@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>生活手帳 Life Log</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FF8C7A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="生活手帳">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;600;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFBF3;
+    --card:#FFFFFF;
+    --ink:#4A3F35;
+    --ink-soft:#8A7D6E;
+    --line:#F1E6D8;
+
+    --coral:#FF8C7A;
+    --coral-dark:#F0715E;
+
+    --c-show:#FFB4A2;      /* 音樂劇/演唱會/展覽 */
+    --c-fit:#A8DDB5;       /* 運動健身 */
+    --c-soul:#D3C0FF;      /* 身心靈 */
+    --c-life:#FFE29A;      /* 飲食/生活瑣事 */
+    --c-culture:#A9DDEE;   /* 閱讀/追劇/娛樂 */
+    --c-other:#FFD3E0;     /* 其他 */
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Noto Sans TC', sans-serif;
+    min-height:100vh;
+    padding-bottom:90px;
+  }
+  h1,h2,.cute-font{font-family:'Chiron GoRound TC','Noto Sans TC',sans-serif;}
+
+  header{
+    padding:30px 20px 18px;
+    text-align:center;
+    position:relative;
+  }
+  header h1{
+    font-weight:800;
+    font-size:26px;
+    margin:0 0 4px;
+    color:var(--coral-dark);
+  }
+  header p{margin:0;font-size:12.5px;color:var(--ink-soft);letter-spacing:1px;}
+
+  .wrap{max-width:520px;margin:0 auto;padding:0 16px;}
+
+  .card{
+    background:var(--card);
+    border-radius:22px;
+    padding:18px;
+    margin-bottom:16px;
+    box-shadow:0 6px 18px rgba(180,150,120,0.10);
+  }
+
+  .tabbar{
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--card);
+    border-top:1px solid var(--line);
+    display:flex;
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom));
+    z-index:50;
+  }
+  .tab-btn{
+    flex:1;background:none;border:none;text-align:center;
+    padding:8px 4px;border-radius:16px;cursor:pointer;
+    color:var(--ink-soft);font-size:11.5px;font-family:'Noto Sans TC';
+  }
+  .tab-btn .icon{font-size:20px;display:block;margin-bottom:2px;}
+  .tab-btn.active{color:var(--coral-dark);background:#FFF1EE;font-weight:700;}
+
+  .page{display:none;}
+  .page.active{display:block;}
+
+  .date-nav{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:18px 0 14px;
+  }
+  .date-nav button{
+    background:var(--card);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer;
+  }
+  .date-nav .date-label{font-family:'Chiron GoRound TC';font-size:16px;font-weight:600;}
+
+  .cat-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+  .cat-chip{
+    padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;
+    border:1.5px solid var(--line);cursor:pointer;color:var(--ink-soft);
+    background:#FCF9F2;transition:.15s;
+  }
+  .cat-chip.active{color:var(--ink);font-weight:700;border-color:transparent;}
+  .cat-chip[data-cat="音樂劇／演唱會／展覽"].active{background:var(--c-show);}
+  .cat-chip[data-cat="運動健身"].active{background:var(--c-fit);}
+  .cat-chip[data-cat="身心靈"].active{background:var(--c-soul);}
+  .cat-chip[data-cat="飲食／生活瑣事"].active{background:var(--c-life);}
+  .cat-chip[data-cat="閱讀／追劇／娛樂"].active{background:var(--c-culture);}
+  .cat-chip[data-cat="其他"].active{background:var(--c-other);}
+
+  textarea{
+    width:100%;min-height:60px;background:#FCF9F2;
+    border:1.5px solid var(--line);border-radius:16px;color:var(--ink);
+    padding:12px 14px;font-family:inherit;font-size:14px;resize:vertical;
+  }
+  textarea:focus{outline:none;border-color:var(--coral);}
+  .add-row{display:flex;gap:10px;margin-top:12px;align-items:center;}
+  .photo-btn, .submit-btn{
+    border-radius:14px;border:none;padding:11px 14px;font-size:13px;cursor:pointer;font-weight:700;
+  }
+  .photo-btn{background:#FCF9F2;border:1.5px solid var(--line);color:var(--ink);flex-shrink:0;}
+  .submit-btn{background:var(--coral);color:#fff;flex:1;}
+  .submit-btn:disabled{opacity:.5;}
+  #photoPreview{margin-top:10px;max-width:100%;border-radius:14px;display:none;}
+  #fileInput{display:none;}
+
+  .ticket{
+    position:relative;
+    background:var(--card);
+    border-radius:18px;
+    padding:14px 16px;
+    margin-bottom:12px;
+    border-left:8px solid var(--c-other);
+    box-shadow:0 4px 14px rgba(180,150,120,0.08);
+  }
+  .ticket.show{border-color:var(--c-show);}
+  .ticket.fit{border-color:var(--c-fit);}
+  .ticket.soul{border-color:var(--c-soul);}
+  .ticket.life{border-color:var(--c-life);}
+  .ticket.culture{border-color:var(--c-culture);}
+  .ticket-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+  .ticket-cat{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--ink-soft);}
+  .ticket-time{font-size:11px;font-family:monospace;color:var(--ink-soft);opacity:.7;}
+  .ticket-text{font-size:14px;line-height:1.55;white-space:pre-wrap;}
+  .ticket img{width:100%;border-radius:12px;margin-top:8px;display:block;}
+  .del-btn{
+    position:absolute;top:10px;right:10px;background:none;border:none;
+    color:#D8CABB;cursor:pointer;font-size:13px;
+  }
+  .empty-state{text-align:center;padding:30px 16px;color:var(--ink-soft);font-size:13.5px;line-height:1.7;}
+
+  .summary-section{margin-top:22px;}
+  .summary-section h2{
+    font-size:15px;font-weight:600;
+    display:flex;align-items:center;gap:6px;margin-bottom:10px;color:var(--ink);
+  }
+  .gen-btn{
+    background:none;border:1.5px solid var(--coral);color:var(--coral-dark);
+    border-radius:20px;padding:5px 12px;font-size:11.5px;cursor:pointer;margin-left:auto;font-weight:600;
+  }
+  .summary-card .label{font-size:11px;letter-spacing:1px;color:var(--coral-dark);margin-bottom:6px;font-weight:700;}
+  .summary-card p{font-size:14px;line-height:1.75;margin:0;color:var(--ink);}
+  .summary-loading{text-align:center;padding:16px;font-size:13px;color:var(--ink-soft);}
+
+  .config-warning{
+    background:#FFE9E4;color:#B3543F;padding:12px 16px;border-radius:16px;
+    font-size:12.5px;margin:12px 16px 0;text-align:center;
+  }
+
+  .progress-ring-wrap{display:flex;align-items:center;gap:16px;}
+  .progress-ring{position:relative;width:74px;height:74px;flex-shrink:0;}
+  .progress-ring svg{transform:rotate(-90deg);}
+  .progress-ring .pct{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:'Chiron GoRound TC';font-size:15px;font-weight:700;color:var(--coral-dark);
+  }
+  .progress-text{font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
+  .progress-text b{color:var(--ink);font-size:15px;}
+
+  .choice-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px;}
+  .choice-chip{
+    padding:9px 15px;border-radius:16px;font-size:13.5px;font-weight:500;
+    border:1.5px solid var(--line);cursor:pointer;color:var(--ink-soft);background:#FCF9F2;
+  }
+  .choice-chip.active{background:var(--c-fit);color:var(--ink);font-weight:700;border-color:transparent;}
+  .field-label{font-size:12.5px;color:var(--ink-soft);font-weight:700;margin:14px 0 2px;letter-spacing:.5px;}
+  .field-label:first-child{margin-top:0;}
+
+  .plan-day{
+    background:#FCF9F2;border-radius:16px;padding:12px 14px;margin-bottom:10px;
+  }
+  .plan-day .d-title{font-weight:700;font-size:13.5px;color:var(--coral-dark);margin-bottom:4px;}
+  .plan-day ul{margin:4px 0 0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--ink);}
+  .plan-tip{
+    background:#FFF6E8;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7;color:var(--ink);margin-top:6px;
+  }
+
+  .year-card .y-head{display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
+  .year-card .y-head .y-num{font-family:'Chiron GoRound TC';font-size:20px;font-weight:800;color:var(--coral-dark);}
+  .year-card .y-head .y-ago{font-size:12px;color:var(--ink-soft);}
+
+  /* ---- 心情選擇器 ---- */
+  .mood-row{display:none;gap:8px;margin-bottom:10px;}
+  .mood-row.show{display:flex;}
+  .mood-chip{
+    flex:1;text-align:center;padding:8px 0;border-radius:14px;font-size:20px;cursor:pointer;
+    border:1.5px solid var(--line);background:#FCF9F2;
+  }
+  .mood-chip.active{background:var(--c-soul);border-color:transparent;}
+
+  /* ---- 連續天數 / 休息提醒 ---- */
+  .streak-badge{
+    display:inline-flex;align-items:center;gap:6px;background:#FFF1EE;color:var(--coral-dark);
+    padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:10px;
+  }
+  .rest-banner{
+    background:#EAF4EC;color:#3E6B4A;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.6;margin-bottom:14px;
+  }
+
+  /* ---- 健身打勾清單 ---- */
+  .check-item{
+    display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);
+    font-size:13.5px;cursor:pointer;
+  }
+  .check-item:last-child{border-bottom:none;}
+  .check-box{
+    width:22px;height:22px;border-radius:8px;border:2px solid var(--c-fit);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;
+  }
+  .check-box.checked{background:var(--c-fit);}
+  .check-item.checked span.ex-name{text-decoration:line-through;color:var(--ink-soft);}
+
+  /* ---- 體重追蹤 ---- */
+  .weight-row{display:flex;gap:8px;align-items:center;}
+  .weight-row input{
+    flex:1;background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;
+    padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;
+  }
+  .weight-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;}
+  .weight-list-item{
+    display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);
+    padding:6px 2px;border-bottom:1px dashed var(--line);
+  }
+  .weight-list-item .w-val{color:var(--ink);font-weight:700;}
+  .weight-delta{font-size:11.5px;margin-left:6px;}
+  .weight-delta.down{color:#3E8C5B;}
+  .weight-delta.up{color:var(--coral-dark);}
+
+  /* ---- 票根牆 ---- */
+  .ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .ticket-stub{
+    background:var(--card);border-radius:16px;overflow:hidden;
+    box-shadow:0 4px 14px rgba(180,150,120,0.10);
+  }
+  .ticket-stub img{width:100%;height:110px;object-fit:cover;display:block;}
+  .ticket-stub .ts-body{padding:10px 12px;}
+  .ticket-stub .ts-name{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.4;}
+  .ticket-stub .ts-meta{font-size:11px;color:var(--ink-soft);margin-top:3px;}
+  .year-divider{
+    font-family:'Chiron GoRound TC';font-size:16px;font-weight:800;color:var(--coral-dark);
+    margin:18px 2px 10px;display:flex;align-items:center;gap:8px;
+  }
+  .wrap-btn{
+    background:none;border:1.5px solid var(--coral);color:var(--coral-dark);
+    border-radius:16px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700;margin-left:auto;
+  }
+  .wrap-narrative{
+    background:linear-gradient(160deg,#FFF6E8,#FFEDE4);border-radius:16px;padding:14px;
+    font-size:13.5px;line-height:1.75;color:var(--ink);margin-bottom:14px;
+  }
+
+  /* ---- 搜尋 ---- */
+  .search-toggle{
+    position:absolute;top:32px;right:18px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink-soft);
+  }
+  .search-bar{display:none;padding:0 16px 10px;}
+  .search-bar.show{display:block;}
+  .search-bar input{
+    width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:14px;
+    padding:10px 14px;font-size:14px;color:var(--ink);font-family:inherit;
+  }
+
+  /* ---- 統計頁 ---- */
+  .month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .month-nav button{
+    background:var(--card);border:1px solid var(--line);color:var(--ink);
+    width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer;
+  }
+  .month-nav .m-label{font-family:'Chiron GoRound TC';font-size:16px;font-weight:600;}
+  .heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+  .heatmap .hm-wd{font-size:10.5px;color:var(--ink-soft);text-align:center;padding-bottom:2px;}
+  .heatmap .hm-day{
+    aspect-ratio:1;border-radius:8px;font-size:10.5px;display:flex;align-items:center;justify-content:center;
+    color:var(--ink-soft);background:#F6EFE2;
+  }
+  .heatmap .hm-day.empty{background:none;}
+  .heatmap .hm-day.today{box-shadow:0 0 0 2px var(--coral) inset;font-weight:700;}
+
+  .donut-wrap{display:flex;align-items:center;gap:16px;}
+  .donut{width:96px;height:96px;border-radius:50%;flex-shrink:0;}
+  .legend{flex:1;display:flex;flex-direction:column;gap:6px;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);}
+  .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+  .mood-chart{width:100%;height:90px;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌸 生活手帳</h1>
+  <p>LIFE LOG · 記錄每一個當下</p>
+  <button class="search-toggle" onclick="toggleSearch()">🔍</button>
+</header>
+<div class="search-bar" id="searchBar">
+  <input type="text" id="searchInput" placeholder="搜尋所有紀錄…" oninput="handleSearchInput()">
+</div>
+<div class="wrap" id="searchResults"></div>
+
+<div id="configWarning" class="config-warning" style="display:none;">
+  尚未設定 GAS_URL，請打開 index.html 編輯最下方 CONFIG.GAS_URL 唷
+</div>
+
+<div class="wrap">
+
+  <div class="page active" id="page-log">
+    <div class="date-nav">
+      <button onclick="changeDate(-1)">‹</button>
+      <div class="date-label" id="dateLabel">今天</div>
+      <button onclick="changeDate(1)">›</button>
+    </div>
+
+    <div class="card">
+      <div class="cat-row" id="catRow"></div>
+      <div class="mood-row" id="moodRow"></div>
+      <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
+      <div class="add-row">
+        <button class="photo-btn" onclick="document.getElementById('fileInput').click()">📷 照片</button>
+        <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
+      <img id="photoPreview">
+    </div>
+
+    <div id="entriesList"></div>
+
+    <div class="summary-section">
+      <h2>✨ 今日彙整 <button class="gen-btn" onclick="generateSummary()">重新生成</button></h2>
+      <div id="summaryArea"></div>
+    </div>
+
+    <div class="summary-section">
+      <h2>🗓️ 本週彙整 <button class="gen-btn" onclick="generateWeekSummary()">生成本週彙整</button></h2>
+      <div id="weekSummaryArea"></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-fit">
+    <div id="streakBadgeArea"></div>
+    <div id="restBannerArea"></div>
+
+    <div class="card">
+      <div class="progress-ring-wrap">
+        <div class="progress-ring">
+          <svg width="74" height="74">
+            <circle cx="37" cy="37" r="30" stroke="#F1E6D8" stroke-width="8" fill="none"/>
+            <circle id="progressCircle" cx="37" cy="37" r="30" stroke="#A8DDB5" stroke-width="8" fill="none"
+              stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+          </svg>
+          <div class="pct" id="progressPct">-</div>
+        </div>
+        <div class="progress-text" id="progressText">還沒有設定每週目標唷</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-label">🎯 主要目標</div>
+      <div class="choice-row" id="goalRow"></div>
+      <div class="field-label">📍 運動地點</div>
+      <div class="choice-row" id="locationRow"></div>
+      <div class="field-label">📅 每週想運動幾天</div>
+      <div class="choice-row" id="daysRow"></div>
+      <button class="submit-btn" style="width:100%;margin-top:6px;" id="fitSubmitBtn" onclick="submitFitnessProfile()">為我生成專屬建議</button>
+    </div>
+
+    <div id="fitnessPlanArea"></div>
+
+    <div class="card" id="checklistCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;">✅ 今天的訓練菜單</div>
+      <div id="checklistArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">⚖️ 體重紀錄</div>
+      <div class="weight-row">
+        <input type="number" step="0.1" id="weightInput" placeholder="今天的體重 (kg)">
+        <button class="submit-btn" onclick="submitWeight()">記錄</button>
+      </div>
+      <div class="weight-list" id="weightList"></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-tickets">
+    <div class="card" style="text-align:center;">
+      <div class="cute-font" style="font-size:15px;font-weight:700;">🎟️ 票根牆</div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">收藏你看過的每一場演出</div>
+    </div>
+    <div id="ticketWallArea"></div>
+  </div>
+
+  <div class="page" id="page-stats">
+    <div class="month-nav">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="m-label" id="monthLabel">—</div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">🗓️ 紀錄熱力圖</div>
+      <div class="heatmap" id="heatmapArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">🍩 類別佔比</div>
+      <div class="donut-wrap" id="donutArea"></div>
+    </div>
+
+    <div class="card" id="moodChartCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;">💭 心情趨勢</div>
+      <svg class="mood-chart" id="moodChartSvg"></svg>
+    </div>
+  </div>
+
+  <div class="page" id="page-memory">
+    <div class="card" style="text-align:center;">
+      <div class="cute-font" style="font-size:15px;font-weight:700;margin-bottom:4px;">🕰️ 那些年的今天</div>
+      <div style="font-size:12.5px;color:var(--ink-soft);" id="memoryDateLabel">—</div>
+    </div>
+    <div id="memoryArea"></div>
+  </div>
+
+</div>
+
+<div class="tabbar">
+  <button class="tab-btn active" data-page="page-log" onclick="switchTab('page-log')">
+    <span class="icon">📝</span>紀錄
+  </button>
+  <button class="tab-btn" data-page="page-fit" onclick="switchTab('page-fit')">
+    <span class="icon">💪</span>健身
+  </button>
+  <button class="tab-btn" data-page="page-tickets" onclick="switchTab('page-tickets')">
+    <span class="icon">🎟️</span>票根
+  </button>
+  <button class="tab-btn" data-page="page-stats" onclick="switchTab('page-stats')">
+    <span class="icon">📊</span>統計
+  </button>
+  <button class="tab-btn" data-page="page-memory" onclick="switchTab('page-memory')">
+    <span class="icon">🕰️</span>回顧
+  </button>
+</div>
+
+<script>
+/* ============================================================
+   請把下面的 GAS_URL 換成你部署 Google Apps Script 後
+   取得的 Web App 網址（詳見「設定說明.md」）
+   ============================================================ */
+const CONFIG = {
+  GAS_URL: 'PASTE_YOUR_GAS_WEB_APP_URL_HERE'
+};
+
+const CATEGORIES = [
+  { key: '音樂劇／演唱會／展覽', cls: 'show', icon: '🎭' },
+  { key: '運動健身', cls: 'fit', icon: '🏃‍♀️' },
+  { key: '身心靈', cls: 'soul', icon: '🧘' },
+  { key: '飲食／生活瑣事', cls: 'life', icon: '🍜' },
+  { key: '閱讀／追劇／娛樂', cls: 'culture', icon: '📖' },
+  { key: '其他', cls: '', icon: '✦' }
+];
+const GOALS = ['增肌', '減脂', '心肺耐力', '紓壓伸展', '體態雕塑'];
+const LOCATIONS = ['在家', '健身房', '兩者都可'];
+const MOODS = [
+  { v: 1, e: '😞' }, { v: 2, e: '😕' }, { v: 3, e: '😐' }, { v: 4, e: '🙂' }, { v: 5, e: '😄' }
+];
+
+let currentDate = new Date();
+let selectedCategory = CATEGORIES[0].key;
+let selectedMood = null;
+let pendingPhotoBase64 = null;
+let pendingPhotoMime = null;
+let selectedGoal = GOALS[0];
+let selectedLocation = LOCATIONS[0];
+let selectedDays = 3;
+let todayChecklist = { planDayIndex: 0, exercises: [], completed: [] };
+let statsMonth = new Date();
+let searchDebounce = null;
+
+const CAT_COLORS = {
+  '音樂劇／演唱會／展覽': '#FFB4A2', '運動健身': '#A8DDB5', '身心靈': '#D3C0FF',
+  '飲食／生活瑣事': '#FFE29A', '閱讀／追劇／娛樂': '#A9DDEE', '其他': '#FFD3E0'
+};
+
+function fmtDate(d) {
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function getMondayStr(d) {
+  const dow = d.getDay();
+  const diff = dow === 0 ? 6 : dow - 1;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - diff);
+  return fmtDate(monday);
+}
+function dateLabel(d) {
+  const today = fmtDate(new Date());
+  const ds = fmtDate(d);
+  if (ds === today) return '今天 · ' + ds;
+  const weekday = ['日','一','二','三','四','五','六'][d.getDay()];
+  return ds + ` (週${weekday})`;
+}
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function checkConfig() {
+  if (!CONFIG.GAS_URL || CONFIG.GAS_URL.includes('PASTE_YOUR')) {
+    document.getElementById('configWarning').style.display = 'block';
+    return false;
+  }
+  return true;
+}
+
+function switchTab(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+  if (pageId === 'page-fit') loadFitnessPage();
+  if (pageId === 'page-tickets') loadTicketWall();
+  if (pageId === 'page-stats') loadStatsPage();
+  if (pageId === 'page-memory') loadMemoryPage();
+}
+
+function renderCatRow() {
+  const row = document.getElementById('catRow');
+  row.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const chip = document.createElement('div');
+    chip.className = 'cat-chip' + (c.key === selectedCategory ? ' active' : '');
+    chip.textContent = c.icon + ' ' + c.key;
+    chip.dataset.cat = c.key;
+    chip.onclick = () => { selectedCategory = c.key; renderCatRow(); };
+    row.appendChild(chip);
+  });
+  renderMoodRow();
+}
+function renderMoodRow() {
+  const row = document.getElementById('moodRow');
+  row.classList.toggle('show', selectedCategory === '身心靈');
+  if (selectedCategory !== '身心靈') { row.innerHTML = ''; return; }
+  row.innerHTML = '';
+  MOODS.forEach(m => {
+    const chip = document.createElement('div');
+    chip.className = 'mood-chip' + (selectedMood === m.v ? ' active' : '');
+    chip.textContent = m.e;
+    chip.onclick = () => { selectedMood = (selectedMood === m.v ? null : m.v); renderMoodRow(); };
+    row.appendChild(chip);
+  });
+}
+function changeDate(delta) {
+  currentDate.setDate(currentDate.getDate() + delta);
+  refresh();
+}
+async function refresh() {
+  document.getElementById('dateLabel').textContent = dateLabel(currentDate);
+  if (!checkConfig()) return;
+  await loadEntries();
+  await loadSummary();
+  await loadWeekSummary();
+}
+async function loadEntries() {
+  const ds = fmtDate(currentDate);
+  const listEl = document.getElementById('entriesList');
+  listEl.innerHTML = '<div class="empty-state">載入中…</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`);
+    const entries = await res.json();
+    if (!entries.length) {
+      listEl.innerHTML = '<div class="empty-state">這天還沒有任何紀錄 🌱<br>寫下第一筆吧</div>';
+      return;
+    }
+    listEl.innerHTML = '';
+    entries.forEach(e => listEl.appendChild(renderTicket(e)));
+  } catch (err) {
+    listEl.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
+  }
+}
+function catClass(cat) {
+  const found = CATEGORIES.find(c => c.key === cat);
+  return found ? found.cls : '';
+}
+function catIcon(cat) {
+  const found = CATEGORIES.find(c => c.key === cat);
+  return found ? found.icon : '✦';
+}
+function moodEmoji(v) {
+  const m = MOODS.find(m => m.v === Number(v));
+  return m ? m.e : '';
+}
+function renderTicket(entry) {
+  const div = document.createElement('div');
+  div.className = 'ticket ' + catClass(entry.category);
+  const tm = entry.ticketMeta;
+  const tmHtml = (tm && (tm.showName || tm.venue || tm.showDate)) ? `
+    <div style="margin-top:6px;font-size:12px;color:var(--coral-dark);font-weight:700;">
+      🎫 ${escapeHtml(tm.showName || '')} ${tm.venue ? '・' + escapeHtml(tm.venue) : ''} ${tm.showDate ? '・' + escapeHtml(tm.showDate) : ''}
+    </div>` : '';
+  div.innerHTML = `
+    <button class="del-btn" onclick="deleteEntry('${entry.id}')">✕</button>
+    <div class="ticket-top">
+      <span class="ticket-cat">${catIcon(entry.category)} ${entry.category} ${entry.mood ? moodEmoji(entry.mood) : ''}</span>
+      <span class="ticket-time">${entry.time}</span>
+    </div>
+    ${entry.text ? `<div class="ticket-text">${escapeHtml(entry.text)}</div>` : ''}
+    ${entry.photoUrl ? `<img src="${entry.photoUrl}" loading="lazy">` : ''}
+    ${tmHtml}
+  `;
+  return div;
+}
+async function deleteEntry(id) {
+  if (!confirm('刪除這則紀錄？')) return;
+  await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteEntry', id }) });
+  loadEntries();
+}
+function handlePhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  pendingPhotoMime = file.type;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingPhotoBase64 = reader.result.split(',')[1];
+    const preview = document.getElementById('photoPreview');
+    preview.src = reader.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+async function submitEntry() {
+  const text = document.getElementById('textInput').value.trim();
+  if (!text && !pendingPhotoBase64) { alert('至少寫點文字或加張照片喔 🌷'); return; }
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '記錄中…';
+  const now = new Date();
+  const isTicketCat = selectedCategory === '音樂劇／演唱會／展覽';
+  const body = {
+    action: 'addEntry', date: fmtDate(currentDate),
+    time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+    category: selectedCategory, text: text, mood: selectedMood || '',
+    photoBase64: pendingPhotoBase64, photoMimeType: pendingPhotoMime
+  };
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(body) });
+    const result = await res.json();
+    document.getElementById('textInput').value = '';
+    document.getElementById('photoPreview').style.display = 'none';
+    pendingPhotoBase64 = null; pendingPhotoMime = null;
+    selectedMood = null; renderMoodRow();
+    await loadEntries();
+    if (isTicketCat && result.photoUrl && result.id) {
+      btn.textContent = 'AI 辨識票根中…';
+      try {
+        await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'recognizeTicket', entryId: result.id }) });
+        await loadEntries();
+      } catch (err) {}
+    }
+  } catch (err) {
+    alert('儲存失敗：' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '記下這一刻';
+  }
+}
+async function loadSummary() {
+  const ds = fmtDate(currentDate);
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getSummary&date=${ds}`);
+    renderSummary(await res.json());
+  } catch (err) { document.getElementById('summaryArea').innerHTML = ''; }
+}
+function renderSummary(summary) {
+  const area = document.getElementById('summaryArea');
+  if (!summary) {
+    area.innerHTML = '<div class="empty-state">還沒有這天的彙整，按上方「重新生成」試試 ✨</div>';
+    return;
+  }
+  area.innerHTML = `
+    <div class="card summary-card"><div class="label">今日總結</div><p>${escapeHtml(summary.summary)}</p></div>
+    <div class="card summary-card"><div class="label">給你的回饋</div><p>${escapeHtml(summary.feedback)}</p></div>
+  `;
+}
+async function generateSummary() {
+  const ds = fmtDate(currentDate);
+  const area = document.getElementById('summaryArea');
+  area.innerHTML = '<div class="summary-loading">AI 正在整理今天的點點滴滴… 🌸</div>';
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateSummary', date: ds }) });
+    const result = await res.json();
+    if (result.ok === false) { area.innerHTML = `<div class="empty-state">${result.message || '生成失敗'}</div>`; return; }
+    if (result.error) { area.innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
+    renderSummary(result);
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
+  }
+}
+
+async function loadWeekSummary() {
+  const weekStart = getMondayStr(currentDate);
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getWeeklySummary&weekStart=${weekStart}`);
+    renderWeekSummary(await res.json());
+  } catch (err) { document.getElementById('weekSummaryArea').innerHTML = ''; }
+}
+function renderWeekSummary(s) {
+  const area = document.getElementById('weekSummaryArea');
+  if (!s) { area.innerHTML = '<div class="empty-state">這週還沒有彙整，按上方按鈕生成看看 🗓️</div>'; return; }
+  area.innerHTML = `
+    <div class="card summary-card"><div class="label">${s.weekStart} ~ ${s.weekEnd}</div><p>${escapeHtml(s.summary)}</p></div>
+    <div class="card summary-card"><div class="label">與上週相比</div><p>${escapeHtml(s.feedback)}</p></div>
+  `;
+}
+async function generateWeekSummary() {
+  const weekStart = getMondayStr(currentDate);
+  const area = document.getElementById('weekSummaryArea');
+  area.innerHTML = '<div class="summary-loading">整理這一週的故事中… 🗓️</div>';
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateWeeklySummary', weekStart }) });
+    const result = await res.json();
+    if (result.ok === false) { area.innerHTML = `<div class="empty-state">${result.message}</div>`; return; }
+    if (result.error) { area.innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
+    renderWeekSummary(result);
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
+  }
+}
+
+function renderChoiceRow(containerId, options, selectedVal, onPick) {
+  const row = document.getElementById(containerId);
+  row.innerHTML = '';
+  options.forEach(opt => {
+    const chip = document.createElement('div');
+    chip.className = 'choice-chip' + (opt == selectedVal ? ' active' : '');
+    chip.textContent = opt;
+    chip.onclick = () => { onPick(opt); renderFitForm(); };
+    row.appendChild(chip);
+  });
+}
+function renderFitForm() {
+  renderChoiceRow('goalRow', GOALS, selectedGoal, v => selectedGoal = v);
+  renderChoiceRow('locationRow', LOCATIONS, selectedLocation, v => selectedLocation = v);
+  renderChoiceRow('daysRow', [1,2,3,4,5,6,7].map(n => n + '天'), selectedDays + '天', v => selectedDays = parseInt(v));
+}
+async function loadFitnessPage() {
+  if (!checkConfig()) return;
+  renderFitForm();
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getFitnessProfile`);
+    const profile = await res.json();
+    if (profile) {
+      selectedGoal = profile.goal; selectedLocation = profile.location; selectedDays = parseInt(profile.daysPerWeek);
+      renderFitForm();
+      renderPlan(profile.plan);
+    }
+  } catch (err) {}
+  loadWeekProgress();
+  loadStreak();
+  loadWeightList();
+}
+
+async function loadStreak() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStreak`);
+    const s = await res.json();
+    const badgeArea = document.getElementById('streakBadgeArea');
+    badgeArea.innerHTML = s.streak > 0 ? `<div class="streak-badge">🔥 連續運動 ${s.streak} 天</div>` : '';
+    const restArea = document.getElementById('restBannerArea');
+    restArea.innerHTML = s.suggestRest ? `<div class="rest-banner">🌿 ${escapeHtml(s.restMessage)}</div>` : '';
+  } catch (err) {}
+}
+
+async function loadWeightList() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getBodyStats`);
+    const stats = await res.json();
+    const listEl = document.getElementById('weightList');
+    if (!stats.length) { listEl.innerHTML = ''; return; }
+    const recent = stats.slice(-8).reverse();
+    listEl.innerHTML = recent.map((s, i) => {
+      const prev = recent[i + 1];
+      let delta = '';
+      if (prev) {
+        const diff = (parseFloat(s.weight) - parseFloat(prev.weight)).toFixed(1);
+        if (diff != 0) delta = `<span class="weight-delta ${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '+' : ''}${diff}</span>`;
+      }
+      return `<div class="weight-list-item"><span>${s.date}</span><span><span class="w-val">${s.weight} kg</span>${delta}</span></div>`;
+    }).join('');
+  } catch (err) {}
+}
+async function submitWeight() {
+  const val = document.getElementById('weightInput').value;
+  if (!val) return;
+  try {
+    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: fmtDate(new Date()), weight: val }) });
+    document.getElementById('weightInput').value = '';
+    loadWeightList();
+  } catch (err) { alert('記錄失敗：' + err.message); }
+}
+async function loadWeekProgress() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`);
+    const p = await res.json();
+    const circle = document.getElementById('progressCircle');
+    const circumference = 188.5;
+    if (p.target) {
+      const ratio = Math.min(p.daysThisWeek / p.target, 1);
+      circle.setAttribute('stroke-dashoffset', circumference - ratio * circumference);
+      document.getElementById('progressPct').textContent = p.daysThisWeek + '/' + p.target;
+      document.getElementById('progressText').innerHTML = `本週已經運動 <b>${p.daysThisWeek}</b> 天，目標是每週 <b>${p.target}</b> 天，加油！💪`;
+    } else {
+      circle.setAttribute('stroke-dashoffset', circumference);
+      document.getElementById('progressPct').textContent = p.daysThisWeek;
+      document.getElementById('progressText').textContent = '本週已記錄 ' + p.daysThisWeek + ' 天運動，設定目標讓進度更清楚吧';
+    }
+  } catch (err) {}
+}
+async function submitFitnessProfile() {
+  const btn = document.getElementById('fitSubmitBtn');
+  btn.disabled = true; btn.textContent = '為你設計中…';
+  document.getElementById('fitnessPlanArea').innerHTML = '<div class="summary-loading">教練正在幫你想菜單 🏋️‍♀️</div>';
+  try {
+    const res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveFitnessProfile', daysPerWeek: selectedDays, location: selectedLocation, goal: selectedGoal })
+    });
+    const result = await res.json();
+    if (result.error) { document.getElementById('fitnessPlanArea').innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
+    renderPlan(result.plan);
+    loadWeekProgress();
+  } catch (err) {
+    document.getElementById('fitnessPlanArea').innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '為我生成專屬建議';
+  }
+}
+function renderPlan(plan) {
+  const area = document.getElementById('fitnessPlanArea');
+  if (!plan || !plan.weeklyPlan) { area.innerHTML = ''; return; }
+  let html = `<div class="card"><div class="field-label" style="margin-top:0;">💌 給你的建議</div><p style="font-size:13.5px;line-height:1.7;margin:6px 0 0;">${escapeHtml(plan.overview)}</p></div>`;
+  html += '<div class="card"><div class="field-label" style="margin-top:0;">🗓️ 每週菜單</div>';
+  plan.weeklyPlan.forEach(d => {
+    html += `<div class="plan-day"><div class="d-title">${escapeHtml(d.day)} · ${escapeHtml(d.focus)}</div>
+      <ul>${(d.exercises||[]).map(ex => `<li>${escapeHtml(ex)}</li>`).join('')}</ul></div>`;
+  });
+  if (plan.tips) html += `<div class="plan-tip">💡 ${escapeHtml(plan.tips)}</div>`;
+  html += '</div>';
+  area.innerHTML = html;
+  loadChecklist(plan);
+}
+
+async function loadChecklist(plan) {
+  if (!plan || !plan.weeklyPlan || !plan.weeklyPlan.length) {
+    document.getElementById('checklistCard').style.display = 'none';
+    return;
+  }
+  const todayStr = fmtDate(new Date());
+  let dayIndex = 0;
+  try {
+    const progRes = await fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`);
+    const prog = await progRes.json();
+    dayIndex = prog.daysThisWeek % plan.weeklyPlan.length;
+  } catch (err) {}
+  const planDay = plan.weeklyPlan[dayIndex];
+  let completed = [];
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getExerciseCheck&date=${todayStr}`);
+    const check = await res.json();
+    completed = check.completed || [];
+  } catch (err) {}
+  todayChecklist = { planDayIndex: dayIndex, exercises: planDay.exercises || [], completed, date: todayStr };
+  document.getElementById('checklistCard').style.display = 'block';
+  renderChecklist();
+}
+function renderChecklist() {
+  const area = document.getElementById('checklistArea');
+  area.innerHTML = todayChecklist.exercises.map((ex, i) => {
+    const checked = todayChecklist.completed.includes(i);
+    return `<div class="check-item ${checked ? 'checked' : ''}" onclick="toggleExerciseItem(${i})">
+      <div class="check-box ${checked ? 'checked' : ''}">${checked ? '✓' : ''}</div>
+      <span class="ex-name">${escapeHtml(ex)}</span>
+    </div>`;
+  }).join('');
+}
+async function toggleExerciseItem(i) {
+  const idx = todayChecklist.completed.indexOf(i);
+  const nowCompleted = idx === -1;
+  if (nowCompleted) todayChecklist.completed.push(i); else todayChecklist.completed.splice(idx, 1);
+  renderChecklist();
+  const completedNames = todayChecklist.completed.map(ci => todayChecklist.exercises[ci]);
+  try {
+    await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'toggleExercise', date: todayChecklist.date, planDayIndex: todayChecklist.planDayIndex,
+        exerciseIndex: i, completed: nowCompleted, completedNames
+      })
+    });
+    loadWeekProgress();
+    loadStreak();
+  } catch (err) {}
+}
+
+async function loadTicketWall() {
+  if (!checkConfig()) return;
+  const area = document.getElementById('ticketWallArea');
+  area.innerHTML = '<div class="empty-state">整理票根中… 🎫</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getTicketWall`);
+    const tickets = await res.json();
+    if (!tickets.length) {
+      area.innerHTML = '<div class="empty-state">還沒有收藏任何票根唷<br>下次記錄音樂劇／演唱會時加張照片，AI 會自動幫你辨識演出資訊 🎭</div>';
+      return;
+    }
+    const byYear = {};
+    tickets.forEach(t => {
+      const y = t.date.substring(0, 4);
+      if (!byYear[y]) byYear[y] = [];
+      byYear[y].push(t);
+    });
+    area.innerHTML = '';
+    Object.keys(byYear).sort().reverse().forEach(year => {
+      const divider = document.createElement('div');
+      divider.className = 'year-divider';
+      divider.innerHTML = `<span>${year}</span><button class="wrap-btn" onclick="generateWrap('${year}')">✨ 年度回顧</button>`;
+      area.appendChild(divider);
+
+      const wrapArea = document.createElement('div');
+      wrapArea.id = 'wrapArea-' + year;
+      area.appendChild(wrapArea);
+
+      const grid = document.createElement('div');
+      grid.className = 'ticket-grid';
+      byYear[year].forEach(t => {
+        const meta = t.ticketMeta || {};
+        const stub = document.createElement('div');
+        stub.className = 'ticket-stub';
+        stub.innerHTML = `
+          ${t.photoUrl ? `<img src="${t.photoUrl}" loading="lazy">` : ''}
+          <div class="ts-body">
+            <div class="ts-name">${escapeHtml(meta.showName || t.text || '未命名紀錄')}</div>
+            <div class="ts-meta">${escapeHtml(meta.venue || '')} ${meta.venue ? '・' : ''}${t.date}</div>
+          </div>`;
+        grid.appendChild(stub);
+      });
+      area.appendChild(grid);
+    });
+  } catch (err) {
+    area.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
+  }
+}
+async function generateWrap(year) {
+  const wrapArea = document.getElementById('wrapArea-' + year);
+  wrapArea.innerHTML = '<div class="summary-loading">正在回顧 ' + year + ' 年的點點滴滴… ✨</div>';
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateYearWrap', year: parseInt(year) }) });
+    const result = await res.json();
+    if (result.ok === false) { wrapArea.innerHTML = `<div class="empty-state">${result.message}</div>`; return; }
+    if (result.error) { wrapArea.innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
+    const s = result.stats;
+    wrapArea.innerHTML = `<div class="wrap-narrative">
+      ${escapeHtml(result.narrative)}
+      <div style="margin-top:10px;font-size:12px;color:var(--ink-soft);">
+        共 ${s.totalEntries} 則紀錄・運動 ${s.exerciseDaysCount} 天・看了 ${s.showCount} 場演出
+      </div>
+    </div>`;
+  } catch (err) {
+    wrapArea.innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
+  }
+}
+
+async function loadMemoryPage() {
+  if (!checkConfig()) return;
+  const today = new Date();
+  const ds = fmtDate(today);
+  document.getElementById('memoryDateLabel').textContent = ds.substring(5).replace('-', '月') + '日';
+  const area = document.getElementById('memoryArea');
+  area.innerHTML = '<div class="empty-state">翻找回憶中… 🔍</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getOnThisDay&date=${ds}`);
+    const years = await res.json();
+    if (!years.length) {
+      area.innerHTML = '<div class="empty-state">還沒有過去這天的紀錄唷<br>明年的今天就會有回憶可以看了 🌱</div>';
+      return;
+    }
+    area.innerHTML = '';
+    years.forEach(y => area.appendChild(renderYearCard(y, today.getFullYear())));
+  } catch (err) {
+    area.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
+  }
+}
+function renderYearCard(y, currentYear) {
+  const div = document.createElement('div');
+  div.className = 'card year-card';
+  const yearsAgo = currentYear - parseInt(y.year);
+  let html = `<div class="y-head"><span class="y-num">${y.year}</span><span class="y-ago">・ ${yearsAgo} 年前的今天</span></div>`;
+  if (y.summary) {
+    html += `<div class="summary-card" style="margin-bottom:10px;"><div class="label">當天總結</div><p>${escapeHtml(y.summary.summary)}</p></div>`;
+  }
+  y.entries.forEach(e => {
+    html += `<div class="ticket ${catClass(e.category)}" style="margin-bottom:8px;">
+      <div class="ticket-top"><span class="ticket-cat">${catIcon(e.category)} ${e.category}</span><span class="ticket-time">${e.time}</span></div>
+      ${e.text ? `<div class="ticket-text">${escapeHtml(e.text)}</div>` : ''}
+      ${e.photoUrl ? `<img src="${e.photoUrl}" loading="lazy">` : ''}
+    </div>`;
+  });
+  div.innerHTML = html;
+  return div;
+}
+
+/* ================= 搜尋 ================= */
+function toggleSearch() {
+  const bar = document.getElementById('searchBar');
+  bar.classList.toggle('show');
+  if (bar.classList.contains('show')) {
+    document.getElementById('searchInput').focus();
+  } else {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchResults').innerHTML = '';
+  }
+}
+function handleSearchInput() {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(doSearch, 350);
+}
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  const area = document.getElementById('searchResults');
+  if (!q) { area.innerHTML = ''; return; }
+  area.innerHTML = '<div class="empty-state">搜尋中… 🔍</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=searchEntries&q=${encodeURIComponent(q)}`);
+    const results = await res.json();
+    if (!results.length) { area.innerHTML = '<div class="empty-state">找不到符合的紀錄</div>'; return; }
+    area.innerHTML = '';
+    results.forEach(e => area.appendChild(renderTicket(e)));
+  } catch (err) {
+    area.innerHTML = '<div class="empty-state">搜尋失敗：' + err.message + '</div>';
+  }
+}
+
+/* ================= 統計頁 ================= */
+function changeMonth(delta) {
+  statsMonth.setMonth(statsMonth.getMonth() + delta);
+  loadStatsPage();
+}
+async function loadStatsPage() {
+  if (!checkConfig()) return;
+  const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
+  document.getElementById('monthLabel').textContent = statsMonth.getFullYear() + ' 年 ' + (statsMonth.getMonth() + 1) + ' 月';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`);
+    const stats = await res.json();
+    renderHeatmap(ym, stats.dayCounts);
+    renderDonut(stats.categoryCounts);
+    renderMoodChart(stats.moodTrend);
+  } catch (err) {}
+}
+function renderHeatmap(ym, dayCounts) {
+  const area = document.getElementById('heatmapArea');
+  const [y, m] = ym.split('-').map(Number);
+  const firstDay = new Date(y, m - 1, 1);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const startOffset = firstDay.getDay(); // 0=Sun
+  const todayStr = fmtDate(new Date());
+  let html = ['日','一','二','三','四','五','六'].map(w => `<div class="hm-wd">${w}</div>`).join('');
+  for (let i = 0; i < startOffset; i++) html += '<div class="hm-day empty"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = ym + '-' + String(d).padStart(2, '0');
+    const count = dayCounts[ds] || 0;
+    let bg = '#F6EFE2';
+    if (count >= 1) bg = '#FFE0D6';
+    if (count >= 3) bg = '#FFC0AC';
+    if (count >= 5) bg = '#FF9C82';
+    const isToday = ds === todayStr ? ' today' : '';
+    html += `<div class="hm-day${isToday}" style="background:${bg};" title="${ds}：${count} 則">${d}</div>`;
+  }
+  area.innerHTML = html;
+}
+function renderDonut(categoryCounts) {
+  const area = document.getElementById('donutArea');
+  const total = Object.values(categoryCounts).reduce((s, v) => s + v, 0);
+  if (!total) { area.innerHTML = '<div class="empty-state">這個月還沒有紀錄</div>'; return; }
+  let acc = 0;
+  const stops = [];
+  Object.keys(categoryCounts).forEach(cat => {
+    const pct = categoryCounts[cat] / total * 100;
+    const color = CAT_COLORS[cat] || '#D8CABB';
+    stops.push(`${color} ${acc}% ${acc + pct}%`);
+    acc += pct;
+  });
+  const donut = `<div class="donut" style="background:conic-gradient(${stops.join(',')});"></div>`;
+  const legend = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]).map(cat => {
+    const pct = Math.round(categoryCounts[cat] / total * 100);
+    return `<div class="legend-item"><span class="legend-dot" style="background:${CAT_COLORS[cat] || '#D8CABB'};"></span>${catIcon(cat)} ${cat}　${pct}%</div>`;
+  }).join('');
+  area.innerHTML = donut + `<div class="legend">${legend}</div>`;
+}
+function renderMoodChart(moodTrend) {
+  const card = document.getElementById('moodChartCard');
+  if (!moodTrend.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  const svg = document.getElementById('moodChartSvg');
+  const w = svg.clientWidth || 300, h = 90, pad = 10;
+  const n = moodTrend.length;
+  const stepX = n > 1 ? (w - pad * 2) / (n - 1) : 0;
+  const yFor = v => h - pad - ((v - 1) / 4) * (h - pad * 2);
+  const points = moodTrend.map((m, i) => `${pad + i * stepX},${yFor(m.mood)}`).join(' ');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.innerHTML = `
+    <polyline points="${points}" fill="none" stroke="#D3C0FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${moodTrend.map((m, i) => `<circle cx="${pad + i * stepX}" cy="${yFor(m.mood)}" r="3.5" fill="#B39DDB"/>`).join('')}
+  `;
+}
+
+renderCatRow();
+refresh();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
