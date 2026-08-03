@@ -207,6 +207,35 @@
   }
   .mood-chip.active{background:var(--c-soul);border-color:transparent;}
 
+  /* ---- 類別管理 ---- */
+  .cat-manage-btn{
+    position:absolute;top:14px;right:14px;background:none;border:none;font-size:16px;
+    cursor:pointer;color:var(--ink-soft);z-index:2;
+  }
+  .cat-manager-row{
+    display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;
+  }
+  .cat-manager-row:last-child{border-bottom:none;}
+  .cat-manager-row .cm-swatch{width:26px;height:26px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+  .cat-manager-row .cm-name{flex:1;}
+  .cat-manager-row button{background:none;border:none;color:var(--ink-soft);font-size:13px;cursor:pointer;padding:4px 6px;}
+  .color-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px;}
+  .color-swatch{
+    width:28px;height:28px;border-radius:10px;cursor:pointer;border:2px solid transparent;
+  }
+  .color-swatch.active{border-color:var(--ink);}
+  .field-row{
+    display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;
+  }
+  .field-row input[type="text"]{
+    flex:1;min-width:80px;background:#FCF9F2;border:1.5px solid var(--line);border-radius:10px;
+    padding:8px 10px;font-size:13px;font-family:inherit;
+  }
+  .field-row select{
+    background:#FCF9F2;border:1.5px solid var(--line);border-radius:10px;padding:8px 6px;font-size:12.5px;font-family:inherit;
+  }
+  .field-row .fr-del{background:none;border:none;color:#D8908A;font-size:15px;cursor:pointer;}
+
   /* ---- 連續天數 / 休息提醒 ---- */
   .streak-badge{
     display:inline-flex;align-items:center;gap:6px;background:#FFF1EE;color:var(--coral-dark);
@@ -235,6 +264,23 @@
     flex:1;background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;
     padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;
   }
+
+  .gym-form input{
+    background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;
+    padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;width:100%;
+    box-sizing:border-box;margin-bottom:8px;
+  }
+  .gym-form-row{display:flex;gap:8px;}
+  .gym-form-row input{margin-bottom:8px;}
+  .gym-log-day{margin-top:14px;}
+  .gym-log-day .gl-date{font-size:11.5px;color:var(--ink-soft);font-weight:700;margin:10px 0 6px;letter-spacing:.5px;}
+  .gym-log-item{
+    display:flex;align-items:center;justify-content:space-between;background:#FCF9F2;
+    border-radius:12px;padding:9px 12px;margin-bottom:6px;font-size:13.5px;
+  }
+  .gym-log-item .gl-ex{font-weight:700;color:var(--ink);}
+  .gym-log-item .gl-detail{color:var(--ink-soft);font-size:12.5px;margin-left:6px;}
+  .gym-log-item .gl-del{background:none;border:none;color:#D8CABB;font-size:13px;cursor:pointer;}
   .weight-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;}
   .weight-list-item{
     display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);
@@ -329,7 +375,8 @@
       <button onclick="changeDate(1)">›</button>
     </div>
 
-    <div class="card">
+    <div class="card" style="position:relative;">
+      <button class="cat-manage-btn" onclick="toggleCatManager()">⚙️</button>
       <div class="cat-row" id="catRow"></div>
       <div class="mood-row" id="moodRow"></div>
       <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
@@ -339,6 +386,31 @@
       </div>
       <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
       <img id="photoPreview">
+    </div>
+
+    <div class="card" id="catManagerCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;">⚙️ 管理類別</div>
+      <div id="catManagerList"></div>
+      <button class="submit-btn" style="width:100%;margin-top:10px;" onclick="openCatEditor(null)">+ 新增類別</button>
+    </div>
+
+    <div class="card" id="catEditorCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;" id="catEditorTitle">新增類別</div>
+      <input type="text" id="catNameInput" placeholder="類別名稱，例如：演唱會" style="width:100%;background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:10px;">
+      <input type="text" id="catIconInput" placeholder="圖示 emoji，例如：🎤" style="width:100%;background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:10px;">
+      <div class="field-label">顏色</div>
+      <div class="color-row" id="colorRow"></div>
+      <div class="field-label" style="display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="ticketScanCheck" style="width:16px;height:16px;">
+        照片上傳時自動用 AI 辨識票根資訊（適合演唱會/音樂劇/展覽）
+      </div>
+      <div class="field-label">自訂欄位</div>
+      <div id="fieldsBuilder"></div>
+      <button class="choice-chip" style="margin-top:6px;" onclick="addFieldRow()">+ 新增欄位</button>
+      <div class="add-row" style="margin-top:14px;">
+        <button class="photo-btn" onclick="closeCatEditor()">取消</button>
+        <button class="submit-btn" onclick="saveCategoryHandler()">儲存類別</button>
+      </div>
     </div>
 
     <div id="entriesList"></div>
@@ -387,6 +459,22 @@
     <div class="card" id="checklistCard" style="display:none;">
       <div class="field-label" style="margin-top:0;">✅ 今天的訓練菜單</div>
       <div id="checklistArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">🏋️ 重量訓練紀錄</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">記錄今天做了哪些器械/動作、重量、組數、次數</div>
+      <div class="gym-form">
+        <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
+        <datalist id="gymExerciseList"></datalist>
+        <div class="gym-form-row">
+          <input type="number" step="0.5" id="gymWeightInput" placeholder="重量(kg)">
+          <input type="number" id="gymSetsInput" placeholder="組數">
+          <input type="number" id="gymRepsInput" placeholder="次數/組">
+        </div>
+        <button class="submit-btn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
+      </div>
+      <div id="gymLogList"></div>
     </div>
 
     <div class="card">
@@ -464,26 +552,24 @@
    取得的 Web App 網址（詳見「設定說明.md」）
    ============================================================ */
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbx86_BfOCQBYv0A1nTNnwhqUkevH27vlYFdNjzdDumx7RgeNqMMyBG6lzV9xjz1RU7b/exec'
+  GAS_URL: 'PASTE_YOUR_GAS_WEB_APP_URL_HERE'
 };
 
-const CATEGORIES = [
-  { key: '音樂劇／演唱會／展覽', cls: 'show', icon: '🎭' },
-  { key: '運動健身', cls: 'fit', icon: '🏃‍♀️' },
-  { key: '身心靈', cls: 'soul', icon: '🧘' },
-  { key: '飲食／生活瑣事', cls: 'life', icon: '🍜' },
-  { key: '閱讀／追劇／娛樂', cls: 'culture', icon: '📖' },
-  { key: '其他', cls: '', icon: '✦' }
-];
+let CATEGORIES = [];
 const GOALS = ['增肌', '減脂', '心肺耐力', '紓壓伸展', '體態雕塑'];
 const LOCATIONS = ['在家', '健身房', '兩者都可'];
 const MOODS = [
   { v: 1, e: '😞' }, { v: 2, e: '😕' }, { v: 3, e: '😐' }, { v: 4, e: '🙂' }, { v: 5, e: '😄' }
 ];
+const FIELD_TYPES = [
+  { v: 'text', label: '文字' }, { v: 'number', label: '數字' },
+  { v: 'select', label: '選單' }, { v: 'mood', label: '心情' }
+];
+const COLOR_PRESETS = ['#FFB4A2','#F5A3C7','#C9A6E8','#A8DDB5','#D3C0FF','#FFE29A','#A9DDEE','#FFD3E0','#FFCF9E','#B9E4C9'];
 
 let currentDate = new Date();
-let selectedCategory = CATEGORIES[0].key;
-let selectedMood = null;
+let selectedCategory = null;
+let currentFieldValues = {};
 let pendingPhotoBase64 = null;
 let pendingPhotoMime = null;
 let selectedGoal = GOALS[0];
@@ -492,11 +578,8 @@ let selectedDays = 3;
 let todayChecklist = { planDayIndex: 0, exercises: [], completed: [] };
 let statsMonth = new Date();
 let searchDebounce = null;
-
-const CAT_COLORS = {
-  '音樂劇／演唱會／展覽': '#FFB4A2', '運動健身': '#A8DDB5', '身心靈': '#D3C0FF',
-  '飲食／生活瑣事': '#FFE29A', '閱讀／追劇／娛樂': '#A9DDEE', '其他': '#FFD3E0'
-};
+let editingCategoryId = null;
+let editingFields = [];
 
 function fmtDate(d) {
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
@@ -537,31 +620,175 @@ function switchTab(pageId) {
   if (pageId === 'page-memory') loadMemoryPage();
 }
 
+async function loadCategories() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getCategories`);
+    CATEGORIES = await res.json();
+  } catch (err) { CATEGORIES = []; }
+  if (!selectedCategory && CATEGORIES.length) selectedCategory = CATEGORIES[0].name;
+  renderCatRow();
+}
+function catByName(name) {
+  return CATEGORIES.find(c => c.name === name);
+}
+function catIcon(name) {
+  const c = catByName(name);
+  return c ? c.icon : '✦';
+}
+function catColor(name) {
+  const c = catByName(name);
+  return c ? c.color : '#D8CABB';
+}
 function renderCatRow() {
   const row = document.getElementById('catRow');
   row.innerHTML = '';
   CATEGORIES.forEach(c => {
     const chip = document.createElement('div');
-    chip.className = 'cat-chip' + (c.key === selectedCategory ? ' active' : '');
-    chip.textContent = c.icon + ' ' + c.key;
-    chip.dataset.cat = c.key;
-    chip.onclick = () => { selectedCategory = c.key; renderCatRow(); };
+    const active = c.name === selectedCategory;
+    chip.className = 'cat-chip' + (active ? ' active' : '');
+    if (active) { chip.style.background = c.color; chip.style.borderColor = 'transparent'; }
+    chip.textContent = c.icon + ' ' + c.name;
+    chip.onclick = () => { selectedCategory = c.name; currentFieldValues = {}; renderCatRow(); };
     row.appendChild(chip);
   });
-  renderMoodRow();
+  renderExtraFields();
 }
-function renderMoodRow() {
+function renderExtraFields() {
   const row = document.getElementById('moodRow');
-  row.classList.toggle('show', selectedCategory === '身心靈');
-  if (selectedCategory !== '身心靈') { row.innerHTML = ''; return; }
+  const cat = catByName(selectedCategory);
+  const fields = cat ? cat.fields : [];
+  if (!fields || !fields.length) { row.classList.remove('show'); row.innerHTML = ''; return; }
+  row.classList.add('show');
+  row.style.flexWrap = 'wrap';
   row.innerHTML = '';
-  MOODS.forEach(m => {
-    const chip = document.createElement('div');
-    chip.className = 'mood-chip' + (selectedMood === m.v ? ' active' : '');
-    chip.textContent = m.e;
-    chip.onclick = () => { selectedMood = (selectedMood === m.v ? null : m.v); renderMoodRow(); };
-    row.appendChild(chip);
+  fields.forEach(f => {
+    const wrap = document.createElement('div');
+    if (f.type === 'mood') {
+      wrap.style.display = 'flex'; wrap.style.gap = '6px';
+      MOODS.forEach(m => {
+        const chip = document.createElement('div');
+        chip.className = 'mood-chip' + (currentFieldValues[f.key] === m.v ? ' active' : '');
+        chip.textContent = m.e;
+        chip.style.flex = 'none'; chip.style.width = '38px';
+        chip.onclick = () => { currentFieldValues[f.key] = (currentFieldValues[f.key] === m.v ? null : m.v); renderExtraFields(); };
+        wrap.appendChild(chip);
+      });
+    } else if (f.type === 'select') {
+      const sel = document.createElement('select');
+      sel.className = 'choice-chip';
+      sel.style.padding = '9px 10px';
+      sel.innerHTML = `<option value="">${escapeHtml(f.label)}</option>` +
+        (f.options || []).map(o => `<option value="${escapeHtml(o)}" ${currentFieldValues[f.key] === o ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('');
+      sel.onchange = () => { currentFieldValues[f.key] = sel.value; };
+      wrap.appendChild(sel);
+    } else {
+      const input = document.createElement('input');
+      input.type = f.type === 'number' ? 'number' : 'text';
+      input.placeholder = f.label;
+      input.value = currentFieldValues[f.key] || '';
+      input.style.cssText = 'background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:110px;';
+      input.oninput = () => { currentFieldValues[f.key] = input.value; };
+      wrap.appendChild(input);
+    }
+    row.appendChild(wrap);
   });
+}
+
+/* ---- 類別管理 ---- */
+function toggleCatManager() {
+  const card = document.getElementById('catManagerCard');
+  const isOpen = card.style.display !== 'none';
+  card.style.display = isOpen ? 'none' : 'block';
+  document.getElementById('catEditorCard').style.display = 'none';
+  if (!isOpen) renderCatManagerList();
+}
+function renderCatManagerList() {
+  const area = document.getElementById('catManagerList');
+  area.innerHTML = CATEGORIES.map(c => `
+    <div class="cat-manager-row">
+      <div class="cm-swatch" style="background:${c.color};">${c.icon}</div>
+      <div class="cm-name">${escapeHtml(c.name)}${c.ticketScan ? ' 🎫' : ''}</div>
+      <button onclick="openCatEditor('${c.id}')">編輯</button>
+      <button onclick="deleteCategoryHandler('${c.id}')">刪除</button>
+    </div>
+  `).join('');
+}
+function renderColorRow(selected) {
+  const row = document.getElementById('colorRow');
+  row.innerHTML = COLOR_PRESETS.map(col => `
+    <div class="color-swatch ${col === selected ? 'active' : ''}" style="background:${col};" onclick="selectColor('${col}')"></div>
+  `).join('');
+}
+function selectColor(col) {
+  document.getElementById('colorRow').dataset.selected = col;
+  renderColorRow(col);
+}
+function openCatEditor(id) {
+  editingCategoryId = id;
+  const existing = id ? CATEGORIES.find(c => c.id === id) : null;
+  document.getElementById('catEditorTitle').textContent = existing ? '編輯類別' : '新增類別';
+  document.getElementById('catNameInput').value = existing ? existing.name : '';
+  document.getElementById('catIconInput').value = existing ? existing.icon : '';
+  document.getElementById('ticketScanCheck').checked = existing ? !!existing.ticketScan : false;
+  const color = existing ? existing.color : COLOR_PRESETS[0];
+  document.getElementById('colorRow').dataset.selected = color;
+  renderColorRow(color);
+  editingFields = existing ? JSON.parse(JSON.stringify(existing.fields || [])) : [];
+  renderFieldsBuilder();
+  document.getElementById('catEditorCard').style.display = 'block';
+  document.getElementById('catManagerCard').style.display = 'none';
+}
+function closeCatEditor() {
+  document.getElementById('catEditorCard').style.display = 'none';
+  document.getElementById('catManagerCard').style.display = 'block';
+}
+function addFieldRow() {
+  editingFields.push({ key: 'f' + Date.now(), label: '', type: 'text', options: [] });
+  renderFieldsBuilder();
+}
+function renderFieldsBuilder() {
+  const area = document.getElementById('fieldsBuilder');
+  area.innerHTML = editingFields.map((f, i) => `
+    <div class="field-row">
+      <input type="text" placeholder="欄位名稱，例如：場地" value="${escapeHtml(f.label)}" oninput="editingFields[${i}].label=this.value">
+      <select onchange="editingFields[${i}].type=this.value; renderFieldsBuilder();">
+        ${FIELD_TYPES.map(t => `<option value="${t.v}" ${f.type === t.v ? 'selected' : ''}>${t.label}</option>`).join('')}
+      </select>
+      <button class="fr-del" onclick="editingFields.splice(${i},1); renderFieldsBuilder();">✕</button>
+      ${f.type === 'select' ? `<input type="text" style="flex-basis:100%;" placeholder="選項，用逗號分隔，例如：書籍,電影,影集"
+        value="${escapeHtml((f.options || []).join(','))}" oninput="editingFields[${i}].options=this.value.split(',').map(s=>s.trim()).filter(Boolean)">` : ''}
+    </div>
+  `).join('');
+}
+async function saveCategoryHandler() {
+  const name = document.getElementById('catNameInput').value.trim();
+  if (!name) { alert('請輸入類別名稱'); return; }
+  const icon = document.getElementById('catIconInput').value.trim() || '✦';
+  const color = document.getElementById('colorRow').dataset.selected || COLOR_PRESETS[0];
+  const ticketScan = document.getElementById('ticketScanCheck').checked;
+  const fields = editingFields.filter(f => f.label.trim()).map(f => ({ key: f.key, label: f.label.trim(), type: f.type, options: f.options || [] }));
+  try {
+    await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveCategory', id: editingCategoryId, name, icon, color, ticketScan, fields })
+    });
+    closeCatEditor();
+    await loadCategories();
+    renderCatManagerList();
+    document.getElementById('catManagerCard').style.display = 'block';
+  } catch (err) {
+    alert('儲存失敗：' + err.message);
+  }
+}
+async function deleteCategoryHandler(id) {
+  if (!confirm('刪除這個類別？已經記錄的紀錄不會被刪除，但會顯示為未分類。')) return;
+  try {
+    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteCategory', id }) });
+    await loadCategories();
+    renderCatManagerList();
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
 }
 function changeDate(delta) {
   currentDate.setDate(currentDate.getDate() + delta);
@@ -591,21 +818,23 @@ async function loadEntries() {
     listEl.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
   }
 }
-function catClass(cat) {
-  const found = CATEGORIES.find(c => c.key === cat);
-  return found ? found.cls : '';
-}
-function catIcon(cat) {
-  const found = CATEGORIES.find(c => c.key === cat);
-  return found ? found.icon : '✦';
-}
 function moodEmoji(v) {
   const m = MOODS.find(m => m.v === Number(v));
   return m ? m.e : '';
 }
+function fieldsSummaryHtml(cat, fields) {
+  if (!fields) return '';
+  const catDef = catByName(cat);
+  if (!catDef) return '';
+  const parts = (catDef.fields || [])
+    .filter(f => f.type !== 'mood' && fields[f.key])
+    .map(f => escapeHtml(String(fields[f.key])));
+  return parts.length ? `<div style="margin-top:6px;font-size:12px;color:var(--ink-soft);">${parts.join('　・　')}</div>` : '';
+}
 function renderTicket(entry) {
   const div = document.createElement('div');
-  div.className = 'ticket ' + catClass(entry.category);
+  div.className = 'ticket';
+  div.style.borderLeftColor = catColor(entry.category);
   const tm = entry.ticketMeta;
   const tmHtml = (tm && (tm.showName || tm.venue || tm.showDate)) ? `
     <div style="margin-top:6px;font-size:12px;color:var(--coral-dark);font-weight:700;">
@@ -619,6 +848,7 @@ function renderTicket(entry) {
     </div>
     ${entry.text ? `<div class="ticket-text">${escapeHtml(entry.text)}</div>` : ''}
     ${entry.photoUrl ? `<img src="${entry.photoUrl}" loading="lazy">` : ''}
+    ${fieldsSummaryHtml(entry.category, entry.fields)}
     ${tmHtml}
   `;
   return div;
@@ -647,11 +877,14 @@ async function submitEntry() {
   const btn = document.getElementById('submitBtn');
   btn.disabled = true; btn.textContent = '記錄中…';
   const now = new Date();
-  const isTicketCat = selectedCategory === '音樂劇／演唱會／展覽';
+  const cat = catByName(selectedCategory);
+  const isTicketCat = cat && cat.ticketScan;
+  const moodField = cat && (cat.fields || []).find(f => f.type === 'mood');
+  const moodVal = moodField ? (currentFieldValues[moodField.key] || '') : '';
   const body = {
     action: 'addEntry', date: fmtDate(currentDate),
     time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
-    category: selectedCategory, text: text, mood: selectedMood || '',
+    category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
     photoBase64: pendingPhotoBase64, photoMimeType: pendingPhotoMime
   };
   try {
@@ -660,7 +893,7 @@ async function submitEntry() {
     document.getElementById('textInput').value = '';
     document.getElementById('photoPreview').style.display = 'none';
     pendingPhotoBase64 = null; pendingPhotoMime = null;
-    selectedMood = null; renderMoodRow();
+    currentFieldValues = {}; renderExtraFields();
     await loadEntries();
     if (isTicketCat && result.photoUrl && result.id) {
       btn.textContent = 'AI 辨識票根中…';
@@ -769,6 +1002,8 @@ async function loadFitnessPage() {
   loadWeekProgress();
   loadStreak();
   loadWeightList();
+  loadGymLog();
+  loadGymExerciseNames();
 }
 
 async function loadStreak() {
@@ -800,6 +1035,59 @@ async function loadWeightList() {
     }).join('');
   } catch (err) {}
 }
+async function loadGymExerciseNames() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymExerciseNames`);
+    const names = await res.json();
+    document.getElementById('gymExerciseList').innerHTML = names.map(n => `<option value="${escapeHtml(n)}">`).join('');
+  } catch (err) {}
+}
+async function loadGymLog() {
+  const ds = fmtDate(new Date());
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymLog&date=${ds}`);
+    const list = await res.json();
+    renderGymLog(list);
+  } catch (err) {}
+}
+function renderGymLog(list) {
+  const area = document.getElementById('gymLogList');
+  if (!list.length) { area.innerHTML = '<div class="empty-state" style="padding:14px 0;">今天還沒有紀錄任何動作</div>'; return; }
+  area.innerHTML = list.map(g => `
+    <div class="gym-log-item">
+      <div><span class="gl-ex">${escapeHtml(g.exercise)}</span><span class="gl-detail">${g.weight ? g.weight + 'kg・' : ''}${g.sets ? g.sets + '組' : ''}${g.reps ? '×' + g.reps + '下' : ''}</span></div>
+      <button class="gl-del" onclick="deleteGymLogItem('${g.id}')">✕</button>
+    </div>
+  `).join('');
+}
+async function submitGymLog() {
+  const exercise = document.getElementById('gymExerciseInput').value.trim();
+  if (!exercise) { alert('請輸入器械/動作名稱'); return; }
+  const weight = document.getElementById('gymWeightInput').value;
+  const sets = document.getElementById('gymSetsInput').value;
+  const reps = document.getElementById('gymRepsInput').value;
+  try {
+    await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'addGymLog', date: fmtDate(new Date()), exercise, weight, sets, reps })
+    });
+    document.getElementById('gymExerciseInput').value = '';
+    document.getElementById('gymWeightInput').value = '';
+    document.getElementById('gymSetsInput').value = '';
+    document.getElementById('gymRepsInput').value = '';
+    loadGymLog();
+    loadGymExerciseNames();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  }
+}
+async function deleteGymLogItem(id) {
+  try {
+    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteGymLog', id }) });
+    loadGymLog();
+  } catch (err) {}
+}
+
 async function submitWeight() {
   const val = document.getElementById('weightInput').value;
   if (!val) return;
@@ -1010,10 +1298,11 @@ function renderYearCard(y, currentYear) {
     html += `<div class="summary-card" style="margin-bottom:10px;"><div class="label">當天總結</div><p>${escapeHtml(y.summary.summary)}</p></div>`;
   }
   y.entries.forEach(e => {
-    html += `<div class="ticket ${catClass(e.category)}" style="margin-bottom:8px;">
+    html += `<div class="ticket" style="margin-bottom:8px;border-left-color:${catColor(e.category)};">
       <div class="ticket-top"><span class="ticket-cat">${catIcon(e.category)} ${e.category}</span><span class="ticket-time">${e.time}</span></div>
       ${e.text ? `<div class="ticket-text">${escapeHtml(e.text)}</div>` : ''}
       ${e.photoUrl ? `<img src="${e.photoUrl}" loading="lazy">` : ''}
+      ${fieldsSummaryHtml(e.category, e.fields)}
     </div>`;
   });
   div.innerHTML = html;
@@ -1097,14 +1386,14 @@ function renderDonut(categoryCounts) {
   const stops = [];
   Object.keys(categoryCounts).forEach(cat => {
     const pct = categoryCounts[cat] / total * 100;
-    const color = CAT_COLORS[cat] || '#D8CABB';
+    const color = catColor(cat);
     stops.push(`${color} ${acc}% ${acc + pct}%`);
     acc += pct;
   });
   const donut = `<div class="donut" style="background:conic-gradient(${stops.join(',')});"></div>`;
   const legend = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]).map(cat => {
     const pct = Math.round(categoryCounts[cat] / total * 100);
-    return `<div class="legend-item"><span class="legend-dot" style="background:${CAT_COLORS[cat] || '#D8CABB'};"></span>${catIcon(cat)} ${cat}　${pct}%</div>`;
+    return `<div class="legend-item"><span class="legend-dot" style="background:${catColor(cat)};"></span>${catIcon(cat)} ${cat}　${pct}%</div>`;
   }).join('');
   area.innerHTML = donut + `<div class="legend">${legend}</div>`;
 }
@@ -1125,8 +1414,7 @@ function renderMoodChart(moodTrend) {
   `;
 }
 
-renderCatRow();
-refresh();
+loadCategories().then(refresh);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
