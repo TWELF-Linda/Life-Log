@@ -949,16 +949,18 @@ function renderCatManagerList() {
 function attachCatDragHandle(row) {
   const handle = row.querySelector('.cm-drag-handle');
   let startY = 0, dragging = false;
-  handle.addEventListener('touchstart', e => {
+  handle.style.touchAction = 'none';
+  handle.addEventListener('pointerdown', e => {
     dragging = true;
-    startY = e.touches[0].clientY;
+    startY = e.clientY;
     row.classList.add('dragging');
     row.style.zIndex = 50;
-  }, { passive: true });
-  handle.addEventListener('touchmove', e => {
+    try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  handle.addEventListener('pointermove', e => {
     if (!dragging) return;
     e.preventDefault();
-    const y = e.touches[0].clientY;
+    const y = e.clientY;
     row.style.transform = `translateY(${y - startY}px)`;
     const area = document.getElementById('catManagerList');
     const rows = Array.from(area.children);
@@ -980,14 +982,20 @@ function attachCatDragHandle(row) {
         break;
       }
     }
-  }, { passive: false });
-  handle.addEventListener('touchend', () => {
+  });
+  handle.addEventListener('pointerup', () => {
     if (!dragging) return;
     dragging = false;
     row.style.transform = '';
     row.classList.remove('dragging');
     row.style.zIndex = '';
     persistCategoryOrder();
+  });
+  handle.addEventListener('pointercancel', () => {
+    dragging = false;
+    row.style.transform = '';
+    row.classList.remove('dragging');
+    row.style.zIndex = '';
   });
 }
 async function persistCategoryOrder() {
