@@ -108,7 +108,7 @@
   .cat-chip[data-cat="其他"].active{background:var(--c-other);}
 
   textarea{
-    width:100%;min-height:60px;background:#FCF9F2;
+    width:100%;min-height:60px;background:#FFFFFF;
     border:1.5px solid var(--line);border-radius:16px;color:var(--ink);
     padding:12px 14px;font-family:inherit;font-size:14px;resize:vertical;
   }
@@ -209,6 +209,11 @@
 
   /* ---- 類別管理 ---- */
   .cat-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .input-panel{
+    background:#FCF9F2;border:1.5px dashed var(--line);border-radius:16px;
+    padding:14px;margin-top:14px;
+  }
+  .input-panel-label{font-size:12px;font-weight:700;color:var(--coral-dark);margin-bottom:8px;letter-spacing:.5px;}
   .cat-manage-btn{
     background:#FCF9F2;border:1px solid var(--line);border-radius:14px;font-size:11.5px;
     cursor:pointer;color:var(--ink-soft);padding:5px 10px;flex-shrink:0;
@@ -220,12 +225,11 @@
   .cat-manager-row .cm-swatch{width:26px;height:26px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
   .cat-manager-row .cm-name{flex:1;}
   .cat-manager-row button{background:none;border:none;color:var(--ink-soft);font-size:13px;cursor:pointer;padding:4px 6px;}
-  .cm-order-btns{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
-  .cm-order-btns button{
-    background:#FCF9F2;border:1px solid var(--line);border-radius:5px;font-size:9px;
-    padding:1px 5px;color:var(--ink-soft);cursor:pointer;line-height:1.4;
+  .cat-manager-row.dragging{background:#fff;box-shadow:0 10px 24px rgba(0,0,0,0.16);border-radius:12px;position:relative;}
+  .cm-drag-handle{
+    font-size:17px;color:var(--ink-soft);padding:0 6px 0 0;cursor:grab;touch-action:none;flex-shrink:0;
+    user-select:none;
   }
-  .cm-order-btns button:disabled{opacity:.3;cursor:default;}
   .color-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px;}
   .color-swatch{
     width:28px;height:28px;border-radius:10px;cursor:pointer;border:2px solid transparent;
@@ -447,15 +451,19 @@
         <button class="cat-manage-btn" onclick="toggleCatManager()">⚙️ 管理類別</button>
       </div>
       <div class="cat-row" id="catRow"></div>
-      <div class="mood-row" id="moodRow"></div>
-      <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
-      <div class="add-row">
-        <button class="photo-btn" onclick="document.getElementById('fileInput').click()">📷 照片</button>
-        <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
+
+      <div class="input-panel">
+        <div class="input-panel-label">✏️ 寫下這一刻</div>
+        <div class="mood-row" id="moodRow"></div>
+        <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
+        <div class="add-row">
+          <button class="photo-btn" onclick="document.getElementById('fileInput').click()">📷 照片</button>
+          <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
+        </div>
+        <button class="gen-btn" id="cancelEditBtn" style="display:none;margin-top:8px;" onclick="cancelEditEntry()">取消編輯</button>
+        <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
+        <img id="photoPreview">
       </div>
-      <button class="gen-btn" id="cancelEditBtn" style="display:none;margin-top:8px;" onclick="cancelEditEntry()">取消編輯</button>
-      <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
-      <img id="photoPreview">
     </div>
 
     <div class="card" id="catManagerCard" style="display:none;">
@@ -835,7 +843,10 @@ async function loadCategories() {
     document.getElementById('catRow').innerHTML = `<div class="empty-state" style="padding:10px 0;">類別載入失敗：${escapeHtml(err.message)}<br><button class="gen-btn" style="margin:8px auto 0;" onclick="loadCategories()">重新載入</button></div>`;
     return;
   }
-  if (!selectedCategory && CATEGORIES.length) selectedCategory = CATEGORIES[0].name;
+  if (!selectedCategory && CATEGORIES.length) {
+    const defaultCat = CATEGORIES.find(c => c.name === '飲食／生活瑣事');
+    selectedCategory = defaultCat ? defaultCat.name : CATEGORIES[0].name;
+  }
   renderCatRow();
 }
 function catByName(name) {
@@ -919,33 +930,74 @@ function toggleCatManager() {
 }
 function renderCatManagerList() {
   const area = document.getElementById('catManagerList');
-  area.innerHTML = CATEGORIES.map((c, i) => `
-    <div class="cat-manager-row">
-      <div class="cm-order-btns">
-        <button ${i === 0 ? 'disabled' : ''} onclick="moveCategory(${i}, -1)">▲</button>
-        <button ${i === CATEGORIES.length - 1 ? 'disabled' : ''} onclick="moveCategory(${i}, 1)">▼</button>
-      </div>
+  area.innerHTML = '';
+  CATEGORIES.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'cat-manager-row';
+    row.dataset.id = c.id;
+    row.innerHTML = `
+      <div class="cm-drag-handle">⠿</div>
       <div class="cm-swatch" style="background:${c.color};">${c.icon}</div>
       <div class="cm-name">${escapeHtml(c.name)}${c.ticketScan ? ' 🎫' : ''}</div>
       <button onclick="openCatEditor('${c.id}')">編輯</button>
       <button onclick="deleteCategoryHandler('${c.id}')">刪除</button>
-    </div>
-  `).join('');
+    `;
+    attachCatDragHandle(row);
+    area.appendChild(row);
+  });
 }
-async function moveCategory(index, delta) {
-  const target = index + delta;
-  if (target < 0 || target >= CATEGORIES.length) return;
-  const arr = CATEGORIES.slice();
-  [arr[index], arr[target]] = [arr[target], arr[index]];
-  CATEGORIES = arr;
-  renderCatManagerList();
-  try {
-    await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'reorderCategories', order: CATEGORIES.map(c => c.id) })
-    });
-  } catch (err) {}
+function attachCatDragHandle(row) {
+  const handle = row.querySelector('.cm-drag-handle');
+  let startY = 0, dragging = false;
+  handle.addEventListener('touchstart', e => {
+    dragging = true;
+    startY = e.touches[0].clientY;
+    row.classList.add('dragging');
+    row.style.zIndex = 50;
+  }, { passive: true });
+  handle.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    e.preventDefault();
+    const y = e.touches[0].clientY;
+    row.style.transform = `translateY(${y - startY}px)`;
+    const area = document.getElementById('catManagerList');
+    const rows = Array.from(area.children);
+    const rowRect = row.getBoundingClientRect();
+    const currentCenter = rowRect.top + rowRect.height / 2;
+    for (const sib of rows) {
+      if (sib === row) continue;
+      const sibRect = sib.getBoundingClientRect();
+      const sibCenter = sibRect.top + sibRect.height / 2;
+      const pos = row.compareDocumentPosition(sib);
+      if (currentCenter < sibCenter && (pos & Node.DOCUMENT_POSITION_PRECEDING)) {
+        area.insertBefore(row, sib);
+        startY = y; row.style.transform = 'translateY(0px)';
+        break;
+      }
+      if (currentCenter > sibCenter && (pos & Node.DOCUMENT_POSITION_FOLLOWING)) {
+        area.insertBefore(row, sib.nextSibling);
+        startY = y; row.style.transform = 'translateY(0px)';
+        break;
+      }
+    }
+  }, { passive: false });
+  handle.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    row.style.transform = '';
+    row.classList.remove('dragging');
+    row.style.zIndex = '';
+    persistCategoryOrder();
+  });
+}
+async function persistCategoryOrder() {
+  const area = document.getElementById('catManagerList');
+  const order = Array.from(area.children).map(r => r.dataset.id);
+  CATEGORIES = order.map(id => CATEGORIES.find(c => c.id === id)).filter(Boolean);
   renderCatRow();
+  try {
+    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'reorderCategories', order }) });
+  } catch (err) {}
 }
 function renderColorRow(selected) {
   const row = document.getElementById('colorRow');
