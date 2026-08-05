@@ -282,6 +282,14 @@
   .gym-log-item .gl-ex{font-weight:700;color:var(--ink);}
   .gym-log-item .gl-detail{color:var(--ink-soft);font-size:12.5px;margin-left:6px;}
   .gym-log-item .gl-del{background:none;border:none;color:#D8CABB;font-size:13px;cursor:pointer;}
+
+  .gym-equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px;}
+  .gym-equip-item{
+    background:#FCF9F2;border:1.5px solid var(--line);border-radius:14px;padding:10px 6px;
+    text-align:center;font-size:11.5px;cursor:pointer;color:var(--ink);line-height:1.3;
+  }
+  .gym-equip-item .ge-icon{font-size:22px;display:block;margin-bottom:4px;}
+  .gym-equip-item.active{background:var(--c-fit);border-color:transparent;font-weight:700;}
   .weight-list{margin-top:12px;display:flex;flex-direction:column;gap:6px;}
   .weight-list-item{
     display:flex;justify-content:space-between;font-size:13px;color:var(--ink-soft);
@@ -519,7 +527,13 @@
 
     <div class="card">
       <div class="field-label" style="margin-top:0;">🏋️ 重量訓練紀錄</div>
-      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">記錄今天做了哪些器械/動作、重量、組數、次數</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">先選練哪個部位，挑一個常用器械，或直接手動輸入</div>
+
+      <div class="field-label" style="margin-top:0;">練哪個部位？</div>
+      <div class="choice-row" id="gymPartRow"></div>
+      <div class="gym-equip-grid" id="gymEquipGrid"></div>
+      <div id="gymEquipTip" class="plan-tip" style="display:none;"></div>
+
       <div class="gym-form">
         <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
         <datalist id="gymExerciseList"></datalist>
@@ -630,6 +644,65 @@ const FIELD_TYPES = [
   { v: 'select', label: '選單' }, { v: 'mood', label: '心情' }
 ];
 const COLOR_PRESETS = ['#FFB4A2','#F5A3C7','#C9A6E8','#A8DDB5','#D3C0FF','#FFE29A','#A9DDEE','#FFD3E0','#FFCF9E','#B9E4C9'];
+
+const GYM_BODY_PARTS = [
+  { key: 'chest', label: '胸', icon: '🏋️' },
+  { key: 'back', label: '背', icon: '🦾' },
+  { key: 'legs', label: '腿', icon: '🦵' },
+  { key: 'shoulders', label: '肩', icon: '🤸' },
+  { key: 'arms', label: '手臂', icon: '💪' },
+  { key: 'core', label: '核心', icon: '🧘' },
+  { key: 'cardio', label: '有氧', icon: '🏃' }
+];
+const GYM_EQUIPMENT = {
+  chest: [
+    { name: '槓鈴臥推', icon: '🏋️', tip: '握距略寬於肩，下放時手肘約45度，避免完全鎖死關節。' },
+    { name: '啞鈴臥推', icon: '🏋️', tip: '活動範圍比槓鈴大，注意肩胛骨後收穩定。' },
+    { name: '蝴蝶機／夾胸機', icon: '🦋', tip: '手肘微彎，聚焦胸肌收縮，避免用手臂發力。' },
+    { name: '上斜臥推機', icon: '📐', tip: '椅背角度30-45度，主要刺激上胸。' },
+    { name: '雙槓撐體', icon: '🤸', tip: '身體微前傾可加強胸肌參與，垂直下降則偏三頭肌。' }
+  ],
+  back: [
+    { name: '滑輪下拉', icon: '⬇️', tip: '寬握練闊背肌外側，窄握練中下背，避免用身體晃動借力。' },
+    { name: '坐姿划船', icon: '🚣', tip: '挺胸夾背，肩胛骨往後夾，避免聳肩。' },
+    { name: '槓鈴划船', icon: '🏋️', tip: '上身前傾約45度，核心收緊保護下背。' },
+    { name: '單臂啞鈴划船', icon: '💪', tip: '另一手扶穩支撐，肘部貼近身體向後拉。' },
+    { name: '引體向上', icon: '🧗', tip: '肩胛骨先下沉再發力，避免完全依賴手臂。' }
+  ],
+  legs: [
+    { name: '腿推機', icon: '🦵', tip: '雙腳與肩同寬踩踏板，膝蓋方向與腳尖一致，避免內夾。' },
+    { name: '槓鈴深蹲', icon: '🏋️', tip: '核心收緊，重心放在腳跟，膝蓋不超過腳尖太多。' },
+    { name: '腿彎舉機', icon: '🦿', tip: '訓練股二頭肌，動作放慢避免用甩的方式借力。' },
+    { name: '腿伸屈機', icon: '🦵', tip: '訓練股四頭肌，膝蓋對齊機器轉軸，避免完全鎖死。' },
+    { name: '史密斯機', icon: '🏗️', tip: '軌道固定較安全，適合新手練深蹲或臀推。' },
+    { name: '臀推', icon: '🍑', tip: '肩胛上緣靠椅凳，臀部發力頂起，避免用下背代償。' }
+  ],
+  shoulders: [
+    { name: '肩推機', icon: '🏋️', tip: '背部貼緊椅背，避免過度後仰借力。' },
+    { name: '啞鈴側平舉', icon: '💪', tip: '手肘微彎，抬到與肩同高即可，避免聳肩。' },
+    { name: '啞鈴肩推', icon: '🏋️', tip: '核心收緊，避免腰部過度後拱。' },
+    { name: '反向蝴蝶機', icon: '🦋', tip: '練後三角肌，肩胛骨後夾，避免用手臂甩動。' }
+  ],
+  arms: [
+    { name: '二頭彎舉', icon: '💪', tip: '手肘固定在身體兩側，避免搖晃借力。' },
+    { name: '三頭下壓', icon: '🔽', tip: '手肘貼緊身體，只有前臂在動。' },
+    { name: '牧師椅彎舉', icon: '🪑', tip: '手臂固定在斜墊上，孤立訓練二頭肌。' },
+    { name: '啞鈴臂屈伸', icon: '🏋️', tip: '手肘朝上固定，練三頭肌後側。' }
+  ],
+  core: [
+    { name: '捲腹機', icon: '🧘', tip: '專注腹肌收縮發力，避免用脖子出力。' },
+    { name: '懸吊抬腿', icon: '🦵', tip: '核心收緊控制下放速度，避免甩動。' },
+    { name: '平板支撐', icon: '🧘', tip: '維持身體一直線，避免塌腰或翹臀。' },
+    { name: '俄羅斯轉體', icon: '🔄', tip: '雙腳可離地增加難度，轉動來自腹斜肌而非手臂。' }
+  ],
+  cardio: [
+    { name: '跑步機', icon: '🏃', tip: '循序漸進調整速度與坡度，注意手臂自然擺動。' },
+    { name: '飛輪／室內腳踏車', icon: '🚴', tip: '調整座椅高度避免膝蓋過度伸直。' },
+    { name: '橢圓機', icon: '🌀', tip: '低衝擊訓練心肺，可同時運用上肢握把。' },
+    { name: '划船機', icon: '🚣', tip: '腿推、身體後仰、手臂拉，三階段順序發力。' }
+  ]
+};
+let selectedGymPart = null;
 
 let currentDate = new Date();
 let selectedCategory = null;
@@ -1221,6 +1294,7 @@ async function loadFitnessPage() {
   loadWeightList();
   loadGymLog();
   loadGymExerciseNames();
+  renderGymPartRow();
 }
 
 async function loadStreak() {
@@ -1255,6 +1329,34 @@ async function loadWeightList() {
       return `<div class="weight-list-item"><span>${s.date}</span><span><span class="w-val">${s.weight} kg</span>${delta}</span></div>`;
     }).join('');
   } catch (err) {}
+}
+function renderGymPartRow() {
+  const row = document.getElementById('gymPartRow');
+  if (!row) return;
+  row.innerHTML = GYM_BODY_PARTS.map(p =>
+    `<div class="choice-chip${selectedGymPart === p.key ? ' active' : ''}" onclick="selectGymPart('${p.key}')">${p.icon} ${p.label}</div>`
+  ).join('');
+}
+function selectGymPart(key) {
+  selectedGymPart = selectedGymPart === key ? null : key;
+  renderGymPartRow();
+  renderGymEquipGrid();
+  document.getElementById('gymEquipTip').style.display = 'none';
+}
+function renderGymEquipGrid() {
+  const grid = document.getElementById('gymEquipGrid');
+  if (!selectedGymPart) { grid.innerHTML = ''; return; }
+  const list = GYM_EQUIPMENT[selectedGymPart] || [];
+  grid.innerHTML = list.map((eq, i) =>
+    `<div class="gym-equip-item" onclick="pickGymEquipment('${selectedGymPart}', ${i})"><span class="ge-icon">${eq.icon}</span>${escapeHtml(eq.name)}</div>`
+  ).join('');
+}
+function pickGymEquipment(partKey, idx) {
+  const eq = GYM_EQUIPMENT[partKey][idx];
+  document.getElementById('gymExerciseInput').value = eq.name;
+  const tip = document.getElementById('gymEquipTip');
+  tip.style.display = 'block';
+  tip.textContent = '💡 ' + eq.tip;
 }
 async function loadGymExerciseNames() {
   try {
