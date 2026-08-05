@@ -220,6 +220,12 @@
   .cat-manager-row .cm-swatch{width:26px;height:26px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
   .cat-manager-row .cm-name{flex:1;}
   .cat-manager-row button{background:none;border:none;color:var(--ink-soft);font-size:13px;cursor:pointer;padding:4px 6px;}
+  .cm-order-btns{display:flex;flex-direction:column;gap:1px;flex-shrink:0;}
+  .cm-order-btns button{
+    background:#FCF9F2;border:1px solid var(--line);border-radius:5px;font-size:9px;
+    padding:1px 5px;color:var(--ink-soft);cursor:pointer;line-height:1.4;
+  }
+  .cm-order-btns button:disabled{opacity:.3;cursor:default;}
   .color-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px;}
   .color-swatch{
     width:28px;height:28px;border-radius:10px;cursor:pointer;border:2px solid transparent;
@@ -820,7 +826,7 @@ function switchTab(pageId) {
 
 async function loadCategories() {
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getCategories`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getCategories`, { cache: 'no-store' });
     const result = await res.json();
     if (result && result.error) throw new Error(result.error);
     CATEGORIES = result;
@@ -913,14 +919,33 @@ function toggleCatManager() {
 }
 function renderCatManagerList() {
   const area = document.getElementById('catManagerList');
-  area.innerHTML = CATEGORIES.map(c => `
+  area.innerHTML = CATEGORIES.map((c, i) => `
     <div class="cat-manager-row">
+      <div class="cm-order-btns">
+        <button ${i === 0 ? 'disabled' : ''} onclick="moveCategory(${i}, -1)">▲</button>
+        <button ${i === CATEGORIES.length - 1 ? 'disabled' : ''} onclick="moveCategory(${i}, 1)">▼</button>
+      </div>
       <div class="cm-swatch" style="background:${c.color};">${c.icon}</div>
       <div class="cm-name">${escapeHtml(c.name)}${c.ticketScan ? ' 🎫' : ''}</div>
       <button onclick="openCatEditor('${c.id}')">編輯</button>
       <button onclick="deleteCategoryHandler('${c.id}')">刪除</button>
     </div>
   `).join('');
+}
+async function moveCategory(index, delta) {
+  const target = index + delta;
+  if (target < 0 || target >= CATEGORIES.length) return;
+  const arr = CATEGORIES.slice();
+  [arr[index], arr[target]] = [arr[target], arr[index]];
+  CATEGORIES = arr;
+  renderCatManagerList();
+  try {
+    await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'reorderCategories', order: CATEGORIES.map(c => c.id) })
+    });
+  } catch (err) {}
+  renderCatRow();
 }
 function renderColorRow(selected) {
   const row = document.getElementById('colorRow');
@@ -1015,7 +1040,7 @@ async function loadEntries() {
   const listEl = document.getElementById('entriesList');
   listEl.innerHTML = '<div class="empty-state">載入中…</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
     const entries = await res.json();
     loadedEntries = entries;
     if (!entries.length) {
@@ -1202,7 +1227,7 @@ function cancelEditEntry() {
 async function loadSummary() {
   const ds = fmtDate(currentDate);
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getSummary&date=${ds}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getSummary&date=${ds}`, { cache: 'no-store' });
     renderSummary(await res.json());
   } catch (err) { document.getElementById('summaryArea').innerHTML = ''; }
 }
@@ -1235,7 +1260,7 @@ async function generateSummary() {
 async function loadWeekSummary() {
   const weekStart = getMondayStr(currentDate);
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getWeeklySummary&weekStart=${weekStart}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getWeeklySummary&weekStart=${weekStart}`, { cache: 'no-store' });
     renderWeekSummary(await res.json());
   } catch (err) { document.getElementById('weekSummaryArea').innerHTML = ''; }
 }
@@ -1282,7 +1307,7 @@ async function loadFitnessPage() {
   if (!checkConfig()) return;
   renderFitForm();
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getFitnessProfile`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getFitnessProfile`, { cache: 'no-store' });
     const profile = await res.json();
     if (profile) {
       selectedGoal = profile.goal; selectedLocation = profile.location; selectedDays = parseInt(profile.daysPerWeek);
@@ -1300,7 +1325,7 @@ async function loadFitnessPage() {
 
 async function loadStreak() {
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getStreak`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStreak`, { cache: 'no-store' });
     const s = await res.json();
     const badgeArea = document.getElementById('streakBadgeArea');
     badgeArea.innerHTML = s.streak > 0 ? `<div class="streak-badge">🔥 連續運動 ${s.streak} 天</div>` : '';
@@ -1315,7 +1340,7 @@ async function loadStreak() {
 
 async function loadWeightList() {
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getBodyStats`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getBodyStats`, { cache: 'no-store' });
     const stats = await res.json();
     const listEl = document.getElementById('weightList');
     if (!stats.length) { listEl.innerHTML = ''; return; }
@@ -1361,7 +1386,7 @@ function pickGymEquipment(partKey, idx) {
 }
 async function loadGymExerciseNames() {
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymExerciseNames`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymExerciseNames`, { cache: 'no-store' });
     const names = await res.json();
     document.getElementById('gymExerciseList').innerHTML = names.map(n => `<option value="${escapeHtml(n)}">`).join('');
     const sel = document.getElementById('gymTrendSelect');
@@ -1376,7 +1401,7 @@ async function loadGymTrend(exercise) {
   const empty = document.getElementById('gymTrendEmpty');
   if (!exercise) { svg.innerHTML = ''; empty.style.display = 'block'; return; }
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymHistory&exercise=${encodeURIComponent(exercise)}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymHistory&exercise=${encodeURIComponent(exercise)}`, { cache: 'no-store' });
     const history = await res.json();
     if (!history.length) { svg.innerHTML = ''; empty.style.display = 'block'; return; }
     empty.style.display = 'none';
@@ -1398,7 +1423,7 @@ async function loadGymTrend(exercise) {
 async function loadGymLog() {
   const ds = fmtDate(new Date());
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymLog&date=${ds}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getGymLog&date=${ds}`, { cache: 'no-store' });
     const list = await res.json();
     renderGymLog(list);
   } catch (err) {}
@@ -1458,7 +1483,7 @@ async function submitWeight() {
 }
 async function loadWeekProgress() {
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`, { cache: 'no-store' });
     const p = await res.json();
     const circle = document.getElementById('progressCircle');
     const circumference = 188.5;
@@ -1520,14 +1545,14 @@ async function loadChecklist(plan) {
   const todayStr = fmtDate(new Date());
   let dayIndex = 0;
   try {
-    const progRes = await fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`);
+    const progRes = await fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`, { cache: 'no-store' });
     const prog = await progRes.json();
     dayIndex = prog.daysThisWeek % plan.weeklyPlan.length;
   } catch (err) {}
   const planDay = plan.weeklyPlan[dayIndex];
   let completed = [];
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getExerciseCheck&date=${todayStr}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getExerciseCheck&date=${todayStr}`, { cache: 'no-store' });
     const check = await res.json();
     completed = check.completed || [];
   } catch (err) {}
@@ -1576,7 +1601,7 @@ async function loadTicketWall() {
   const area = document.getElementById('ticketWallArea');
   area.innerHTML = '<div class="empty-state">整理票根中… 🎫</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getTicketWall`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getTicketWall`, { cache: 'no-store' });
     ticketWallAll = await res.json();
     renderTicketFilterRow();
     renderTicketWall();
@@ -1675,7 +1700,7 @@ async function loadMemoryPage() {
   const area = document.getElementById('memoryArea');
   area.innerHTML = '<div class="empty-state">翻找回憶中… 🔍</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getOnThisDay&date=${ds}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getOnThisDay&date=${ds}`, { cache: 'no-store' });
     const years = await res.json();
     if (!years.length) {
       area.innerHTML = '<div class="empty-state">還沒有過去這天的紀錄唷<br>明年的今天就會有回憶可以看了 🌱</div>';
@@ -1728,7 +1753,7 @@ async function doSearch() {
   if (!q) { area.innerHTML = ''; return; }
   area.innerHTML = '<div class="empty-state">搜尋中… 🔍</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=searchEntries&q=${encodeURIComponent(q)}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=searchEntries&q=${encodeURIComponent(q)}`, { cache: 'no-store' });
     const results = await res.json();
     if (!results.length) { area.innerHTML = '<div class="empty-state">找不到符合的紀錄</div>'; return; }
     area.innerHTML = '';
@@ -1748,7 +1773,7 @@ async function loadStatsPage() {
   const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
   document.getElementById('monthLabel').textContent = statsMonth.getFullYear() + ' 年 ' + (statsMonth.getMonth() + 1) + ' 月';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`);
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`, { cache: 'no-store' });
     const stats = await res.json();
     renderHeatmap(ym, stats.dayCounts);
     renderDonut(stats.categoryCounts);
