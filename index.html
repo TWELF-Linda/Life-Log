@@ -436,6 +436,25 @@
     position:fixed;inset:0;display:none;align-items:center;justify-content:center;
     background:rgba(74,63,53,0.28);z-index:300;
   }
+  .lock-overlay{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:var(--bg);z-index:400;
+  }
+  .lock-overlay.show{display:flex;}
+  .lock-card{
+    background:var(--card);border-radius:24px;padding:32px 28px;text-align:center;
+    box-shadow:0 16px 40px rgba(0,0,0,0.15);width:min(320px, 84vw);
+  }
+  .lock-title{font-family:'Chiron GoRound TC';font-size:19px;font-weight:800;color:var(--ink);margin:8px 0 2px;}
+  .lock-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:16px;}
+  .lock-input{
+    width:100%;background:var(--input-bg);border:1.5px solid var(--line);border-radius:14px;
+    padding:12px 14px;font-size:15px;color:var(--ink);font-family:inherit;text-align:center;
+    letter-spacing:2px;box-sizing:border-box;
+  }
+  .lock-input:focus{outline:none;border-color:var(--accent);}
+  .lock-error{color:var(--accent-dark);font-size:12px;margin-top:10px;display:none;}
+  .lock-error:not(:empty){display:block;}
   .celebrate-overlay.show{display:flex;}
   .celebrate-card{
     background:var(--card);border-radius:24px;padding:28px 32px;text-align:center;
@@ -562,6 +581,17 @@
     <div class="onboarding-item"><span class="oi-icon">📊</span><div><b>統計</b> — 熱力圖、類別佔比、心情趨勢</div></div>
     <div class="onboarding-item"><span class="oi-icon">🕰️</span><div><b>回顧</b> — 看看去年、前年的今天發生了什麼</div></div>
     <button class="submit-btn" style="width:100%;margin-top:14px;" onclick="toggleOnboarding(false)">開始使用</button>
+  </div>
+</div>
+
+<div class="lock-overlay" id="lockOverlay">
+  <div class="lock-card">
+    <div style="font-size:38px;">🔒</div>
+    <div class="lock-title">生活手帳</div>
+    <div class="lock-sub">請輸入通關密碼</div>
+    <input type="password" id="lockInput" class="lock-input" placeholder="密碼" autocomplete="off" onkeydown="if(event.key==='Enter')submitLock()">
+    <button class="submit-btn" id="lockBtn" style="width:100%;margin-top:10px;" onclick="submitLock()">進入</button>
+    <div id="lockError" class="lock-error"></div>
   </div>
 </div>
 
@@ -2346,10 +2376,71 @@ async function runRepairDates() {
     alert('修復失敗：' + err.message);
   }
 }
-loadCategories().then(refresh).then(() => {
-  if (location.hash === '#quick') quickRecord();
-  if (location.hash === '#today') switchTab('page-log');
-});
+let APP_TOKEN = '';
+const _rawFetch = window.fetch.bind(window);
+window.fetch = function(url, options) {
+  if (typeof url === 'string' && CONFIG.GAS_URL && url.indexOf(CONFIG.GAS_URL) === 0) {
+    options = options || {};
+    if (options.method === 'POST' && options.body) {
+      try {
+        const bodyObj = JSON.parse(options.body);
+        bodyObj.token = APP_TOKEN;
+        options = Object.assign({}, options, { body: JSON.stringify(bodyObj) });
+      } catch (err) {}
+    } else {
+      const sep = url.indexOf('?') === -1 ? '?' : '&';
+      url = url + sep + 'token=' + encodeURIComponent(APP_TOKEN);
+    }
+  }
+  return _rawFetch(url, options);
+};
+
+function startApp() {
+  loadCategories().then(refresh).then(() => {
+    if (location.hash === '#quick') quickRecord();
+    if (location.hash === '#today') switchTab('page-log');
+  });
+}
+async function initAuth() {
+  if (!checkConfig()) { startApp(); return; }
+  try {
+    const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result && result.error === 'AUTH_REQUIRED') {
+      document.getElementById('lockOverlay').classList.add('show');
+      document.getElementById('lockInput').focus();
+    } else {
+      startApp();
+    }
+  } catch (err) {
+    startApp(); // 探測失敗時照常啟動，讓原本的錯誤提示機制接手顯示問題
+  }
+}
+async function submitLock() {
+  const val = document.getElementById('lockInput').value;
+  const btn = document.getElementById('lockBtn');
+  const errEl = document.getElementById('lockError');
+  errEl.style.display = 'none';
+  btn.disabled = true; btn.textContent = '確認中…';
+  try {
+    const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories&token=${encodeURIComponent(val)}`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result && result.error === 'AUTH_REQUIRED') {
+      errEl.textContent = '密碼錯誤，請再試一次';
+      errEl.style.display = 'block';
+      return;
+    }
+    APP_TOKEN = val;
+    document.getElementById('lockOverlay').classList.remove('show');
+    startApp();
+  } catch (err) {
+    errEl.textContent = '連線失敗：' + err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false; btn.textContent = '進入';
+  }
+}
+initAuth();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
