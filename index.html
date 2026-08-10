@@ -29,6 +29,25 @@
     --c-life:#FFE29A;      /* 飲食/生活瑣事 */
     --c-culture:#A9DDEE;   /* 閱讀/追劇/娛樂 */
     --c-other:#FFD3E0;     /* 其他 */
+    --input-bg:#FCF9F2;
+    --accent:#FF8C7A;
+    --accent-dark:#F0715E;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1E1B18;
+      --card:#2A2521;
+      --ink:#F0E9E1;
+      --ink-soft:#B0A599;
+      --line:#3D362F;
+      --input-bg:#332D27;
+
+      --coral:#FF8C7A;
+      --coral-dark:#FFA894;
+    }
+    #configWarning{background:#4a2020;color:#f5c6c6;}
+    .empty-state{color:var(--ink-soft);}
+    img{opacity:.92;}
   }
   *{box-sizing:border-box;}
   body{
@@ -50,7 +69,8 @@
     font-weight:800;
     font-size:26px;
     margin:0 0 4px;
-    color:var(--coral-dark);
+    background:linear-gradient(90deg,#FF8C7A,#E8A33D,#7BC99B,#6FA8DC,#B39DDB);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
   }
   header p{margin:0;font-size:12.5px;color:var(--ink-soft);letter-spacing:1px;}
 
@@ -78,7 +98,7 @@
     color:var(--ink-soft);font-size:11.5px;font-family:'Noto Sans TC';
   }
   .tab-btn .icon{font-size:20px;display:block;margin-bottom:2px;}
-  .tab-btn.active{color:var(--coral-dark);background:#FFF1EE;font-weight:700;}
+  .tab-btn.active{color:var(--accent-dark);background:color-mix(in srgb, var(--accent) 16%, white);font-weight:700;}
 
   .page{display:none;}
   .page.active{display:block;}
@@ -92,12 +112,42 @@
     width:34px;height:34px;border-radius:50%;font-size:15px;cursor:pointer;
   }
   .date-nav .date-label{font-family:'Chiron GoRound TC';font-size:16px;font-weight:600;}
+  .date-label-wrap{position:relative;cursor:pointer;}
+  .date-jump-input{
+    position:absolute;inset:0;opacity:0;width:100%;height:100%;border:none;cursor:pointer;
+    -webkit-appearance:none;
+  }
+  .today-btn{
+    background:none;border:none;color:var(--accent-dark);font-size:11.5px;
+    text-decoration:underline;cursor:pointer;padding:2px 8px;
+  }
+
+  /* ---- 工具箱 ---- */
+  .tool-row{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:10px 0;border-bottom:1px solid var(--line);
+  }
+  .tool-row:last-of-type{border-bottom:none;}
+  .tool-name{font-size:13.5px;font-weight:700;color:var(--ink);}
+  .tool-desc{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .tool-btn{
+    background:var(--accent);color:#fff;border:none;border-radius:12px;
+    padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;flex-shrink:0;
+  }
+  .health-item{display:flex;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line);}
+  .health-item:last-child{border-bottom:none;}
+  .hi-name{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .hi-detail{font-size:11.5px;color:var(--ink-soft);margin-top:2px;line-height:1.5;}
+  .tool-result-box{
+    background:var(--input-bg);border-radius:12px;padding:10px 12px;margin:8px 0;font-size:12.5px;
+    color:var(--ink);line-height:1.6;
+  }
 
   .cat-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
   .cat-chip{
     padding:8px 14px;border-radius:20px;font-size:13px;font-weight:500;
     border:1.5px solid var(--line);cursor:pointer;color:var(--ink-soft);
-    background:#FCF9F2;transition:.15s;
+    background:var(--input-bg);transition:.15s;
   }
   .cat-chip.active{color:var(--ink);font-weight:700;border-color:transparent;}
   .cat-chip[data-cat="音樂劇／演唱會／展覽"].active{background:var(--c-show);}
@@ -108,17 +158,17 @@
   .cat-chip[data-cat="其他"].active{background:var(--c-other);}
 
   textarea{
-    width:100%;min-height:60px;background:#FFFFFF;
+    width:100%;min-height:60px;background:var(--card);
     border:1.5px solid var(--line);border-radius:16px;color:var(--ink);
     padding:12px 14px;font-family:inherit;font-size:14px;resize:vertical;
   }
-  textarea:focus{outline:none;border-color:var(--coral);}
+  textarea:focus{outline:none;border-color:var(--accent);}
   .add-row{display:flex;gap:10px;margin-top:12px;align-items:center;}
   .photo-btn, .submit-btn{
     border-radius:14px;border:none;padding:11px 14px;font-size:13px;cursor:pointer;font-weight:700;
   }
-  .photo-btn{background:#FCF9F2;border:1.5px solid var(--line);color:var(--ink);flex-shrink:0;}
-  .submit-btn{background:var(--coral);color:#fff;flex:1;}
+  .photo-btn{background:var(--input-bg);border:1.5px solid var(--line);color:var(--ink);flex-shrink:0;}
+  .submit-btn{background:var(--accent);color:#fff;flex:1;}
   .submit-btn:disabled{opacity:.5;}
   #photoPreview{margin-top:10px;max-width:100%;border-radius:14px;display:none;}
   #fileInput{display:none;}
@@ -154,10 +204,10 @@
     display:flex;align-items:center;gap:6px;margin-bottom:10px;color:var(--ink);
   }
   .gen-btn{
-    background:none;border:1.5px solid var(--coral);color:var(--coral-dark);
+    background:none;border:1.5px solid var(--accent);color:var(--accent-dark);
     border-radius:20px;padding:5px 12px;font-size:11.5px;cursor:pointer;margin-left:auto;font-weight:600;
   }
-  .summary-card .label{font-size:11px;letter-spacing:1px;color:var(--coral-dark);margin-bottom:6px;font-weight:700;}
+  .summary-card .label{font-size:11px;letter-spacing:1px;color:var(--accent-dark);margin-bottom:6px;font-weight:700;}
   .summary-card p{font-size:14px;line-height:1.75;margin:0;color:var(--ink);}
   .summary-loading{text-align:center;padding:16px;font-size:13px;color:var(--ink-soft);}
 
@@ -171,7 +221,7 @@
   .progress-ring svg{transform:rotate(-90deg);}
   .progress-ring .pct{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    font-family:'Chiron GoRound TC';font-size:15px;font-weight:700;color:var(--coral-dark);
+    font-family:'Chiron GoRound TC';font-size:15px;font-weight:700;color:var(--accent-dark);
   }
   .progress-text{font-size:13.5px;color:var(--ink-soft);line-height:1.6;}
   .progress-text b{color:var(--ink);font-size:15px;}
@@ -179,23 +229,23 @@
   .choice-row{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px;}
   .choice-chip{
     padding:9px 15px;border-radius:16px;font-size:13.5px;font-weight:500;
-    border:1.5px solid var(--line);cursor:pointer;color:var(--ink-soft);background:#FCF9F2;
+    border:1.5px solid var(--line);cursor:pointer;color:var(--ink-soft);background:var(--input-bg);
   }
   .choice-chip.active{background:var(--c-fit);color:var(--ink);font-weight:700;border-color:transparent;}
   .field-label{font-size:12.5px;color:var(--ink-soft);font-weight:700;margin:14px 0 2px;letter-spacing:.5px;}
   .field-label:first-child{margin-top:0;}
 
   .plan-day{
-    background:#FCF9F2;border-radius:16px;padding:12px 14px;margin-bottom:10px;
+    background:var(--input-bg);border-radius:16px;padding:12px 14px;margin-bottom:10px;
   }
-  .plan-day .d-title{font-weight:700;font-size:13.5px;color:var(--coral-dark);margin-bottom:4px;}
+  .plan-day .d-title{font-weight:700;font-size:13.5px;color:var(--accent-dark);margin-bottom:4px;}
   .plan-day ul{margin:4px 0 0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--ink);}
   .plan-tip{
     background:#FFF6E8;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7;color:var(--ink);margin-top:6px;
   }
 
   .year-card .y-head{display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
-  .year-card .y-head .y-num{font-family:'Chiron GoRound TC';font-size:20px;font-weight:800;color:var(--coral-dark);}
+  .year-card .y-head .y-num{font-family:'Chiron GoRound TC';font-size:20px;font-weight:800;color:var(--accent-dark);}
   .year-card .y-head .y-ago{font-size:12px;color:var(--ink-soft);}
 
   /* ---- 心情選擇器 ---- */
@@ -203,19 +253,19 @@
   .mood-row.show{display:flex;}
   .mood-chip{
     flex:1;text-align:center;padding:8px 0;border-radius:14px;font-size:20px;cursor:pointer;
-    border:1.5px solid var(--line);background:#FCF9F2;
+    border:1.5px solid var(--line);background:var(--input-bg);
   }
   .mood-chip.active{background:var(--c-soul);border-color:transparent;}
 
   /* ---- 類別管理 ---- */
   .cat-header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
   .input-panel{
-    background:#FCF9F2;border:1.5px dashed var(--line);border-radius:16px;
+    background:var(--input-bg);border:1.5px dashed var(--line);border-radius:16px;
     padding:14px;margin-top:14px;
   }
-  .input-panel-label{font-size:12px;font-weight:700;color:var(--coral-dark);margin-bottom:8px;letter-spacing:.5px;}
+  .input-panel-label{font-size:12px;font-weight:700;color:var(--accent-dark);margin-bottom:8px;letter-spacing:.5px;}
   .cat-manage-btn{
-    background:#FCF9F2;border:1px solid var(--line);border-radius:14px;font-size:11.5px;
+    background:var(--input-bg);border:1px solid var(--line);border-radius:14px;font-size:11.5px;
     cursor:pointer;color:var(--ink-soft);padding:5px 10px;flex-shrink:0;
   }
   .cat-manager-row{
@@ -239,17 +289,17 @@
     display:flex;gap:6px;align-items:center;margin-bottom:8px;flex-wrap:wrap;
   }
   .field-row input[type="text"]{
-    flex:1;min-width:80px;background:#FCF9F2;border:1.5px solid var(--line);border-radius:10px;
+    flex:1;min-width:80px;background:var(--input-bg);border:1.5px solid var(--line);border-radius:10px;
     padding:8px 10px;font-size:13px;font-family:inherit;
   }
   .field-row select{
-    background:#FCF9F2;border:1.5px solid var(--line);border-radius:10px;padding:8px 6px;font-size:12.5px;font-family:inherit;
+    background:var(--input-bg);border:1.5px solid var(--line);border-radius:10px;padding:8px 6px;font-size:12.5px;font-family:inherit;
   }
   .field-row .fr-del{background:none;border:none;color:#D8908A;font-size:15px;cursor:pointer;}
 
   /* ---- 連續天數 / 休息提醒 ---- */
   .streak-badge{
-    display:inline-flex;align-items:center;gap:6px;background:#FFF1EE;color:var(--coral-dark);
+    display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--accent) 16%, white);color:var(--accent-dark);
     padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;margin-bottom:10px;
   }
   .rest-banner{
@@ -272,12 +322,12 @@
   /* ---- 體重追蹤 ---- */
   .weight-row{display:flex;gap:8px;align-items:center;}
   .weight-row input{
-    flex:1;background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;
+    flex:1;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;
     padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;
   }
 
   .gym-form input{
-    background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;
+    background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;
     padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;width:100%;
     box-sizing:border-box;margin-bottom:8px;
   }
@@ -286,7 +336,7 @@
   .gym-log-day{margin-top:14px;}
   .gym-log-day .gl-date{font-size:11.5px;color:var(--ink-soft);font-weight:700;margin:10px 0 6px;letter-spacing:.5px;}
   .gym-log-item{
-    display:flex;align-items:center;justify-content:space-between;background:#FCF9F2;
+    display:flex;align-items:center;justify-content:space-between;background:var(--input-bg);
     border-radius:12px;padding:9px 12px;margin-bottom:6px;font-size:13.5px;
   }
   .gym-log-item .gl-ex{font-weight:700;color:var(--ink);}
@@ -295,7 +345,7 @@
 
   .gym-equip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 10px;}
   .gym-equip-item{
-    background:#FCF9F2;border:1.5px solid var(--line);border-radius:14px;padding:10px 6px;
+    background:var(--input-bg);border:1.5px solid var(--line);border-radius:14px;padding:10px 6px;
     text-align:center;font-size:11.5px;cursor:pointer;color:var(--ink);line-height:1.3;
   }
   .gym-equip-item .ge-icon{font-size:22px;display:block;margin-bottom:4px;}
@@ -308,7 +358,7 @@
   .weight-list-item .w-val{color:var(--ink);font-weight:700;}
   .weight-delta{font-size:11.5px;margin-left:6px;}
   .weight-delta.down{color:#3E8C5B;}
-  .weight-delta.up{color:var(--coral-dark);}
+  .weight-delta.up{color:var(--accent-dark);}
 
   /* ---- 票根牆 ---- */
   .ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -322,13 +372,64 @@
   .ticket-stub .ts-cat{font-size:10px;font-weight:700;margin-bottom:2px;letter-spacing:.3px;}
 
   /* ---- 溫暖提示 toast ---- */
+  .help-fab{
+    position:fixed;right:18px;bottom:154px;width:34px;height:34px;border-radius:50%;
+    background:var(--card);color:var(--ink-soft);border:1px solid var(--line);font-size:14px;font-weight:700;
+    box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:150;cursor:pointer;
+  }
   .toast{
     position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(16px);
-    background:var(--ink);color:#fff;padding:11px 20px;border-radius:22px;font-size:13px;
+    background:var(--ink);color:#fff;padding:11px 16px 11px 20px;border-radius:22px;font-size:13px;
     opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;z-index:200;
-    box-shadow:0 8px 20px rgba(0,0,0,0.18);max-width:80vw;text-align:center;
+    box-shadow:0 8px 20px rgba(0,0,0,0.18);max-width:88vw;text-align:center;
+    display:flex;align-items:center;gap:10px;
   }
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;}
+  .toast-action{
+    background:rgba(255,255,255,0.18);border:none;color:#fff;font-weight:700;
+    border-radius:14px;padding:5px 12px;font-size:12px;cursor:pointer;flex-shrink:0;
+  }
+
+  /* ---- 浮動快速記錄按鈕 ---- */
+  .fab{
+    position:fixed;right:18px;bottom:88px;width:54px;height:54px;border-radius:50%;
+    background:var(--accent);color:#fff;font-size:26px;border:none;cursor:pointer;
+    box-shadow:0 8px 20px rgba(0,0,0,0.25);z-index:60;display:flex;align-items:center;justify-content:center;
+    line-height:1;
+  }
+
+  /* ---- 下拉重新整理 ---- */
+  .ptr-indicator{
+    position:fixed;top:8px;left:50%;transform:translateX(-50%) translateY(-10px);
+    opacity:0;font-size:20px;z-index:150;transition:opacity .15s;pointer-events:none;
+  }
+
+  /* ---- 新手導覽 ---- */
+  .onboarding-overlay{
+    position:fixed;inset:0;background:rgba(74,63,53,0.35);z-index:400;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .onboarding-overlay.show{display:flex;}
+  .onboarding-card{
+    background:var(--card);border-radius:24px;padding:26px 22px;max-width:360px;width:100%;
+    max-height:85vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,0.25);
+  }
+  .onboarding-title{font-family:'Chiron GoRound TC';font-size:17px;font-weight:800;color:var(--ink);margin-bottom:16px;text-align:center;}
+  .onboarding-item{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;font-size:13px;color:var(--ink-soft);line-height:1.6;}
+  .onboarding-item b{color:var(--ink);}
+  .oi-icon{font-size:22px;flex-shrink:0;}
+
+  /* ---- 骨架載入 ---- */
+  .skeleton-card{
+    background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:12px;
+    box-shadow:0 4px 14px rgba(180,150,120,0.08);
+  }
+  .skeleton-line{
+    height:12px;border-radius:6px;margin-bottom:8px;
+    background:linear-gradient(90deg, var(--input-bg) 25%, var(--line) 50%, var(--input-bg) 75%);
+    background-size:200% 100%;animation:skeletonShine 1.4s infinite;
+  }
+  @keyframes skeletonShine{ 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
 
   /* ---- 慶祝動畫 ---- */
   .celebrate-overlay{
@@ -362,11 +463,11 @@
   .ticket-swipe-wrap .ticket{position:relative;margin-bottom:0;transition:transform .25s;will-change:transform;}
   .ticket-stub .ts-meta{font-size:11px;color:var(--ink-soft);margin-top:3px;}
   .year-divider{
-    font-family:'Chiron GoRound TC';font-size:16px;font-weight:800;color:var(--coral-dark);
+    font-family:'Chiron GoRound TC';font-size:16px;font-weight:800;color:var(--accent-dark);
     margin:18px 2px 10px;display:flex;align-items:center;gap:8px;
   }
   .wrap-btn{
-    background:none;border:1.5px solid var(--coral);color:var(--coral-dark);
+    background:none;border:1.5px solid var(--accent);color:var(--accent-dark);
     border-radius:16px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:700;margin-left:auto;
   }
   .wrap-narrative{
@@ -399,7 +500,7 @@
     color:var(--ink-soft);background:#F6EFE2;
   }
   .heatmap .hm-day.empty{background:none;}
-  .heatmap .hm-day.today{box-shadow:0 0 0 2px var(--coral) inset;font-weight:700;}
+  .heatmap .hm-day.today{box-shadow:0 0 0 2px var(--accent) inset;font-weight:700;}
 
   .donut-wrap{display:flex;align-items:center;gap:16px;}
   .donut{width:96px;height:96px;border-radius:50%;flex-shrink:0;}
@@ -408,21 +509,61 @@
   .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 
   .mood-chart{width:100%;height:90px;}
+
+  .health-item{
+    display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start;
+  }
+  .health-item:last-child{border-bottom:none;}
+  .health-icon{font-size:16px;flex-shrink:0;margin-top:1px;}
+  .health-name{font-size:13px;font-weight:700;color:var(--ink);}
+  .health-detail{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.6;}
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🌸 生活手帳</h1>
+  <h1>📖 生活手帳</h1>
   <p id="greetingText">LIFE LOG · 記錄每一個當下</p>
   <button class="search-toggle" onclick="toggleSearch()">🔍</button>
+  <button class="help-toggle" onclick="startTour()">❔</button>
 </header>
 <div class="search-bar" id="searchBar">
   <input type="text" id="searchInput" placeholder="搜尋所有紀錄…" oninput="handleSearchInput()">
 </div>
 <div class="wrap" id="searchResults"></div>
 
-<div class="toast" id="toast"></div>
+<button class="help-fab" onclick="toggleOnboarding(true)">？</button>
+
+<div class="tour-overlay" id="tourOverlay">
+  <div class="tour-card">
+    <div class="tour-emoji" id="tourEmoji">📝</div>
+    <div class="tour-title" id="tourTitle"></div>
+    <div class="tour-text" id="tourText"></div>
+    <div class="tour-dots" id="tourDots"></div>
+    <div class="tour-btns">
+      <button class="tour-skip" onclick="endTour()">跳過</button>
+      <button class="tour-next" id="tourNextBtn" onclick="tourNext()">下一步</button>
+    </div>
+  </div>
+</div>
+
+<div class="ptr-indicator" id="ptrIndicator">🔄</div>
+
+<div class="toast" id="toast"><span id="toastText"></span><button id="toastAction" class="toast-action" style="display:none;"></button></div>
+
+<button class="fab" id="fabBtn" onclick="quickRecord()">＋</button>
+
+<div class="onboarding-overlay" id="onboardingOverlay">
+  <div class="onboarding-card">
+    <div class="onboarding-title">🌸 歡迎使用生活手帳</div>
+    <div class="onboarding-item"><span class="oi-icon">📝</span><div><b>紀錄</b> — 記下每天的大小事，文字或照片都可以</div></div>
+    <div class="onboarding-item"><span class="oi-icon">💪</span><div><b>健身</b> — 訓練菜單、打勾清單、體重與重量紀錄</div></div>
+    <div class="onboarding-item"><span class="oi-icon">🎟️</span><div><b>票根</b> — 演唱會、音樂劇、追劇的收藏牆</div></div>
+    <div class="onboarding-item"><span class="oi-icon">📊</span><div><b>統計</b> — 熱力圖、類別佔比、心情趨勢</div></div>
+    <div class="onboarding-item"><span class="oi-icon">🕰️</span><div><b>回顧</b> — 看看去年、前年的今天發生了什麼</div></div>
+    <button class="submit-btn" style="width:100%;margin-top:14px;" onclick="toggleOnboarding(false)">開始使用</button>
+  </div>
+</div>
 
 <div class="celebrate-overlay" id="celebrateOverlay">
   <div class="celebrate-card">
@@ -441,14 +582,23 @@
   <div class="page active" id="page-log">
     <div class="date-nav">
       <button onclick="changeDate(-1)">‹</button>
-      <div class="date-label" id="dateLabel">今天</div>
+      <div class="date-label-wrap">
+        <div class="date-label" id="dateLabel">今天</div>
+        <input type="date" id="dateJump" class="date-jump-input" onchange="jumpToDateInput(this.value)">
+      </div>
       <button onclick="changeDate(1)">›</button>
+    </div>
+    <div style="text-align:center;margin-top:-6px;margin-bottom:8px;">
+      <button class="today-btn" onclick="jumpToDateInput(fmtDate(new Date()))">回到今天</button>
     </div>
 
     <div class="card">
       <div class="cat-header-row">
         <div class="field-label" style="margin:0;">選擇類別</div>
-        <button class="cat-manage-btn" onclick="toggleCatManager()">⚙️ 管理類別</button>
+        <div style="display:flex;gap:6px;">
+          <button class="cat-manage-btn" onclick="toggleCatManager()">⚙️ 管理類別</button>
+          <button class="cat-manage-btn" onclick="toggleToolsPanel()">🛠️ 工具箱</button>
+        </div>
       </div>
       <div class="cat-row" id="catRow"></div>
 
@@ -466,6 +616,54 @@
       </div>
     </div>
 
+    <div class="card" id="toolsPanelCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;">🛠️ 工具箱</div>
+
+      <div class="tool-row">
+        <div>
+          <div class="tool-name">🩺 健康檢查</div>
+          <div class="tool-desc">檢查時區、API Key、各分頁是否正常</div>
+        </div>
+        <button class="tool-btn" onclick="runHealthCheck()">執行</button>
+      </div>
+      <div id="healthCheckResult"></div>
+
+      <div class="tool-row">
+        <div>
+          <div class="tool-name">💾 備份到試算表</div>
+          <div class="tool-desc">在同一份試算表裡建立隱藏的備份分頁，最快速</div>
+        </div>
+        <button class="tool-btn" onclick="runBackup('createBackup')">備份</button>
+      </div>
+
+      <div class="tool-row">
+        <div>
+          <div class="tool-name">📦 備份成獨立檔案</div>
+          <div class="tool-desc">在 Google Drive 建立完整副本檔案，更保險</div>
+        </div>
+        <button class="tool-btn" onclick="runBackup('backupNow')">備份</button>
+      </div>
+      <div id="backupResult"></div>
+
+      <div class="tool-row">
+        <div>
+          <div class="tool-name">🔧 修復舊資料格式</div>
+          <div class="tool-desc">把被 Sheets 自動轉型的日期/時間欄位轉回純文字</div>
+        </div>
+        <button class="tool-btn" onclick="runRepair('repairLegacyDates', 'repairResult')">修復</button>
+      </div>
+      <div id="repairResult"></div>
+
+      <div class="tool-row">
+        <div>
+          <div class="tool-name">🖼️ 修復舊照片連結</div>
+          <div class="tool-desc">把舊格式的圖片連結換成不會被擋掉的新格式</div>
+        </div>
+        <button class="tool-btn" onclick="runRepair('fixOldPhotoLinks', 'photoFixResult')">修復</button>
+      </div>
+      <div id="photoFixResult"></div>
+    </div>
+
     <div class="card" id="catManagerCard" style="display:none;">
       <div class="field-label" style="margin-top:0;">⚙️ 管理類別</div>
       <div id="catManagerList"></div>
@@ -474,8 +672,8 @@
 
     <div class="card" id="catEditorCard" style="display:none;">
       <div class="field-label" style="margin-top:0;" id="catEditorTitle">新增類別</div>
-      <input type="text" id="catNameInput" placeholder="類別名稱，例如：演唱會" style="width:100%;background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:10px;">
-      <input type="text" id="catIconInput" placeholder="圖示 emoji，例如：🎤" style="width:100%;background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:10px;">
+      <input type="text" id="catNameInput" placeholder="類別名稱，例如：演唱會" style="width:100%;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:10px;">
+      <input type="text" id="catIconInput" placeholder="圖示 emoji，例如：🎤" style="width:100%;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:10px;">
       <div class="field-label">顏色</div>
       <div class="color-row" id="colorRow"></div>
       <div class="field-label" style="display:flex;align-items:center;gap:8px;">
@@ -557,6 +755,7 @@
           <input type="number" id="gymRepsInput" placeholder="次數/組">
         </div>
         <button class="submit-btn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
+        <button class="gen-btn" id="repeatSetBtn" style="width:100%;margin-top:8px;display:none;" onclick="repeatLastSet()">🔁 重複上一組</button>
       </div>
       <div id="gymLogList"></div>
     </div>
@@ -607,6 +806,20 @@
     <div class="card" id="moodChartCard" style="display:none;">
       <div class="field-label" style="margin-top:0;">💭 心情趨勢</div>
       <svg class="mood-chart" id="moodChartSvg"></svg>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">🩺 健康檢查</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">檢查連線、AI 設定、時區、資料格式是否正常</div>
+      <button class="submit-btn" style="width:100%;" onclick="runHealthCheck()">開始檢查</button>
+      <div id="healthCheckResult" style="margin-top:12px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">💾 備份</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">把目前的紀錄、彙整、類別設定複製一份存進同一份試算表（會隱藏起來不干擾使用，需要救援時再到試算表裡找「備份_」開頭的分頁）</div>
+      <button class="submit-btn" style="width:100%;" onclick="runBackup()">立即備份</button>
+      <div id="backupResult" style="margin-top:10px;font-size:12.5px;color:var(--ink-soft);"></div>
     </div>
   </div>
 
@@ -717,6 +930,7 @@ const GYM_EQUIPMENT = {
   ]
 };
 let selectedGymPart = null;
+let lastGymSet = null;
 
 let currentDate = new Date();
 let selectedCategory = null;
@@ -764,12 +978,32 @@ function checkConfig() {
 
 /* ================= 溫暖提示 toast ================= */
 let toastTimer = null;
+function vibrate(pattern) { if (navigator.vibrate) { try { navigator.vibrate(pattern); } catch (e) {} } }
 function showToast(msg, ms) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
+  document.getElementById('toastText').textContent = msg;
+  document.getElementById('toastAction').style.display = 'none';
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2200);
+  vibrate(12);
+}
+function showUndoToast(msg, undoFn, ms) {
+  ms = ms || 4000;
+  const t = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  const btn = document.getElementById('toastAction');
+  btn.textContent = '復原';
+  btn.style.display = 'inline-block';
+  btn.onclick = () => {
+    undoFn();
+    t.classList.remove('show');
+    clearTimeout(toastTimer);
+  };
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); btn.style.display = 'none'; }, ms);
+  vibrate(12);
 }
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 const SAVE_MSGS = ['記下來了 🌷', '這一刻收藏好了 ✨', '寫進手帳裡了 📖', '收好囉，辛苦了 🌙'];
@@ -778,7 +1012,62 @@ const DELETE_MSGS = ['已經收起來了 🗑️', '刪掉了，沒問題的 �
 
 /* ================= 里程碑慶祝動畫 ================= */
 const CONFETTI_COLORS = ['#FF8C7A', '#A8DDB5', '#D3C0FF', '#FFE29A', '#A9DDEE', '#F5A3C7'];
+function skeletonCards(n) {
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    html += `<div class="skeleton-card"><div class="skeleton-line" style="width:40%;"></div><div class="skeleton-line" style="width:85%;"></div><div class="skeleton-line" style="width:60%;margin-bottom:0;"></div></div>`;
+  }
+  return html;
+}
+
+/* ================= 浮動快速記錄 ================= */
+function toggleOnboarding(show) {
+  document.getElementById('onboardingOverlay').classList.toggle('show', show);
+}
+function quickRecord() {
+  switchTab('page-log');
+  setTimeout(() => {
+    const ta = document.getElementById('textInput');
+    if (ta) { ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); ta.focus(); }
+  }, 80);
+}
+
+/* ================= 下拉重新整理 ================= */
+let ptrStartY = 0, ptrPulling = false, ptrDist = 0;
+function reloadCurrentTab() {
+  const active = document.querySelector('.page.active');
+  if (!active) return;
+  const id = active.id;
+  if (id === 'page-log') refresh();
+  else if (id === 'page-fit') loadFitnessPage();
+  else if (id === 'page-tickets') loadTicketWall();
+  else if (id === 'page-stats') loadStatsPage();
+  else if (id === 'page-memory') loadMemoryPage();
+}
+document.addEventListener('touchstart', e => {
+  if (window.scrollY <= 0) { ptrStartY = e.touches[0].clientY; ptrPulling = true; ptrDist = 0; }
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!ptrPulling) return;
+  ptrDist = e.touches[0].clientY - ptrStartY;
+  if (ptrDist > 0 && window.scrollY <= 0) {
+    const indicator = document.getElementById('ptrIndicator');
+    indicator.style.opacity = Math.min(ptrDist / 70, 1);
+    indicator.style.transform = `translateX(-50%) translateY(${Math.min(ptrDist * 0.4, 36)}px)`;
+  }
+}, { passive: true });
+document.addEventListener('touchend', () => {
+  if (!ptrPulling) return;
+  ptrPulling = false;
+  const indicator = document.getElementById('ptrIndicator');
+  indicator.style.opacity = 0;
+  indicator.style.transform = 'translateX(-50%) translateY(-10px)';
+  if (ptrDist > 55) { vibrate(10); reloadCurrentTab(); showToast('刷新好了 🔄', 1400); }
+  ptrDist = 0;
+});
+
 function celebrate(text, emoji) {
+  vibrate([30, 50, 30, 50, 60]);
   const overlay = document.getElementById('celebrateOverlay');
   document.getElementById('celebrateEmoji').textContent = emoji || '🎉';
   document.getElementById('celebrateText').textContent = text;
@@ -822,10 +1111,22 @@ function attachSwipe(el, onSwipeDelete) {
   });
 }
 
+const PAGE_ACCENTS = {
+  'page-log': ['#FF8C7A', '#F0715E'],
+  'page-fit': ['#7BC99B', '#4FA873'],
+  'page-tickets': ['#E8A33D', '#C9861F'],
+  'page-stats': ['#6FA8DC', '#4A85BF'],
+  'page-memory': ['#B39DDB', '#8B6FC9']
+};
 function switchTab(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+  const accent = PAGE_ACCENTS[pageId];
+  if (accent) {
+    document.documentElement.style.setProperty('--accent', accent[0]);
+    document.documentElement.style.setProperty('--accent-dark', accent[1]);
+  }
   if (pageId === 'page-fit') loadFitnessPage();
   if (pageId === 'page-tickets') loadTicketWall();
   if (pageId === 'page-stats') loadStatsPage();
@@ -912,7 +1213,7 @@ function renderExtraFields() {
       input.type = f.type === 'number' ? 'number' : 'text';
       input.placeholder = f.label;
       input.value = currentFieldValues[f.key] || '';
-      input.style.cssText = 'background:#FCF9F2;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:110px;';
+      input.style.cssText = 'background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:110px;';
       input.oninput = () => { currentFieldValues[f.key] = input.value; };
       wrap.appendChild(input);
     }
@@ -926,7 +1227,63 @@ function toggleCatManager() {
   const isOpen = card.style.display !== 'none';
   card.style.display = isOpen ? 'none' : 'block';
   document.getElementById('catEditorCard').style.display = 'none';
+  document.getElementById('toolsPanelCard').style.display = 'none';
   if (!isOpen) renderCatManagerList();
+}
+function toggleToolsPanel() {
+  const card = document.getElementById('toolsPanelCard');
+  const isOpen = card.style.display !== 'none';
+  card.style.display = isOpen ? 'none' : 'block';
+  document.getElementById('catManagerCard').style.display = 'none';
+  document.getElementById('catEditorCard').style.display = 'none';
+}
+async function runHealthCheck() {
+  const area = document.getElementById('healthCheckResult');
+  area.innerHTML = '<div class="tool-result-box">檢查中… 🔍</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=healthCheck`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result.error) { area.innerHTML = `<div class="tool-result-box">檢查失敗：${escapeHtml(result.error)}</div>`; return; }
+    area.innerHTML = '<div class="tool-result-box">' + result.checks.map(c => `
+      <div class="health-item">
+        <span>${c.ok === false ? '⚠️' : '✅'}</span>
+        <div><div class="hi-name">${escapeHtml(c.name)}</div><div class="hi-detail">${escapeHtml(c.detail)}</div></div>
+      </div>
+    `).join('') + '</div>';
+  } catch (err) {
+    area.innerHTML = `<div class="tool-result-box">檢查失敗：${escapeHtml(err.message)}（代表 GAS_URL 本身可能有問題）</div>`;
+  }
+}
+async function runBackup(action) {
+  const area = document.getElementById('backupResult');
+  area.innerHTML = '<div class="tool-result-box">備份中… 💾</div>';
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action }) });
+    const result = await res.json();
+    if (result.error) { area.innerHTML = `<div class="tool-result-box">備份失敗：${escapeHtml(result.error)}</div>`; return; }
+    if (action === 'createBackup') {
+      area.innerHTML = `<div class="tool-result-box">備份好了 ✅ 建立了 ${result.backed} 個隱藏備份分頁（時間戳記：${result.stamp}）</div>`;
+    } else {
+      area.innerHTML = `<div class="tool-result-box">備份好了 ✅ <a href="${result.fileUrl}" target="_blank">開啟備份檔案</a></div>`;
+    }
+    showToast('備份完成 💾');
+  } catch (err) {
+    area.innerHTML = `<div class="tool-result-box">備份失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+async function runRepair(action, resultId) {
+  const area = document.getElementById(resultId);
+  area.innerHTML = '<div class="tool-result-box">處理中… 🔧</div>';
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action }) });
+    const result = await res.json();
+    if (result.error) { area.innerHTML = `<div class="tool-result-box">失敗：${escapeHtml(result.error)}</div>`; return; }
+    const count = result.fixed !== undefined ? result.fixed : result.fixedCount;
+    area.innerHTML = `<div class="tool-result-box">完成 ✅ 修復了 ${count} 筆</div>`;
+    showToast('修復完成 ✨');
+  } catch (err) {
+    area.innerHTML = `<div class="tool-result-box">失敗：${escapeHtml(err.message)}</div>`;
+  }
 }
 function renderCatManagerList() {
   const area = document.getElementById('catManagerList');
@@ -1095,8 +1452,15 @@ function changeDate(delta) {
   currentDate.setDate(currentDate.getDate() + delta);
   refresh();
 }
+function jumpToDateInput(val) {
+  if (!val) return;
+  const [y, m, d] = val.split('-').map(Number);
+  currentDate = new Date(y, m - 1, d);
+  refresh();
+}
 async function refresh() {
   document.getElementById('dateLabel').textContent = dateLabel(currentDate);
+  document.getElementById('dateJump').value = fmtDate(currentDate);
   if (!checkConfig()) return;
   await loadEntries();
   await loadSummary();
@@ -1105,7 +1469,7 @@ async function refresh() {
 async function loadEntries() {
   const ds = fmtDate(currentDate);
   const listEl = document.getElementById('entriesList');
-  listEl.innerHTML = '<div class="empty-state">載入中…</div>';
+  listEl.innerHTML = skeletonCards(3);
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
     const entries = await res.json();
@@ -1136,6 +1500,7 @@ function fieldsSummaryHtml(cat, fields) {
 function renderTicket(entry) {
   const wrap = document.createElement('div');
   wrap.className = 'ticket-swipe-wrap';
+  wrap.dataset.entryId = entry.id;
   const bg = document.createElement('div');
   bg.className = 'ticket-swipe-bg';
   bg.textContent = '🗑️';
@@ -1144,7 +1509,7 @@ function renderTicket(entry) {
   div.style.borderLeftColor = catColor(entry.category);
   const tm = entry.ticketMeta;
   const tmHtml = (tm && (tm.showName || tm.venue || tm.showDate)) ? `
-    <div style="margin-top:6px;font-size:12px;color:var(--coral-dark);font-weight:700;">
+    <div style="margin-top:6px;font-size:12px;color:var(--accent-dark);font-weight:700;">
       🎫 ${escapeHtml(tm.showName || '')} ${tm.venue ? '・' + escapeHtml(tm.venue) : ''} ${tm.showDate ? '・' + escapeHtml(tm.showDate) : ''}
     </div>` : '';
   div.innerHTML = `
@@ -1164,11 +1529,23 @@ function renderTicket(entry) {
   attachSwipe(div, () => deleteEntry(entry.id));
   return wrap;
 }
+const pendingDeletes = {};
 async function deleteEntry(id) {
-  if (!confirm('刪除這則紀錄？')) return;
-  await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteEntry', id }) });
-  showToast(pick(DELETE_MSGS));
-  loadEntries();
+  const wrap = document.querySelector(`[data-entry-id="${id}"]`);
+  if (wrap) wrap.style.display = 'none';
+  vibrate(15);
+  showUndoToast('已刪除，幾秒內可復原', () => {
+    clearTimeout(pendingDeletes[id]);
+    delete pendingDeletes[id];
+    if (wrap) wrap.style.display = '';
+  }, 4500);
+  pendingDeletes[id] = setTimeout(async () => {
+    delete pendingDeletes[id];
+    try {
+      await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteEntry', id }) });
+      loadEntries();
+    } catch (err) {}
+  }, 4500);
 }
 function compressImage(file, maxDim, quality) {
   maxDim = maxDim || 1280; quality = quality || 0.72;
@@ -1520,6 +1897,8 @@ async function submitGymLog() {
     document.getElementById('gymWeightInput').value = '';
     document.getElementById('gymSetsInput').value = '';
     document.getElementById('gymRepsInput').value = '';
+    document.getElementById('repeatSetBtn').style.display = 'block';
+    lastGymSet = { exercise, weight, sets, reps };
     showToast(pick(['這組收工啦 💪', '記下這一組了 🏋️', '又進步一點點 🌱']));
     loadGymLog();
     loadGymExerciseNames();
@@ -1528,6 +1907,14 @@ async function submitGymLog() {
   } catch (err) {
     alert('記錄失敗：' + err.message);
   }
+}
+function repeatLastSet() {
+  if (!lastGymSet) return;
+  document.getElementById('gymExerciseInput').value = lastGymSet.exercise;
+  document.getElementById('gymWeightInput').value = lastGymSet.weight;
+  document.getElementById('gymSetsInput').value = lastGymSet.sets;
+  document.getElementById('gymRepsInput').value = lastGymSet.reps;
+  vibrate(10);
 }
 async function deleteGymLogItem(id) {
   try {
@@ -1685,7 +2072,7 @@ function renderTicketFilterRow() {
   );
   row.innerHTML = chips.map(c => {
     const active = ticketWallFilter === c.key;
-    const bg = c.key === 'all' ? 'var(--coral)' : catColor(c.key);
+    const bg = c.key === 'all' ? 'var(--accent)' : catColor(c.key);
     return `<div class="cat-chip${active ? ' active' : ''}" style="${active ? `background:${bg};border-color:transparent;` : ''}" onclick="setTicketFilter('${c.key}')">${c.icon ? c.icon + ' ' : ''}${escapeHtml(c.label)}</div>`;
   }).join('');
 }
@@ -1923,7 +2310,46 @@ function setGreeting() {
 }
 setGreeting();
 
-loadCategories().then(refresh);
+async function runHealthCheck() {
+  const area = document.getElementById('healthCheckResult');
+  area.innerHTML = '<div class="empty-state" style="padding:14px 0;">檢查中… 🔍</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=healthCheck`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result.error) { area.innerHTML = `<div class="empty-state">檢查失敗：${escapeHtml(result.error)}</div>`; return; }
+    area.innerHTML = result.results.map(r => `
+      <div class="health-item">
+        <div class="health-icon">${r.ok ? '✅' : '⚠️'}</div>
+        <div>
+          <div class="health-name">${escapeHtml(r.name)}</div>
+          <div class="health-detail">${escapeHtml(r.detail)}</div>
+        </div>
+      </div>
+    `).join('');
+    const needsRepair = result.results.find(r => r.name === '紀錄日期格式' && !r.ok);
+    if (needsRepair) {
+      area.innerHTML += `<button class="submit-btn" style="width:100%;margin-top:10px;" onclick="runRepairDates()">修復舊資料格式</button>`;
+    }
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">檢查失敗：${escapeHtml(err.message)}（如果連這個都失敗，代表 GAS_URL 或部署本身有問題）</div>`;
+  }
+}
+async function runRepairDates() {
+  const area = document.getElementById('healthCheckResult');
+  area.innerHTML += '<div class="empty-state" style="padding:10px 0;">修復中… 🔧</div>';
+  try {
+    const res = await postJSON({ action: 'repairLegacyDates' }, 30000);
+    if (res.error) { alert('修復失敗：' + res.error); return; }
+    showToast(`修復完成，共處理 ${res.fixed} 個欄位 ✨`);
+    runHealthCheck();
+  } catch (err) {
+    alert('修復失敗：' + err.message);
+  }
+}
+loadCategories().then(refresh).then(() => {
+  if (location.hash === '#quick') quickRecord();
+  if (location.hash === '#today') switchTab('page-log');
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
