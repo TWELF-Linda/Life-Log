@@ -537,6 +537,7 @@
   .health-name{font-size:13px;font-weight:700;color:var(--ink);}
   .health-detail{font-size:12px;color:var(--ink-soft);margin-top:2px;line-height:1.6;}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -544,7 +545,6 @@
   <h1>📖 生活手帳</h1>
   <p id="greetingText">LIFE LOG · 記錄每一個當下</p>
   <button class="search-toggle" onclick="toggleSearch()">🔍</button>
-  <button class="help-toggle" onclick="startTour()">❔</button>
 </header>
 <div class="search-bar" id="searchBar">
   <input type="text" id="searchInput" placeholder="搜尋所有紀錄…" oninput="handleSearchInput()">
@@ -552,19 +552,6 @@
 <div class="wrap" id="searchResults"></div>
 
 <button class="help-fab" onclick="toggleOnboarding(true)">？</button>
-
-<div class="tour-overlay" id="tourOverlay">
-  <div class="tour-card">
-    <div class="tour-emoji" id="tourEmoji">📝</div>
-    <div class="tour-title" id="tourTitle"></div>
-    <div class="tour-text" id="tourText"></div>
-    <div class="tour-dots" id="tourDots"></div>
-    <div class="tour-btns">
-      <button class="tour-skip" onclick="endTour()">跳過</button>
-      <button class="tour-next" id="tourNextBtn" onclick="tourNext()">下一步</button>
-    </div>
-  </div>
-</div>
 
 <div class="ptr-indicator" id="ptrIndicator">🔄</div>
 
@@ -588,9 +575,16 @@
   <div class="lock-card">
     <div style="font-size:38px;">🔒</div>
     <div class="lock-title">生活手帳</div>
-    <div class="lock-sub">請輸入通關密碼</div>
-    <input type="password" id="lockInput" class="lock-input" placeholder="密碼" autocomplete="off" onkeydown="if(event.key==='Enter')submitLock()">
-    <button class="submit-btn" id="lockBtn" style="width:100%;margin-top:10px;" onclick="submitLock()">進入</button>
+    <div class="lock-sub" id="lockSub">請輸入通關密碼</div>
+
+    <div id="googleSignInArea" style="display:none;">
+      <div id="googleBtnContainer" style="display:flex;justify-content:center;"></div>
+    </div>
+
+    <div id="passcodeArea">
+      <input type="password" id="lockInput" class="lock-input" placeholder="密碼" autocomplete="off" onkeydown="if(event.key==='Enter')submitLock()">
+      <button class="submit-btn" id="lockBtn" style="width:100%;margin-top:10px;" onclick="submitLock()">進入</button>
+    </div>
     <div id="lockError" class="lock-error"></div>
   </div>
 </div>
@@ -887,7 +881,10 @@
    取得的 Web App 網址（詳見「設定說明.md」）
    ============================================================ */
 const CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbx86_BfOCQBYv0A1nTNnwhqUkevH27vlYFdNjzdDumx7RgeNqMMyBG6lzV9xjz1RU7b/exec'
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbx86_BfOCQBYv0A1nTNnwhqUkevH27vlYFdNjzdDumx7RgeNqMMyBG6lzV9xjz1RU7b/exec',
+  // 申請好 OAuth 用戶端 ID 後貼在這裡，格式像 123456-abc...xyz.apps.googleusercontent.com
+  // 沒填的話會自動改用密碼輸入畫面，不影響現有功能
+  GOOGLE_CLIENT_ID: '452560318422-04mc4mnpn78924sll2eimm8cqo55k8kr.apps.googleusercontent.com'
 };
 
 let CATEGORIES = [];
@@ -2407,13 +2404,51 @@ async function initAuth() {
     const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories`, { cache: 'no-store' });
     const result = await res.json();
     if (result && result.error === 'AUTH_REQUIRED') {
-      document.getElementById('lockOverlay').classList.add('show');
-      document.getElementById('lockInput').focus();
+      showLockScreen();
     } else {
       startApp();
     }
   } catch (err) {
     startApp(); // 探測失敗時照常啟動，讓原本的錯誤提示機制接手顯示問題
+  }
+}
+function showLockScreen() {
+  document.getElementById('lockOverlay').classList.add('show');
+  if (CONFIG.GOOGLE_CLIENT_ID) {
+    document.getElementById('lockSub').textContent = '請用授權的 Google 帳號登入';
+    document.getElementById('googleSignInArea').style.display = 'block';
+    document.getElementById('passcodeArea').style.display = 'none';
+    try {
+      google.accounts.id.initialize({ client_id: CONFIG.GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
+      google.accounts.id.renderButton(document.getElementById('googleBtnContainer'), { theme: 'outline', size: 'large', shape: 'pill' });
+    } catch (err) {
+      document.getElementById('lockError').textContent = 'Google 登入元件載入失敗：' + err.message;
+      document.getElementById('lockError').style.display = 'block';
+    }
+  } else {
+    document.getElementById('passcodeArea').style.display = 'block';
+    document.getElementById('googleSignInArea').style.display = 'none';
+    document.getElementById('lockInput').focus();
+  }
+}
+async function handleGoogleCredential(response) {
+  const errEl = document.getElementById('lockError');
+  errEl.style.display = 'none';
+  const testToken = response.credential;
+  try {
+    const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories&token=${encodeURIComponent(testToken)}`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result && result.error === 'AUTH_REQUIRED') {
+      errEl.textContent = '這個 Google 帳號沒有被授權使用';
+      errEl.style.display = 'block';
+      return;
+    }
+    APP_TOKEN = testToken;
+    document.getElementById('lockOverlay').classList.remove('show');
+    startApp();
+  } catch (err) {
+    errEl.textContent = '登入驗證失敗：' + err.message;
+    errEl.style.display = 'block';
   }
 }
 async function submitLock() {
