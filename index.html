@@ -332,6 +332,39 @@
     box-sizing:border-box;margin-bottom:8px;
   }
   .gym-form-row{display:flex;gap:8px;}
+
+  /* ---- 股票 ---- */
+  .stock-form-row{display:flex;gap:8px;margin-bottom:8px;}
+  .stock-form-row input{
+    flex:1;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;
+    padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;box-sizing:border-box;min-width:0;
+  }
+  .stock-date-input{max-width:150px;}
+  .holding-item{
+    display:flex;justify-content:space-between;align-items:center;background:var(--input-bg);
+    border-radius:12px;padding:10px 12px;margin-bottom:8px;
+  }
+  .holding-item .h-code{font-weight:700;font-size:13.5px;color:var(--ink);}
+  .holding-item .h-name{font-size:11.5px;color:var(--ink-soft);}
+  .holding-item .h-right{text-align:right;font-size:12.5px;color:var(--ink);}
+  .holding-item .h-right .h-sub{font-size:11px;color:var(--ink-soft);}
+  .pl-item{
+    display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;
+  }
+  .pl-item:last-child{border-bottom:none;}
+  .pl-pos{color:#3E8C5B;font-weight:700;}
+  .pl-neg{color:var(--accent-dark);font-weight:700;}
+  .stock-log-item{
+    background:var(--input-bg);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .stock-log-item .sl-main{color:var(--ink);}
+  .stock-log-item .sl-tag{
+    font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:8px;margin-right:6px;
+  }
+  .sl-tag.buy{background:#DDEFE6;color:#3E8C5B;}
+  .sl-tag.sell{background:#FCE0DC;color:var(--accent-dark);}
+  .stock-log-item .sl-del{background:none;border:none;color:#D8CABB;font-size:13px;cursor:pointer;}
   .gym-form-row input{margin-bottom:8px;}
   .gym-log-day{margin-top:14px;}
   .gym-log-day .gl-date{font-size:11.5px;color:var(--ink-soft);font-weight:700;margin:10px 0 6px;letter-spacing:.5px;}
@@ -855,6 +888,42 @@
     <div id="memoryArea"></div>
   </div>
 
+  <div class="page" id="page-stock">
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📈 新增買賣紀錄</div>
+      <div class="stock-form-row">
+        <input type="text" id="stockCode" placeholder="代號，例如 2330">
+        <input type="text" id="stockName" placeholder="名稱，例如 台積電">
+      </div>
+      <div class="choice-row" id="stockActionRow"></div>
+      <div class="stock-form-row">
+        <input type="number" id="stockShares" placeholder="股數">
+        <input type="number" step="0.01" id="stockPrice" placeholder="成交價">
+      </div>
+      <div class="stock-form-row">
+        <input type="number" step="0.01" id="stockFee" placeholder="手續費/稅（選填）">
+        <input type="date" id="stockDate" class="stock-date-input">
+      </div>
+      <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
+      <button class="submit-btn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">💼 目前持股</div>
+      <div id="stockHoldingsArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">💰 已實現損益</div>
+      <div id="stockRealizedArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📜 交易紀錄</div>
+      <div id="stockLogArea"></div>
+    </div>
+  </div>
+
 </div>
 
 <div class="tabbar">
@@ -872,6 +941,9 @@
   </button>
   <button class="tab-btn" data-page="page-memory" onclick="switchTab('page-memory')">
     <span class="icon">🕰️</span>回顧
+  </button>
+  <button class="tab-btn" data-page="page-stock" onclick="switchTab('page-stock')">
+    <span class="icon">📈</span>股票
   </button>
 </div>
 
@@ -899,6 +971,8 @@ const FIELD_TYPES = [
 ];
 const COLOR_PRESETS = ['#FFB4A2','#F5A3C7','#C9A6E8','#A8DDB5','#D3C0FF','#FFE29A','#A9DDEE','#FFD3E0','#FFCF9E','#B9E4C9'];
 
+const STOCK_ACTIONS = [{ v: 'buy', label: '買進' }, { v: 'sell', label: '賣出' }];
+let selectedStockAction = 'buy';
 const GYM_BODY_PARTS = [
   { key: 'chest', label: '胸', icon: '🏋️' },
   { key: 'back', label: '背', icon: '🦾' },
@@ -1143,7 +1217,8 @@ const PAGE_ACCENTS = {
   'page-fit': ['#7BC99B', '#4FA873'],
   'page-tickets': ['#E8A33D', '#C9861F'],
   'page-stats': ['#6FA8DC', '#4A85BF'],
-  'page-memory': ['#B39DDB', '#8B6FC9']
+  'page-memory': ['#B39DDB', '#8B6FC9'],
+  'page-stock': ['#5FA88F', '#3D8570']
 };
 function switchTab(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1158,6 +1233,7 @@ function switchTab(pageId) {
   if (pageId === 'page-tickets') loadTicketWall();
   if (pageId === 'page-stats') loadStatsPage();
   if (pageId === 'page-memory') loadMemoryPage();
+  if (pageId === 'page-stock') loadStockPage();
 }
 
 async function loadCategories() {
@@ -1277,6 +1353,10 @@ async function runHealthCheck() {
         <div><div class="hi-name">${escapeHtml(c.name)}</div><div class="hi-detail">${escapeHtml(c.detail)}</div></div>
       </div>
     `).join('') + '</div>';
+    const needsRepair = result.checks.find(c => c.name === '紀錄日期格式' && c.ok === false);
+    if (needsRepair) {
+      area.innerHTML += `<button class="submit-btn" style="width:100%;margin-top:10px;" onclick="runRepair('repairLegacyDates', 'healthCheckResult')">一鍵修復舊資料格式</button>`;
+    }
   } catch (err) {
     area.innerHTML = `<div class="tool-result-box">檢查失敗：${escapeHtml(err.message)}（代表 GAS_URL 本身可能有問題）</div>`;
   }
@@ -1855,6 +1935,117 @@ function pickGymEquipment(partKey, idx) {
   tip.style.display = 'block';
   tip.textContent = '💡 ' + eq.tip;
 }
+/* ================= 股票 ================= */
+function renderStockActionRow() {
+  const row = document.getElementById('stockActionRow');
+  if (!row) return;
+  row.innerHTML = STOCK_ACTIONS.map(a =>
+    `<div class="choice-chip${selectedStockAction === a.v ? ' active' : ''}" onclick="selectStockAction('${a.v}')">${a.label}</div>`
+  ).join('');
+}
+function selectStockAction(v) {
+  selectedStockAction = v;
+  renderStockActionRow();
+}
+async function loadStockPage() {
+  if (!checkConfig()) return;
+  renderStockActionRow();
+  document.getElementById('stockDate').value = fmtDate(new Date());
+  loadStockSummary();
+  loadStockLogList();
+}
+async function submitStockLog() {
+  const code = document.getElementById('stockCode').value.trim();
+  const name = document.getElementById('stockName').value.trim();
+  const shares = document.getElementById('stockShares').value;
+  const price = document.getElementById('stockPrice').value;
+  const fee = document.getElementById('stockFee').value;
+  const date = document.getElementById('stockDate').value || fmtDate(new Date());
+  const note = document.getElementById('stockNote').value.trim();
+  if (!code || !shares || !price) { alert('至少填代號、股數、成交價喔'); return; }
+  try {
+    await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'addStockLog', code, name, action: selectedStockAction, shares, price, fee, date, note })
+    });
+    document.getElementById('stockCode').value = '';
+    document.getElementById('stockName').value = '';
+    document.getElementById('stockShares').value = '';
+    document.getElementById('stockPrice').value = '';
+    document.getElementById('stockFee').value = '';
+    document.getElementById('stockNote').value = '';
+    showToast(selectedStockAction === 'buy' ? '買進記錄好了 📈' : '賣出記錄好了 📉');
+    loadStockSummary();
+    loadStockLogList();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  }
+}
+async function loadStockSummary() {
+  const holdArea = document.getElementById('stockHoldingsArea');
+  const plArea = document.getElementById('stockRealizedArea');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockSummary`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result.error) { holdArea.innerHTML = `<div class="empty-state">${escapeHtml(result.error)}</div>`; return; }
+    if (!result.holdings.length) {
+      holdArea.innerHTML = '<div class="empty-state">目前沒有持股</div>';
+    } else {
+      holdArea.innerHTML = result.holdings.map(h => `
+        <div class="holding-item">
+          <div><div class="h-code">${escapeHtml(h.code)}</div><div class="h-name">${escapeHtml(h.name || '')}</div></div>
+          <div class="h-right">${h.qty} 股<div class="h-sub">均價 ${h.avgCost} ・ 成本 ${h.costBasis.toLocaleString()}</div></div>
+        </div>
+      `).join('');
+    }
+    if (!result.realized.length) {
+      plArea.innerHTML = '<div class="empty-state">還沒有已實現損益紀錄</div>';
+    } else {
+      const totalClass = result.totalRealizedPL >= 0 ? 'pl-pos' : 'pl-neg';
+      let html = `<div class="pl-item"><span style="font-weight:700;">總計</span><span class="${totalClass}">${result.totalRealizedPL >= 0 ? '+' : ''}${result.totalRealizedPL.toLocaleString()}</span></div>`;
+      html += result.realized.map(r => {
+        const cls = r.realizedPL >= 0 ? 'pl-pos' : 'pl-neg';
+        return `<div class="pl-item"><span>${escapeHtml(r.code)} ${escapeHtml(r.name || '')}</span><span class="${cls}">${r.realizedPL >= 0 ? '+' : ''}${r.realizedPL.toLocaleString()}</span></div>`;
+      }).join('');
+      plArea.innerHTML = html;
+    }
+  } catch (err) {
+    holdArea.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+async function loadStockLogList() {
+  const area = document.getElementById('stockLogArea');
+  area.innerHTML = '<div class="empty-state">載入中… 🔍</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockLog`, { cache: 'no-store' });
+    const rows = await res.json();
+    if (rows.error) { area.innerHTML = `<div class="empty-state">${escapeHtml(rows.error)}</div>`; return; }
+    if (!rows.length) { area.innerHTML = '<div class="empty-state">還沒有任何交易紀錄</div>'; return; }
+    area.innerHTML = rows.map(r => `
+      <div class="stock-log-item">
+        <div class="sl-main">
+          <span class="sl-tag ${r.action}">${r.action === 'buy' ? '買' : '賣'}</span>
+          ${escapeHtml(r.code)} ${escapeHtml(r.name || '')}　${r.shares}股 @ ${r.price}　<span style="color:var(--ink-soft);">${r.date}</span>
+        </div>
+        <button class="sl-del" onclick="deleteStockLogItem('${r.id}')">✕</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+async function deleteStockLogItem(id) {
+  if (!confirm('刪除這筆交易紀錄？')) return;
+  try {
+    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteStockLog', id }) });
+    showToast('已刪除 🗑️');
+    loadStockSummary();
+    loadStockLogList();
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
+}
+
 async function loadGymExerciseNames() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getGymExerciseNames`, { cache: 'no-store' });
@@ -2337,42 +2528,6 @@ function setGreeting() {
 }
 setGreeting();
 
-async function runHealthCheck() {
-  const area = document.getElementById('healthCheckResult');
-  area.innerHTML = '<div class="empty-state" style="padding:14px 0;">檢查中… 🔍</div>';
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=healthCheck`, { cache: 'no-store' });
-    const result = await res.json();
-    if (result.error) { area.innerHTML = `<div class="empty-state">檢查失敗：${escapeHtml(result.error)}</div>`; return; }
-    area.innerHTML = result.results.map(r => `
-      <div class="health-item">
-        <div class="health-icon">${r.ok ? '✅' : '⚠️'}</div>
-        <div>
-          <div class="health-name">${escapeHtml(r.name)}</div>
-          <div class="health-detail">${escapeHtml(r.detail)}</div>
-        </div>
-      </div>
-    `).join('');
-    const needsRepair = result.results.find(r => r.name === '紀錄日期格式' && !r.ok);
-    if (needsRepair) {
-      area.innerHTML += `<button class="submit-btn" style="width:100%;margin-top:10px;" onclick="runRepairDates()">修復舊資料格式</button>`;
-    }
-  } catch (err) {
-    area.innerHTML = `<div class="empty-state">檢查失敗：${escapeHtml(err.message)}（如果連這個都失敗，代表 GAS_URL 或部署本身有問題）</div>`;
-  }
-}
-async function runRepairDates() {
-  const area = document.getElementById('healthCheckResult');
-  area.innerHTML += '<div class="empty-state" style="padding:10px 0;">修復中… 🔧</div>';
-  try {
-    const res = await postJSON({ action: 'repairLegacyDates' }, 30000);
-    if (res.error) { alert('修復失敗：' + res.error); return; }
-    showToast(`修復完成，共處理 ${res.fixed} 個欄位 ✨`);
-    runHealthCheck();
-  } catch (err) {
-    alert('修復失敗：' + err.message);
-  }
-}
 let APP_TOKEN = '';
 const _rawFetch = window.fetch.bind(window);
 window.fetch = function(url, options) {
