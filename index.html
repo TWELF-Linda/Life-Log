@@ -989,6 +989,13 @@
     </div>
 
     <div class="card">
+      <div class="field-label" style="margin-top:0;">📈 總成本走勢</div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">每筆交易後的持股總成本變化</div>
+      <svg class="mood-chart" id="stockCostChart"></svg>
+      <div id="stockCostChartEmpty" class="empty-state" style="display:none;">還沒有足夠的交易紀錄可以畫圖</div>
+    </div>
+
+    <div class="card">
       <div class="field-label" style="margin-top:0;">💼 目前持股</div>
       <div id="stockHoldingsArea"></div>
     </div>
@@ -1005,38 +1012,12 @@
   </div>
 
   <div class="page" id="page-more">
-    <div class="more-grid">
-      <div class="more-item" onclick="switchTab('page-tickets')">
-        <span class="more-icon">🎟️</span><span class="more-label">票根牆</span>
-      </div>
-      <div class="more-item" onclick="switchTab('page-memory')">
-        <span class="more-icon">🕰️</span><span class="more-label">回顧</span>
-      </div>
-      <div class="more-item" onclick="switchTab('page-stock')">
-        <span class="more-icon">📈</span><span class="more-label">股票</span>
-      </div>
-      <div class="more-item" onclick="toggleSettings()">
-        <span class="more-icon">⚙️</span><span class="more-label">設定</span>
-      </div>
-    </div>
+    <div class="more-grid" id="moreGrid"></div>
   </div>
 
 </div>
 
-<div class="tabbar">
-  <button class="tab-btn active" data-page="page-log" onclick="switchTab('page-log')">
-    <span class="icon">📝</span>紀錄
-  </button>
-  <button class="tab-btn" data-page="page-fit" onclick="switchTab('page-fit')">
-    <span class="icon">💪</span>健身
-  </button>
-  <button class="tab-btn" data-page="page-stats" onclick="switchTab('page-stats')">
-    <span class="icon">📊</span>統計
-  </button>
-  <button class="tab-btn" data-page="page-more" onclick="switchTab('page-more')">
-    <span class="icon">⋯</span>更多
-  </button>
-</div>
+<div class="tabbar" id="tabbarContainer"></div>
 
 <script>
 /* ============================================================
@@ -1575,9 +1556,12 @@ async function persistCategoryOrder() {
 const TAB_META = {
   'page-log': { icon: '📝', label: '紀錄' },
   'page-fit': { icon: '💪', label: '健身' },
+  'page-tickets': { icon: '🎟️', label: '票根' },
   'page-stats': { icon: '📊', label: '統計' },
-  'page-more': { icon: '⋯', label: '更多' }
+  'page-memory': { icon: '🕰️', label: '回顧' },
+  'page-stock': { icon: '📈', label: '股票' }
 };
+const MAX_PRIMARY_TABS = 4;
 async function loadTabOrderSettings() {
   const area = document.getElementById('tabOrderList');
   area.innerHTML = '<div class="empty-state">載入中…</div>';
@@ -1591,9 +1575,15 @@ async function loadTabOrderSettings() {
 }
 function renderTabOrderList(order) {
   const area = document.getElementById('tabOrderList');
-  area.innerHTML = '';
-  order.forEach(id => {
+  area.innerHTML = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">拖曳調整順序，前 ${MAX_PRIMARY_TABS} 個會直接顯示在下方選單，其餘收進「更多」</div>`;
+  order.forEach((id, i) => {
     const meta = TAB_META[id] || { icon: '✦', label: id };
+    if (i === MAX_PRIMARY_TABS) {
+      const divider = document.createElement('div');
+      divider.className = 'tab-order-divider';
+      divider.textContent = '⋯ 以下收進「更多」';
+      area.appendChild(divider);
+    }
     const row = document.createElement('div');
     row.className = 'cat-manager-row';
     row.dataset.id = id;
@@ -1662,11 +1652,12 @@ function startTabDrag(row, e) {
 }
 async function persistTabOrder() {
   const area = document.getElementById('tabOrderList');
-  const order = Array.from(area.children).map(r => r.dataset.id);
+  const order = Array.from(area.querySelectorAll('.cat-manager-row')).map(r => r.dataset.id);
   applyTabOrder(order);
   try {
     await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveTabOrder', order }) });
     showToast('分頁順序已更新 ✨');
+    renderTabOrderList(order);
   } catch (err) {}
 }
 function applyTabOrder(order) {
@@ -2211,6 +2202,35 @@ async function loadStockPage() {
   loadStockSummary();
   loadStockLogList();
   loadStockNameMap();
+  loadStockCostChart();
+}
+async function loadStockCostChart() {
+  const svg = document.getElementById('stockCostChart');
+  const empty = document.getElementById('stockCostChartEmpty');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockHistory`, { cache: 'no-store' });
+    const series = await res.json();
+    if (!series || series.error || series.length < 2) {
+      svg.innerHTML = ''; empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    const w = svg.clientWidth || 300, h = 100, pad = 14;
+    const values = series.map(s => s.totalCostBasis);
+    const minV = Math.min(0, ...values), maxV = Math.max(...values, 1);
+    const range = (maxV - minV) || 1;
+    const n = series.length;
+    const stepX = n > 1 ? (w - pad * 2) / (n - 1) : 0;
+    const yFor = v => h - pad - ((v - minV) / range) * (h - pad * 2);
+    const points = series.map((s, i) => `${pad + i * stepX},${yFor(s.totalCostBasis)}`).join(' ');
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    svg.innerHTML = `
+      <polyline points="${points}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      ${series.map((s, i) => `<circle cx="${pad + i * stepX}" cy="${yFor(s.totalCostBasis)}" r="3" fill="var(--accent-dark)"><title>${s.date}：總成本 ${s.totalCostBasis.toLocaleString()}</title></circle>`).join('')}
+    `;
+  } catch (err) {
+    svg.innerHTML = ''; empty.style.display = 'block'; empty.textContent = '讀取失敗：' + err.message;
+  }
 }
 let STOCK_NAME_MAP = { codeToName: {}, nameToCode: {} };
 async function loadStockNameMap() {
@@ -2259,6 +2279,7 @@ async function submitStockLog() {
     loadStockSummary();
     loadStockLogList();
     loadStockNameMap();
+    loadStockCostChart();
   } catch (err) {
     alert('記錄失敗：' + err.message);
   }
@@ -2323,6 +2344,7 @@ async function deleteStockLogItem(id) {
     showToast('已刪除 🗑️');
     loadStockSummary();
     loadStockLogList();
+    loadStockCostChart();
   } catch (err) {
     alert('刪除失敗：' + err.message);
   }
