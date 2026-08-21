@@ -68,7 +68,8 @@
   header h1{
     font-weight:800;
     font-size:26px;
-    margin:0 0 4px;
+    margin:0 auto 4px;
+    display:inline-block;
     background:linear-gradient(90deg,#FF8C7A,#E8A33D,#7BC99B,#6FA8DC,#B39DDB);
     -webkit-background-clip:text;background-clip:text;color:transparent;
   }
@@ -591,6 +592,17 @@
   }
   .tab-order-item.dragging{background:var(--card);box-shadow:0 10px 24px rgba(0,0,0,0.16);position:relative;}
   .tab-order-drag-handle{font-size:17px;color:var(--ink-soft);cursor:grab;touch-action:none;user-select:none;}
+  .affirmation-card{
+    background:linear-gradient(135deg,#FFF6E8,#FFE9E0);
+    border:1px solid #F5DFC0;border-radius:18px;
+    padding:14px 16px;margin:0 0 16px;text-align:center;
+  }
+  .affirmation-icon{font-size:20px;margin-bottom:4px;}
+  .affirmation-text{font-size:14px;line-height:1.6;color:var(--ink);font-weight:600;margin-bottom:8px;}
+  .affirmation-refresh{
+    background:none;border:1px solid #E8C99A;color:#B8863D;border-radius:14px;
+    padding:5px 12px;font-size:11.5px;cursor:pointer;font-weight:700;
+  }
   .search-bar{display:none;padding:0 16px 10px;}
   .search-bar.show{display:block;}
   .search-bar input{
@@ -640,6 +652,15 @@
   <button class="search-toggle" onclick="toggleSearch()">🔍</button>
   <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
 </header>
+
+<div class="wrap">
+  <div class="affirmation-card" id="affirmationCard">
+    <div class="affirmation-icon">💛</div>
+    <div class="affirmation-text" id="affirmationText">今天也是值得被自己肯定的一天。</div>
+    <button class="affirmation-refresh" id="affirmationRefreshBtn" onclick="regenerateAffirmation()">✨ AI 客製化一句</button>
+  </div>
+</div>
+
 <div class="search-bar" id="searchBar">
   <input type="text" id="searchInput" placeholder="搜尋所有紀錄…" oninput="handleSearchInput()">
 </div>
@@ -1567,8 +1588,10 @@ const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-stats',
 function renderTabbarButtons(order) {
   const container = document.getElementById('tabbarContainer');
   const list = (order && order.length ? order : DEFAULT_TAB_ORDER).filter(id => TAB_META[id]);
+  const activePage = document.querySelector('.page.active');
+  const activeId = activePage ? activePage.id : 'page-log';
   container.innerHTML = list.map(id => `
-    <button class="tab-btn" data-page="${id}" onclick="switchTab('${id}')">
+    <button class="tab-btn${id === activeId ? ' active' : ''}" data-page="${id}" onclick="switchTab('${id}')">
       <span class="icon">${TAB_META[id].icon}</span>${TAB_META[id].label}
     </button>
   `).join('') + `
@@ -2834,6 +2857,81 @@ function renderMoodChart(moodTrend) {
   `;
 }
 
+/* ================= 今日鼓勵語 ================= */
+const AFFIRMATIONS = [
+  '今天也是值得被自己肯定的一天。',
+  '你已經很努力了，休息也是一種前進。',
+  '不用跟任何人比較，你的步調就是最好的步調。',
+  '光是願意好好記錄生活這件事，就很了不起。',
+  '有些日子看起來平凡，但你正在悄悄變得更好。',
+  '你值得被溫柔對待，尤其是被自己溫柔對待。',
+  '慢慢來也沒關係，你一直都在往前走。',
+  '今天的你，已經比昨天更了解自己一點了。',
+  '累的時候不用逞強，你已經做得很好了。',
+  '你所付出的努力，時間都看得見。',
+  '允許自己有不完美的一天，那也是完整的一天。',
+  '你的存在本身，就已經很有價值。',
+  '每一次記錄下來的當下，都是你認真生活的證明。',
+  '今天，請對自己說一聲辛苦了。',
+  '你比自己想像中更有韌性。',
+  '不論今天做了多少，你都值得被肯定。',
+  '學會照顧自己，是這輩子最重要的功課之一。',
+  '你正在用自己的方式，好好地活著。',
+  '有你在的地方，都會多一點溫暖。',
+  '今天也要記得，好好吃飯、好好休息。',
+  '你不需要完美，你只需要是你自己。',
+  '過去的一切造就了今天的你，都是養分。',
+  '你已經走了很遠的路，回頭看看會發現自己很棒。',
+  '別忘了，你也值得被自己好好愛著。',
+  '今天的小小進步，明天都會看見它的意義。',
+  '你有能力面對接下來的每一天。',
+  '就算只是撐過今天，也是一種勇敢。',
+  '你的感受都是真實且重要的，不用壓抑它們。',
+  '給自己一個擁抱，你辛苦了。',
+  '你正在成為更喜歡的自己，慢慢來。'
+];
+function getTodayAffirmationIndex(dateStr) {
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0;
+  return hash % AFFIRMATIONS.length;
+}
+function loadTodayAffirmation() {
+  const todayStr = fmtDate(new Date());
+  const idx = getTodayAffirmationIndex(todayStr);
+  document.getElementById('affirmationText').textContent = AFFIRMATIONS[idx];
+}
+async function loadAffirmation() {
+  const textEl = document.getElementById('affirmationText');
+  const btn = document.getElementById('affirmationRefreshBtn');
+  const todayStr = fmtDate(new Date());
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getAffirmation&date=${todayStr}`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result && result.text) {
+      textEl.textContent = result.text;
+      btn.textContent = '✨ 換一句';
+      return;
+    }
+  } catch (err) {}
+  // 今天還沒有生成過，靜靜地在背景先生成一句，不擋畫面
+  regenerateAffirmation(true);
+}
+async function regenerateAffirmation(silent) {
+  const btn = document.getElementById('affirmationRefreshBtn');
+  const textEl = document.getElementById('affirmationText');
+  if (!silent) { btn.disabled = true; btn.textContent = '生成中… ✨'; }
+  try {
+    const result = await postJSON({ action: 'generateAffirmation', date: fmtDate(new Date()) }, 30000);
+    if (result.error) { if (!silent) alert('生成失敗：' + result.error); return; }
+    textEl.textContent = result.text;
+    if (!silent) vibrate(12);
+  } catch (err) {
+    if (!silent) alert('生成失敗：' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ 換一句';
+  }
+}
+
 function setGreeting() {
   const h = new Date().getHours();
   let msg;
@@ -2867,7 +2965,9 @@ window.fetch = function(url, options) {
 };
 
 function startApp() {
+  renderTabbarButtons(DEFAULT_TAB_ORDER);
   loadSavedTabOrder();
+  loadTodayAffirmation();
   loadCategories().then(refresh).then(() => {
     if (location.hash === '#quick') quickRecord();
     if (location.hash === '#today') switchTab('page-log');
@@ -2877,7 +2977,7 @@ async function loadSavedTabOrder() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getTabOrder`, { cache: 'no-store' });
     const order = await res.json();
-    if (Array.isArray(order)) applyTabOrder(order);
+    if (Array.isArray(order) && order.length) renderTabbarButtons(order);
   } catch (err) {}
 }
 async function initAuth() {
