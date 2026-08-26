@@ -794,6 +794,14 @@
           <button class="tool-btn" onclick="runRepair('fixOldPhotoLinks', 'photoFixResult')">修復</button>
         </div>
         <div id="photoFixResult"></div>
+
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">🔒 登出</div>
+            <div class="tool-desc">清除這台裝置記住的登入狀態，下次開啟需要重新登入</div>
+          </div>
+          <button class="tool-btn" onclick="logoutApp()">登出</button>
+        </div>
       </div>
     </div>
 
@@ -1388,22 +1396,46 @@ function switchTab(pageId) {
   if (pageId === 'page-period') loadPeriodPage();
 }
 
-async function loadCategories() {
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getCategories`, { cache: 'no-store' });
-    const result = await res.json();
-    if (result && result.error) throw new Error(result.error);
-    CATEGORIES = result;
-  } catch (err) {
-    CATEGORIES = [];
-    document.getElementById('catRow').innerHTML = `<div class="empty-state" style="padding:10px 0;">類別載入失敗：${escapeHtml(err.message)}<br><button class="gen-btn" style="margin:8px auto 0;" onclick="loadCategories()">重新載入</button></div>`;
-    return;
-  }
+const CATEGORIES_CACHE_KEY = 'lifelog_categories_cache';
+let PRELOADED_CATEGORIES = null; // 登入驗證時如果已經順便拿到最新類別，重複用它，不要再多打一次 API
+
+function applyCategories(list) {
+  CATEGORIES = list;
+  try { localStorage.setItem(CATEGORIES_CACHE_KEY, JSON.stringify(CATEGORIES)); } catch (err) {}
   if (!selectedCategory && CATEGORIES.length) {
     const defaultCat = CATEGORIES.find(c => c.name === '飲食／生活瑣事');
     selectedCategory = defaultCat ? defaultCat.name : CATEGORIES[0].name;
   }
   renderCatRow();
+}
+
+async function loadCategories() {
+  // 先用上次快取的類別「秒開」畫面，不用乾等後端回應（GAS 常常要 1~2 秒才回）
+  if (!CATEGORIES.length) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CATEGORIES_CACHE_KEY) || 'null');
+      if (Array.isArray(cached) && cached.length) applyCategories(cached);
+    } catch (err) {}
+  }
+
+  if (PRELOADED_CATEGORIES) {
+    const preloaded = PRELOADED_CATEGORIES;
+    PRELOADED_CATEGORIES = null;
+    applyCategories(preloaded);
+    return;
+  }
+
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getCategories`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
+    applyCategories(result);
+  } catch (err) {
+    if (!CATEGORIES.length) {
+      document.getElementById('catRow').innerHTML = `<div class="empty-state" style="padding:10px 0;">類別載入失敗：${escapeHtml(err.message)}<br><button class="gen-btn" style="margin:8px auto 0;" onclick="loadCategories()">重新載入</button></div>`;
+    }
+    // 若畫面上已經有快取的類別可用，就先讓使用者用著，不要用錯誤畫面把它蓋掉
+  }
 }
 function catByName(name) {
   return CATEGORIES.find(c => c.name === name);
@@ -3104,15 +3136,17 @@ const _rawFetch = window.fetch.bind(window);
 window.fetch = function(url, options) {
   if (typeof url === 'string' && CONFIG.GAS_URL && url.indexOf(CONFIG.GAS_URL) === 0) {
     options = options || {};
-    if (options.method === 'POST' && options.body) {
-      try {
-        const bodyObj = JSON.parse(options.body);
-        bodyObj.token = APP_TOKEN;
-        options = Object.assign({}, options, { body: JSON.stringify(bodyObj) });
-      } catch (err) {}
-    } else {
-      const sep = url.indexOf('?') === -1 ? '?' : '&';
-      url = url + sep + 'token=' + encodeURIComponent(APP_TOKEN);
+    if (APP_TOKEN) {
+      if (options.method === 'POST' && options.body) {
+        try {
+          const bodyObj = JSON.parse(options.body);
+          bodyObj.token = APP_TOKEN;
+          options = Object.assign({}, options, { body: JSON.stringify(bodyObj) });
+        } catch (err) {}
+      } else {
+        const sep = url.indexOf('?') === -1 ? '?' : '&';
+        url = url + sep + 'token=' + encodeURIComponent(APP_TOKEN);
+      }
     }
   }
   return _rawFetch(url, options);
@@ -3134,19 +3168,37 @@ async function loadSavedTabOrder() {
     if (Array.isArray(order) && order.length) renderTabbarButtons(order);
   } catch (err) {}
 }
+const REMEMBER_TOKEN_KEY = 'lifelog_remember_token';
+
 async function initAuth() {
   if (!checkConfig()) { startApp(); return; }
-  try {
-    const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories`, { cache: 'no-store' });
-    const result = await res.json();
-    if (result && result.error === 'AUTH_REQUIRED') {
-      showLockScreen();
-    } else {
-      startApp();
+  // 一律先假設「未登入」，只有明確驗證通過的 token 才能進入 App。
+  // 絕對不要用「不帶 token 的探測請求」來判斷是否需要登入——
+  // 那只反映後端對「沒有 token 參數」的處理方式，跟正式請求（一定會帶 token）不是同一件事，
+  // 曾經導致鎖定畫面沒跳出來、但讀取/儲存資料全部失敗的 bug。
+  const remembered = localStorage.getItem(REMEMBER_TOKEN_KEY) || '';
+  if (remembered) {
+    try {
+      const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories&token=${encodeURIComponent(remembered)}`, { cache: 'no-store' });
+      const result = await res.json();
+      if (result && result.error === 'AUTH_REQUIRED') {
+        localStorage.removeItem(REMEMBER_TOKEN_KEY); // 記住的憑證已失效，清掉並要求重新登入
+      } else {
+        APP_TOKEN = remembered;
+        PRELOADED_CATEGORIES = result; // 驗證時已經拿到最新類別了，startApp() 裡不用再打一次
+        startApp();
+        return;
+      }
+    } catch (err) {
+      // 網路問題：不擅自放行，但也先別清掉記住的憑證，等連線恢復再試
     }
-  } catch (err) {
-    startApp(); // 探測失敗時照常啟動，讓原本的錯誤提示機制接手顯示問題
   }
+  showLockScreen();
+}
+function logoutApp() {
+  localStorage.removeItem(REMEMBER_TOKEN_KEY);
+  APP_TOKEN = '';
+  location.reload();
 }
 function showLockScreen() {
   document.getElementById('lockOverlay').classList.add('show');
@@ -3180,6 +3232,8 @@ async function handleGoogleCredential(response) {
       return;
     }
     APP_TOKEN = testToken;
+    localStorage.setItem(REMEMBER_TOKEN_KEY, testToken);
+    PRELOADED_CATEGORIES = result; // 驗證時已經拿到類別了，直接沿用
     document.getElementById('lockOverlay').classList.remove('show');
     startApp();
   } catch (err) {
@@ -3202,6 +3256,8 @@ async function submitLock() {
       return;
     }
     APP_TOKEN = val;
+    localStorage.setItem(REMEMBER_TOKEN_KEY, val);
+    PRELOADED_CATEGORIES = result; // 驗證時已經拿到類別了，直接沿用
     document.getElementById('lockOverlay').classList.remove('show');
     startApp();
   } catch (err) {
