@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
 <title>生活手帳 Life Log</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FF8C7A">
@@ -14,6 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@400;600;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
+    color-scheme: light;
     --bg:#FFFBF3;
     --card:#FFFFFF;
     --ink:#4A3F35;
@@ -33,22 +35,21 @@
     --accent:#FF8C7A;
     --accent-dark:#F0715E;
   }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#1E1B18;
-      --card:#2A2521;
-      --ink:#F0E9E1;
-      --ink-soft:#B0A599;
-      --line:#3D362F;
-      --input-bg:#332D27;
+  html.dark-mode{
+    color-scheme: dark;
+    --bg:#1E1B18;
+    --card:#2A2521;
+    --ink:#F0E9E1;
+    --ink-soft:#B0A599;
+    --line:#3D362F;
+    --input-bg:#332D27;
 
-      --coral:#FF8C7A;
-      --coral-dark:#FFA894;
-    }
-    #configWarning{background:#4a2020;color:#f5c6c6;}
-    .empty-state{color:var(--ink-soft);}
-    img{opacity:.92;}
+    --coral:#FF8C7A;
+    --coral-dark:#FFA894;
   }
+  html.dark-mode #configWarning{background:#4a2020;color:#f5c6c6;}
+  html.dark-mode .empty-state{color:var(--ink-soft);}
+  html.dark-mode img{opacity:.92;}
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -348,6 +349,21 @@
     padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;box-sizing:border-box;min-width:0;
   }
   .stock-date-input{max-width:150px;}
+  .period-phase-badge{
+    display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--accent) 16%, white);
+    color:var(--accent-dark);padding:8px 16px;border-radius:20px;font-size:15px;font-weight:700;margin-bottom:10px;
+  }
+  .period-stat-row{display:flex;gap:10px;margin-top:10px;}
+  .period-stat{flex:1;background:var(--input-bg);border-radius:14px;padding:10px 12px;text-align:center;}
+  .period-stat .ps-num{font-family:'Chiron GoRound TC';font-size:18px;font-weight:800;color:var(--ink);}
+  .period-stat .ps-label{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .period-log-item{
+    display:flex;justify-content:space-between;align-items:center;background:var(--input-bg);
+    border-radius:12px;padding:10px 12px;margin-bottom:6px;font-size:13px;
+  }
+  .period-log-item .pl-dates{font-weight:700;color:var(--ink);}
+  .period-log-item .pl-note{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .period-log-item .pl-del{background:none;border:none;color:#D8CABB;font-size:13px;cursor:pointer;}
   .holding-item{
     display:flex;justify-content:space-between;align-items:center;background:var(--input-bg);
     border-radius:12px;padding:10px 12px;margin-bottom:8px;
@@ -695,6 +711,7 @@
     <button class="settings-tab-btn active" id="stabTabs" onclick="switchSettingsTab('tabs')">分頁順序</button>
     <button class="settings-tab-btn" id="stabCats" onclick="switchSettingsTab('cats')">類別管理</button>
     <button class="settings-tab-btn" id="stabTools" onclick="switchSettingsTab('tools')">工具箱</button>
+    <button class="settings-tab-btn" id="stabAppearance" onclick="switchSettingsTab('appearance')">外觀</button>
   </div>
   <div class="settings-body">
 
@@ -777,6 +794,22 @@
           <button class="tool-btn" onclick="runRepair('fixOldPhotoLinks', 'photoFixResult')">修復</button>
         </div>
         <div id="photoFixResult"></div>
+      </div>
+    </div>
+
+    <div id="settingsPageAppearance" style="display:none;">
+      <div class="card">
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">🌙 深色模式</div>
+            <div class="tool-desc">預設一律使用淺色，不會再跟著手機系統設定自動變黑</div>
+          </div>
+          <label class="dm-switch">
+            <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)">
+            <span class="dm-slider"></span>
+          </label>
+        </div>
+        <div class="tool-desc" style="margin-top:10px;">⚠️ 這個開關只在這次瀏覽期間有效，重新整理頁面會回到淺色，之後想要記住設定可以再跟我說。</div>
       </div>
     </div>
 
@@ -1028,6 +1061,34 @@
     <div class="card">
       <div class="field-label" style="margin-top:0;">📜 交易紀錄</div>
       <div id="stockLogArea"></div>
+    </div>
+  </div>
+
+  <div class="page" id="page-period">
+    <div class="card" id="periodStatusCard">
+      <div class="field-label" style="margin-top:0;">🌷 目前狀態</div>
+      <div id="periodStatusArea" class="empty-state">還沒有任何紀錄，記一筆開始追蹤吧</div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📝 記錄經期</div>
+      <div class="stock-form-row">
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">開始日期</div>
+          <input type="date" id="periodStart" class="stock-date-input" style="width:100%;">
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">結束日期（選填）</div>
+          <input type="date" id="periodEnd" class="stock-date-input" style="width:100%;">
+        </div>
+      </div>
+      <textarea id="periodNote" placeholder="備註（選填），例如經痛程度、量多寡" style="min-height:44px;margin-top:8px;"></textarea>
+      <button class="submit-btn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">記錄這次經期</button>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📜 歷史紀錄</div>
+      <div id="periodLogArea"></div>
     </div>
   </div>
 
@@ -1324,6 +1385,7 @@ function switchTab(pageId) {
   if (pageId === 'page-stats') loadStatsPage();
   if (pageId === 'page-memory') loadMemoryPage();
   if (pageId === 'page-stock') loadStockPage();
+  if (pageId === 'page-period') loadPeriodPage();
 }
 
 async function loadCategories() {
@@ -1425,11 +1487,16 @@ function switchSettingsTab(tab) {
   document.getElementById('settingsPageTabs').style.display = tab === 'tabs' ? 'block' : 'none';
   document.getElementById('settingsPageCats').style.display = tab === 'cats' ? 'block' : 'none';
   document.getElementById('settingsPageTools').style.display = tab === 'tools' ? 'block' : 'none';
+  document.getElementById('settingsPageAppearance').style.display = tab === 'appearance' ? 'block' : 'none';
   document.getElementById('stabTabs').classList.toggle('active', tab === 'tabs');
   document.getElementById('stabCats').classList.toggle('active', tab === 'cats');
   document.getElementById('stabTools').classList.toggle('active', tab === 'tools');
+  document.getElementById('stabAppearance').classList.toggle('active', tab === 'appearance');
   if (tab === 'tabs') loadTabOrderSettings();
   if (tab === 'cats') renderCatManagerList();
+}
+function toggleDarkMode(on) {
+  document.documentElement.classList.toggle('dark-mode', on);
 }
 async function runHealthCheck() {
   const area = document.getElementById('healthCheckResult');
@@ -1577,9 +1644,10 @@ const TAB_META = {
   'page-tickets': { icon: '🎟️', label: '票根' },
   'page-stats': { icon: '📊', label: '統計' },
   'page-memory': { icon: '🕰️', label: '回顧' },
-  'page-stock': { icon: '📈', label: '股票' }
+  'page-stock': { icon: '📈', label: '股票' },
+  'page-period': { icon: '🌷', label: '經期' }
 };
-const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-stats', 'page-memory', 'page-stock'];
+const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-stats', 'page-memory', 'page-stock', 'page-period'];
 
 /**
  * 直接把所有分頁按鈕畫出來，不再分「常用/更多」兩層——全部一次顯示，
@@ -2232,6 +2300,92 @@ function renderStockActionRow() {
 function selectStockAction(v) {
   selectedStockAction = v;
   renderStockActionRow();
+}
+async function loadPeriodPage() {
+  if (!checkConfig()) return;
+  loadPeriodStatus();
+  loadPeriodLogList();
+}
+async function loadPeriodStatus() {
+  const area = document.getElementById('periodStatusArea');
+  area.innerHTML = '';
+  area.className = 'empty-state';
+  area.textContent = '計算中… 🌷';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodStatus`, { cache: 'no-store' });
+    const s = await res.json();
+    if (s.error) { area.textContent = '讀取失敗：' + s.error; return; }
+    if (!s.hasData) {
+      area.textContent = '還沒有任何紀錄，記一筆開始追蹤吧';
+      return;
+    }
+    area.className = '';
+    area.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="font-size:32px;">${s.phaseIcon}</div>
+        <div>
+          <div style="font-family:'Chiron GoRound TC';font-size:17px;font-weight:800;color:var(--accent-dark);">${escapeHtml(s.phase)}</div>
+          <div style="font-size:12px;color:var(--ink-soft);">週期第 ${s.cycleDay} 天</div>
+        </div>
+      </div>
+      <div class="tool-result-box" style="margin:0;">
+        <div>📅 預估下次經期：<b>${s.nextPeriodDate}</b>（${s.daysUntilNext >= 0 ? s.daysUntilNext + ' 天後' : '已超過預期 ' + Math.abs(s.daysUntilNext) + ' 天'}）</div>
+        <div style="margin-top:4px;">📏 平均週期 ${s.avgCycleLength} 天・平均經期 ${s.avgPeriodLength} 天</div>
+        ${s.isEstimateRough ? '<div style="margin-top:4px;color:var(--ink-soft);">紀錄還不多，預估僅供參考，多記幾次會更準確 🌱</div>' : ''}
+      </div>
+    `;
+  } catch (err) {
+    area.textContent = '讀取失敗：' + err.message;
+  }
+}
+async function loadPeriodLogList() {
+  const area = document.getElementById('periodLogArea');
+  area.innerHTML = '<div class="empty-state">載入中…</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodLogs`, { cache: 'no-store' });
+    const logs = await res.json();
+    if (!logs.length || logs.error) { area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>'; return; }
+    area.innerHTML = logs.map(l => `
+      <div class="stock-log-item">
+        <div>
+          <div class="sl-code">${l.startDate}${l.endDate ? ' ～ ' + l.endDate : ''}</div>
+          ${l.note ? `<div class="sl-detail">${escapeHtml(l.note)}</div>` : ''}
+        </div>
+        <button class="sl-del" onclick="deletePeriodLogItem('${l.id}')">✕</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+async function submitPeriodLog() {
+  const startDate = document.getElementById('periodStart').value;
+  const endDate = document.getElementById('periodEnd').value;
+  const note = document.getElementById('periodNote').value.trim();
+  if (!startDate) { alert('請至少選開始日期喔'); return; }
+  try {
+    const res = await postJSON({ action: 'addPeriodLog', startDate, endDate, note });
+    if (res.error || res.ok === false) { alert('記錄失敗：' + (res.error || res.message)); return; }
+    document.getElementById('periodStart').value = '';
+    document.getElementById('periodEnd').value = '';
+    document.getElementById('periodNote').value = '';
+    showToast('記錄好了 🌷');
+    loadPeriodStatus();
+    loadPeriodLogList();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  }
+}
+async function deletePeriodLogItem(id) {
+  if (!confirm('刪除這筆經期紀錄？')) return;
+  try {
+    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deletePeriodLog', id }) });
+    showToast('已刪除 🗑️');
+    loadPeriodStatus();
+    loadPeriodLogList();
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
 }
 async function loadStockPage() {
   if (!checkConfig()) return;
