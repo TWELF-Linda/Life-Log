@@ -3075,7 +3075,7 @@ async function regenerateAffirmation(silent) {
   const textEl = document.getElementById('affirmationText');
   if (!silent) { btn.disabled = true; btn.textContent = '生成中… ✨'; }
   try {
-    const result = await postJSON({ action: 'generateAffirmation', date: fmtDate(new Date()) }, 30000);
+    const result = await postJSON({ action: 'generateAffirmation', date: fmtDate(new Date()) }, 60000);
     if (result.error) { if (!silent) alert('生成失敗：' + result.error); return; }
     textEl.textContent = result.text;
     if (!silent) vibrate(12);
