@@ -179,8 +179,30 @@
   .photo-btn{background:var(--input-bg);border:1.5px solid var(--line);color:var(--ink);flex-shrink:0;}
   .submit-btn{background:var(--accent);color:#fff;flex:1;}
   .submit-btn:disabled{opacity:.5;}
-  #photoPreview{margin-top:10px;max-width:100%;border-radius:14px;display:none;}
   #fileInput{display:none;}
+  #photoPreviewGrid{
+    display:none;margin-top:10px;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;
+  }
+  .photo-thumb{
+    position:relative;aspect-ratio:1/1;border-radius:12px;overflow:hidden;cursor:pointer;
+    border:2.5px solid transparent;transition:border-color .15s;
+  }
+  .photo-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .photo-thumb.selected{border-color:var(--coral);}
+  .photo-thumb:not(.selected) img{opacity:.4;}
+  .photo-badge{
+    position:absolute;top:4px;left:4px;background:var(--coral);color:#fff;font-size:10px;font-weight:700;
+    padding:2px 6px;border-radius:8px;line-height:1.3;
+  }
+  .photo-check{
+    position:absolute;bottom:4px;left:4px;font-size:16px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35));
+  }
+  .photo-remove{
+    position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;border:none;
+    background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  #photoGridHint{display:none;margin-top:6px;font-size:12px;color:var(--ink-soft);}
 
   .ticket{
     position:relative;
@@ -201,6 +223,10 @@
   .ticket-time{font-size:11px;font-family:monospace;color:var(--ink-soft);opacity:.7;}
   .ticket-text{font-size:14px;line-height:1.55;white-space:pre-wrap;}
   .ticket img{width:100%;border-radius:12px;margin-top:8px;display:block;}
+  .ticket-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:8px;}
+  .ticket-photos img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;margin-top:0;display:block;}
+  .ticket-photos.single{grid-template-columns:1fr;}
+  .ticket-photos.single img{aspect-ratio:auto;}
   .del-btn{
     position:absolute;top:10px;right:10px;background:none;border:none;
     color:#D8CABB;cursor:pointer;font-size:13px;
@@ -884,8 +910,9 @@
           <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
         </div>
         <button class="gen-btn" id="cancelEditBtn" style="display:none;margin-top:8px;" onclick="cancelEditEntry()">取消編輯</button>
-        <input type="file" id="fileInput" accept="image/*" onchange="handlePhoto(event)">
-        <img id="photoPreview">
+        <input type="file" id="fileInput" accept="image/*" multiple onchange="handlePhoto(event)">
+        <div id="photoPreviewGrid"></div>
+        <div id="photoGridHint"></div>
       </div>
     </div>
 
@@ -1195,8 +1222,7 @@ let lastGymSet = null;
 let currentDate = new Date();
 let selectedCategory = null;
 let currentFieldValues = {};
-let pendingPhotoBase64 = null;
-let pendingPhotoMime = null;
+let pendingPhotos = []; // 待送出的照片：{ base64, mimeType, dataUrl, selected, takenAt, takenToday }
 let selectedGoal = GOALS[0];
 let selectedLocation = LOCATIONS[0];
 let selectedDays = 3;
@@ -1227,6 +1253,14 @@ function dateLabel(d) {
 }
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+// 產生某則紀錄的照片區塊 HTML：優先用 photoUrls（可能多張），
+// 沒有的話（例如舊快取資料）退回單張 photoUrl，確保不會漏顯示。
+function entryPhotosHtml(entry) {
+  const urls = (entry.photoUrls && entry.photoUrls.length) ? entry.photoUrls : (entry.photoUrl ? [entry.photoUrl] : []);
+  if (!urls.length) return '';
+  const cls = urls.length > 1 ? 'ticket-photos' : 'ticket-photos single';
+  return `<div class="${cls}">${urls.map(u => `<img src="${u}" loading="lazy">`).join('')}</div>`;
 }
 function checkConfig() {
   if (!CONFIG.GAS_URL || CONFIG.GAS_URL.includes('PASTE_YOUR')) {
@@ -2012,7 +2046,7 @@ function renderTicket(entry) {
       <span class="ticket-time">${entry.time}</span>
     </div>
     ${entry.text ? `<div class="ticket-text">${escapeHtml(entry.text)}</div>` : ''}
-    ${entry.photoUrl ? `<img src="${entry.photoUrl}" loading="lazy">` : ''}
+    ${entryPhotosHtml(entry)}
     ${fieldsSummaryHtml(entry.category, entry.fields)}
     ${tmHtml}
   `;
@@ -2066,19 +2100,144 @@ function compressImage(file, maxDim, quality) {
   });
 }
 async function handlePhoto(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const preview = document.getElementById('photoPreview');
-  preview.style.display = 'none';
-  try {
-    const { base64, mimeType, dataUrl } = await compressImage(file);
-    pendingPhotoBase64 = base64;
-    pendingPhotoMime = mimeType;
-    preview.src = dataUrl;
-    preview.style.display = 'block';
-  } catch (err) {
-    alert('照片處理失敗，請換一張試試：' + err.message);
+  const files = Array.from(event.target.files || []);
+  event.target.value = ''; // 清空，讓使用者之後選同一批檔案也能再次觸發
+  if (!files.length) return;
+  const today = new Date();
+  for (const file of files) {
+    try {
+      const [{ base64, mimeType, dataUrl }, takenAt] = await Promise.all([
+        compressImage(file),
+        getPhotoTakenDate(file)
+      ]);
+      const takenToday = isSameLocalDay(takenAt, today);
+      pendingPhotos.push({ base64, mimeType, dataUrl, selected: takenToday, takenAt, takenToday });
+    } catch (err) {
+      alert('有張照片處理失敗，已略過：' + err.message);
+    }
   }
+  pendingPhotos.sort((a, b) => (b.takenToday ? 1 : 0) - (a.takenToday ? 1 : 0));
+  renderPhotoGrid();
+}
+function renderPhotoGrid() {
+  const grid = document.getElementById('photoPreviewGrid');
+  const hint = document.getElementById('photoGridHint');
+  if (!pendingPhotos.length) {
+    grid.style.display = 'none'; grid.innerHTML = '';
+    hint.style.display = 'none';
+    return;
+  }
+  grid.style.display = 'grid';
+  grid.innerHTML = pendingPhotos.map((p, i) => `
+    <div class="photo-thumb${p.selected ? ' selected' : ''}" onclick="togglePendingPhoto(${i})">
+      <img src="${p.dataUrl}">
+      ${p.takenToday ? '<span class="photo-badge">今天</span>' : ''}
+      <span class="photo-check">${p.selected ? '✅' : '⬜'}</span>
+      <button class="photo-remove" onclick="event.stopPropagation();removePendingPhoto(${i})">✕</button>
+    </div>
+  `).join('');
+  const n = pendingPhotos.filter(p => p.selected).length;
+  hint.textContent = n ? `已選 ${n} 張照片會一起存進這則紀錄，點照片可切換要不要上傳` : '目前沒有勾選任何照片，點照片可以勾選';
+  hint.style.display = 'block';
+}
+function togglePendingPhoto(i) {
+  if (!pendingPhotos[i]) return;
+  pendingPhotos[i].selected = !pendingPhotos[i].selected;
+  renderPhotoGrid();
+}
+function removePendingPhoto(i) {
+  pendingPhotos.splice(i, 1);
+  renderPhotoGrid();
+}
+function isSameLocalDay(a, b) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+// 讀取照片的實際拍攝時間：優先解析 JPEG 的 EXIF DateTimeOriginal，
+// 讀不到（非 JPEG、被壓縮過、EXIF 被清除等）就退回用檔案的最後修改時間概略判斷。
+function getPhotoTakenDate(file) {
+  return new Promise((resolve) => {
+    const fallback = () => resolve(new Date(file.lastModified));
+    if (!/^image\/jpe?g$/i.test(file.type)) { fallback(); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const view = new DataView(reader.result);
+        const dateStr = readExifDateString(view);
+        if (dateStr) {
+          const m = dateStr.match(/^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+          if (m) {
+            resolve(new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]));
+            return;
+          }
+        }
+      } catch (err) {}
+      fallback();
+    };
+    reader.onerror = fallback;
+    reader.readAsArrayBuffer(file.slice(0, 262144)); // 前 256KB 通常已經涵蓋 EXIF 區塊
+  });
+}
+function readExifDateString(view) {
+  if (view.byteLength < 4 || view.getUint16(0, false) !== 0xFFD8) return null;
+  let offset = 2;
+  const len = view.byteLength;
+  while (offset + 4 <= len) {
+    const marker = view.getUint16(offset, false);
+    if (marker === 0xFFE1) {
+      const segStart = offset + 4;
+      if (segStart + 6 > len || view.getUint32(segStart, false) !== 0x45786966) return null; // "Exif"
+      const tiffOffset = segStart + 6;
+      if (tiffOffset + 8 > len) return null;
+      const little = view.getUint16(tiffOffset, false) === 0x4949;
+      const ifd0Offset = tiffOffset + view.getUint32(tiffOffset + 4, little);
+      const ifd0 = readExifIFD(view, tiffOffset, ifd0Offset, little);
+      let dateStr = ifd0.tags[0x0132]; // DateTime（備用）
+      if (ifd0.tags[0x8769]) {
+        const exifIFDOffset = tiffOffset + ifd0.tags[0x8769];
+        const exifIFD = readExifIFD(view, tiffOffset, exifIFDOffset, little);
+        if (exifIFD.tags[0x9003]) dateStr = exifIFD.tags[0x9003]; // DateTimeOriginal（優先）
+      }
+      return dateStr || null;
+    } else if (marker === 0xFFD8) {
+      offset += 2;
+    } else if ((marker & 0xFF00) === 0xFF00) {
+      if (marker === 0xFFDA) return null; // 進入掃描資料了，代表沒有 EXIF APP1 段
+      const segLen = view.getUint16(offset + 2, false);
+      offset += 2 + segLen;
+    } else {
+      break;
+    }
+  }
+  return null;
+}
+function readExifIFD(view, tiffOffset, ifdOffset, little) {
+  const tags = {};
+  try {
+    if (ifdOffset + 2 > view.byteLength) return { tags };
+    const count = view.getUint16(ifdOffset, little);
+    for (let i = 0; i < count; i++) {
+      const entryOffset = ifdOffset + 2 + i * 12;
+      if (entryOffset + 12 > view.byteLength) break;
+      const tag = view.getUint16(entryOffset, little);
+      const type = view.getUint16(entryOffset + 2, little);
+      const num = view.getUint32(entryOffset + 4, little);
+      const valOffset = entryOffset + 8;
+      if (type === 2) { // ASCII
+        let start = valOffset;
+        if (num > 4) start = tiffOffset + view.getUint32(valOffset, little);
+        let str = '';
+        for (let j = 0; j < num - 1 && start + j < view.byteLength; j++) {
+          str += String.fromCharCode(view.getUint8(start + j));
+        }
+        tags[tag] = str;
+      } else if (type === 3 && num === 1) { // SHORT
+        tags[tag] = view.getUint16(valOffset, little);
+      } else if (type === 4 && num === 1) { // LONG
+        tags[tag] = view.getUint32(valOffset, little);
+      }
+    }
+  } catch (err) {}
+  return { tags };
 }
 async function postJSON(bodyObj, timeoutMs) {
   timeoutMs = timeoutMs || 45000;
@@ -2096,7 +2255,8 @@ async function postJSON(bodyObj, timeoutMs) {
 }
 async function submitEntry() {
   const text = document.getElementById('textInput').value.trim();
-  if (!text && !pendingPhotoBase64 && !editingEntryId) { alert('至少寫點文字或加張照片喔 🌷'); return; }
+  const selectedPhotos = pendingPhotos.filter(p => p.selected);
+  if (!text && !selectedPhotos.length && !editingEntryId) { alert('至少寫點文字或加張照片喔 🌷'); return; }
   const btn = document.getElementById('submitBtn');
   const isEdit = !!editingEntryId;
   btn.disabled = true; btn.textContent = isEdit ? '更新中…' : '記錄中…';
@@ -2105,19 +2265,21 @@ async function submitEntry() {
   const isTicketCat = cat && cat.ticketScan;
   const moodField = cat && (cat.fields || []).find(f => f.type === 'mood');
   const moodVal = moodField ? (currentFieldValues[moodField.key] || '') : '';
+  const photosPayload = selectedPhotos.map(p => ({ photoBase64: p.base64, photoMimeType: p.mimeType }));
+  // photoBase64/photoMimeType 保留給只認得單張照片的舊版後端；photos 是完整清單（多張照片要存進 Sheet/Drive 需要後端一併更新才會生效）
+  const firstPhoto = photosPayload[0] || {};
   const body = isEdit
     ? { action: 'updateEntry', id: editingEntryId, category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
-        photoBase64: pendingPhotoBase64, photoMimeType: pendingPhotoMime }
+        photos: photosPayload, photoBase64: firstPhoto.photoBase64 || null, photoMimeType: firstPhoto.photoMimeType || null }
     : { action: 'addEntry', date: fmtDate(currentDate),
         time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
         category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
-        photoBase64: pendingPhotoBase64, photoMimeType: pendingPhotoMime };
+        photos: photosPayload, photoBase64: firstPhoto.photoBase64 || null, photoMimeType: firstPhoto.photoMimeType || null };
   try {
     const result = await postJSON(body);
     if (result && result.error) throw new Error(result.error);
     document.getElementById('textInput').value = '';
-    document.getElementById('photoPreview').style.display = 'none';
-    pendingPhotoBase64 = null; pendingPhotoMime = null;
+    pendingPhotos = []; renderPhotoGrid();
     currentFieldValues = {}; renderExtraFields();
     if (isEdit) cancelEditEntry();
     showToast(isEdit ? pick(UPDATE_MSGS) : pick(SAVE_MSGS));
@@ -2156,8 +2318,7 @@ function cancelEditEntry() {
   document.getElementById('submitBtn').textContent = '記下這一刻';
   document.getElementById('cancelEditBtn').style.display = 'none';
   document.getElementById('textInput').value = '';
-  pendingPhotoBase64 = null; pendingPhotoMime = null;
-  document.getElementById('photoPreview').style.display = 'none';
+  pendingPhotos = []; renderPhotoGrid();
   currentFieldValues = {};
   renderExtraFields();
 }
@@ -2861,7 +3022,7 @@ function renderTicketWall() {
       const stub = document.createElement('div');
       stub.className = 'ticket-stub';
       stub.innerHTML = `
-        ${t.photoUrl ? `<img src="${t.photoUrl}" loading="lazy">` : ''}
+        ${(t.photoUrl || (t.photoUrls && t.photoUrls[0])) ? `<img src="${t.photoUrl || t.photoUrls[0]}" loading="lazy">` : ''}
         <div class="ts-body">
           <div class="ts-cat" style="color:${catColor(t.category)};">${catIcon(t.category)} ${escapeHtml(t.category)}</div>
           <div class="ts-name">${escapeHtml(meta.showName || fieldTitle || t.text || '未命名紀錄')}</div>
@@ -2924,7 +3085,7 @@ function renderYearCard(y, currentYear) {
     html += `<div class="ticket" style="margin-bottom:8px;border-left-color:${catColor(e.category)};">
       <div class="ticket-top"><span class="ticket-cat">${catIcon(e.category)} ${e.category}</span><span class="ticket-time">${e.time}</span></div>
       ${e.text ? `<div class="ticket-text">${escapeHtml(e.text)}</div>` : ''}
-      ${e.photoUrl ? `<img src="${e.photoUrl}" loading="lazy">` : ''}
+      ${entryPhotosHtml(e)}
       ${fieldsSummaryHtml(e.category, e.fields)}
     </div>`;
   });
