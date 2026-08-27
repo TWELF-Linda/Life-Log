@@ -416,12 +416,22 @@
   .sl-tag.sell{background:#FCE0DC;color:var(--accent-dark);}
 
   /* ---- 批次操作 ---- */
-  .list-toolbar{display:flex;justify-content:flex-end;margin-bottom:8px;}
+  .list-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap;}
+  .list-toolbar-right{display:flex;gap:8px;margin-left:auto;}
   .batch-toggle-btn{
     background:none;border:1px solid var(--line);color:var(--ink-soft);
     border-radius:14px;padding:5px 12px;font-size:11.5px;cursor:pointer;
   }
   .batch-toggle-btn.active{background:var(--accent);color:#fff;border-color:transparent;}
+  .entries-group-header{
+    display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--ink);
+    margin:16px 2px 8px;
+  }
+  .entries-group-header:first-child{margin-top:2px;}
+  .entries-group-count{
+    background:var(--input-bg);color:var(--ink-soft);font-weight:500;font-size:11px;
+    border-radius:10px;padding:1px 7px;
+  }
   .batch-check{
     width:22px;height:22px;border-radius:7px;border:2px solid var(--accent);flex-shrink:0;
     display:none;align-items:center;justify-content:center;font-size:13px;color:#fff;
@@ -916,9 +926,13 @@
       </div>
     </div>
 
+    <div class="cat-row" id="entriesFilterRow" style="margin-bottom:8px;"></div>
     <div class="list-toolbar">
-      <button class="batch-toggle-btn" id="batchToggleBtn" onclick="toggleBatchMode()">☑️ 選取</button>
-      <button class="batch-toggle-btn" id="batchSelectAllBtn" style="display:none;" onclick="selectAllEntries()">全選</button>
+      <button class="batch-toggle-btn" id="viewModeBtn" onclick="toggleEntriesViewMode()">🗂 依類別分組</button>
+      <div class="list-toolbar-right">
+        <button class="batch-toggle-btn" id="batchToggleBtn" onclick="toggleBatchMode()">☑️ 選取</button>
+        <button class="batch-toggle-btn" id="batchSelectAllBtn" style="display:none;" onclick="selectAllEntries()">全選</button>
+      </div>
     </div>
     <div id="entriesList"></div>
     <div class="batch-bar" id="batchBar">
@@ -1936,6 +1950,8 @@ async function refresh() {
   await loadSummary();
   await loadWeekSummary();
 }
+let entriesFilter = 'all';
+let entriesGroupMode = localStorage.getItem('lifelog_entries_group_mode') === '1';
 async function loadEntries() {
   const ds = fmtDate(currentDate);
   const listEl = document.getElementById('entriesList');
@@ -1944,15 +1960,67 @@ async function loadEntries() {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
     const entries = await res.json();
     loadedEntries = entries;
-    if (!entries.length) {
-      listEl.innerHTML = '<div class="empty-state">這天還沒有任何紀錄 🌱<br>寫下第一筆吧</div>';
-      return;
-    }
-    listEl.innerHTML = '';
-    entries.forEach(e => listEl.appendChild(renderTicket(e)));
+    entriesFilter = 'all'; // 換日期時重置篩選，避免忘記篩選條件、以為某天沒有紀錄
+    renderEntriesFilterRow();
+    renderEntriesList();
   } catch (err) {
     listEl.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
   }
+}
+function renderEntriesFilterRow() {
+  const row = document.getElementById('entriesFilterRow');
+  const presentCats = Array.from(new Set(loadedEntries.map(e => e.category)));
+  if (presentCats.length <= 1) { row.innerHTML = ''; return; }
+  const chips = [{ key: 'all', label: '全部', icon: '' }].concat(
+    presentCats.map(c => ({ key: c, label: c, icon: catIcon(c) }))
+  );
+  row.innerHTML = chips.map(c => {
+    const active = entriesFilter === c.key;
+    const bg = c.key === 'all' ? 'var(--accent)' : catColor(c.key);
+    return `<div class="cat-chip${active ? ' active' : ''}" style="${active ? `background:${bg};color:#fff;border-color:transparent;` : ''}" onclick="setEntriesFilter('${c.key}')">${c.icon ? c.icon + ' ' : ''}${escapeHtml(c.label)}</div>`;
+  }).join('');
+}
+function setEntriesFilter(key) {
+  entriesFilter = key;
+  renderEntriesFilterRow();
+  renderEntriesList();
+}
+function toggleEntriesViewMode() {
+  entriesGroupMode = !entriesGroupMode;
+  localStorage.setItem('lifelog_entries_group_mode', entriesGroupMode ? '1' : '0');
+  document.getElementById('viewModeBtn').classList.toggle('active', entriesGroupMode);
+  document.getElementById('viewModeBtn').textContent = entriesGroupMode ? '⏱ 依時間排序' : '🗂 依類別分組';
+  renderEntriesList();
+}
+function renderEntriesList() {
+  const listEl = document.getElementById('entriesList');
+  const entries = entriesFilter === 'all' ? loadedEntries : loadedEntries.filter(e => e.category === entriesFilter);
+  document.getElementById('viewModeBtn').classList.toggle('active', entriesGroupMode);
+  document.getElementById('viewModeBtn').textContent = entriesGroupMode ? '⏱ 依時間排序' : '🗂 依類別分組';
+  if (!loadedEntries.length) {
+    listEl.innerHTML = '<div class="empty-state">這天還沒有任何紀錄 🌱<br>寫下第一筆吧</div>';
+    return;
+  }
+  if (!entries.length) {
+    listEl.innerHTML = '<div class="empty-state">這個類別這天沒有紀錄</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  if (!entriesGroupMode) {
+    entries.forEach(e => listEl.appendChild(renderTicket(e)));
+    return;
+  }
+  // 依類別分組：跟著使用者在「⚙️ 管理類別」排好的順序走，同一組內仍按時間排序
+  const orderedCats = CATEGORIES.map(c => c.name).filter(name => entries.some(e => e.category === name));
+  orderedCats.forEach(catName => {
+    const group = entries.filter(e => e.category === catName);
+    const header = document.createElement('div');
+    header.className = 'entries-group-header';
+    header.style.color = catColor(catName);
+    header.innerHTML = `${catIcon(catName)} ${escapeHtml(catName)} <span class="entries-group-count">${group.length}</span>`;
+    listEl.appendChild(header);
+    group.forEach(e => listEl.appendChild(renderTicket(e)));
+  });
 }
 function moodEmoji(v) {
   const m = MOODS.find(m => m.v === Number(v));
