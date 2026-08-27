@@ -3361,17 +3361,36 @@ function logoutApp() {
   APP_TOKEN = '';
   location.reload();
 }
-function showLockScreen() {
+// Google Identity 的 <script> 是用 async 載入，執行時機跟這段 inline script 誰先誰後不一定，
+// 網路慢一點時常常還沒載完就跑到這裡，才會出現「google is not defined」。改成等它真的載好再用。
+function waitForGoogleIdentity_(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    if (window.google && google.accounts && google.accounts.id) { resolve(); return; }
+    const start = Date.now();
+    const timer = setInterval(() => {
+      if (window.google && google.accounts && google.accounts.id) {
+        clearInterval(timer);
+        resolve();
+      } else if (Date.now() - start > (timeoutMs || 8000)) {
+        clearInterval(timer);
+        reject(new Error('元件逾時未載入，請檢查網路連線'));
+      }
+    }, 100);
+  });
+}
+async function showLockScreen() {
   document.getElementById('lockOverlay').classList.add('show');
   if (CONFIG.GOOGLE_CLIENT_ID) {
     document.getElementById('lockSub').textContent = '請用授權的 Google 帳號登入';
     document.getElementById('googleSignInArea').style.display = 'block';
     document.getElementById('passcodeArea').style.display = 'none';
     try {
+      await waitForGoogleIdentity_();
       google.accounts.id.initialize({ client_id: CONFIG.GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
       google.accounts.id.renderButton(document.getElementById('googleBtnContainer'), { theme: 'outline', size: 'large', shape: 'pill' });
     } catch (err) {
-      document.getElementById('lockError').textContent = 'Google 登入元件載入失敗：' + err.message;
+      document.getElementById('lockError').innerHTML = 'Google 登入元件載入失敗：' + escapeHtml(err.message) +
+        '<br><button class="gen-btn" style="margin-top:8px;" onclick="showLockScreen()">重試</button>';
       document.getElementById('lockError').style.display = 'block';
     }
   } else {
