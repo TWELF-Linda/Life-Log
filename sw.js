@@ -1,4 +1,4 @@
-const CACHE_NAME = 'life-log-shell-v1';
+const CACHE_NAME = 'life-log-shell-v2'; // 每次更新 index.html / manifest.json 後，記得手動把這個版本號 +1
 const SHELL_FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', (event) => {
