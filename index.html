@@ -206,6 +206,24 @@
   }
   #photoGridHint{display:none;margin-top:6px;font-size:12px;color:var(--ink-soft);}
 
+  .photo-wall-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .photo-wall-item{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;cursor:pointer;}
+  .photo-wall-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .15s;}
+  .photo-wall-item:active img{transform:scale(0.95);}
+  .photo-wall-date{
+    position:absolute;bottom:0;left:0;right:0;padding:3px 5px;font-size:9.5px;color:#fff;
+    background:linear-gradient(transparent,rgba(0,0,0,.55));
+  }
+  .photo-lightbox{
+    display:none;position:fixed;inset:0;background:rgba(20,15,12,.92);z-index:200;
+    flex-direction:column;align-items:center;justify-content:center;padding:20px;
+  }
+  .photo-lightbox.show{display:flex;}
+  .photo-lightbox img{max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain;}
+  .pl-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;}
+  .pl-info{margin-top:14px;text-align:center;}
+  .pl-info > div{color:#fff;font-size:13px;margin-bottom:10px;opacity:.9;}
+
   .ticket{
     position:relative;
     background:var(--card);
@@ -614,6 +632,8 @@
     background:linear-gradient(160deg,#FFF6E8,#FFEDE4);border-radius:16px;padding:14px;
     font-size:13.5px;line-height:1.75;color:var(--ink);margin-bottom:14px;
   }
+  .year-ticket-overview{margin:-4px 2px 10px;}
+  .yto-stat{font-size:12px;color:var(--ink-soft);}
 
   /* ---- 搜尋 ---- */
   .search-toggle{
@@ -1052,6 +1072,23 @@
     <div id="ticketWallArea"></div>
   </div>
 
+  <div class="page" id="page-photos">
+    <div class="card" style="text-align:center;">
+      <div class="cute-font" style="font-size:15px;font-weight:700;">🖼️ 相片牆</div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">所有紀錄裡的照片，一次瀏覽</div>
+    </div>
+    <div class="cat-row" id="photoWallFilterRow" style="margin-bottom:14px;"></div>
+    <div id="photoWallArea"></div>
+  </div>
+  <div class="photo-lightbox" id="photoLightbox" onclick="if(event.target===this) closePhotoLightbox()">
+    <button class="pl-close" onclick="closePhotoLightbox()">✕</button>
+    <img id="photoLightboxImg" src="">
+    <div class="pl-info">
+      <div id="photoLightboxMeta"></div>
+      <button class="submit-btn" id="photoLightboxJump" onclick="jumpToPhotoEntry()">查看這篇紀錄 →</button>
+    </div>
+  </div>
+
   <div class="page" id="page-stats">
     <div class="month-nav">
       <button onclick="changeMonth(-1)">‹</button>
@@ -1072,6 +1109,14 @@
     <div class="card" id="moodChartCard" style="display:none;">
       <div class="field-label" style="margin-top:0;">💭 心情趨勢</div>
       <svg class="mood-chart" id="moodChartSvg"></svg>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;display:flex;align-items:center;justify-content:space-between;">
+        <span>✨ 本月回顧</span>
+        <button class="wrap-btn" onclick="generateMonthWrap()">生成回顧</button>
+      </div>
+      <div id="monthWrapArea"></div>
     </div>
 
   </div>
@@ -1363,6 +1408,7 @@ function reloadCurrentTab() {
   if (id === 'page-log') refresh();
   else if (id === 'page-fit') loadFitnessPage();
   else if (id === 'page-tickets') loadTicketWall();
+  else if (id === 'page-photos') loadPhotoWall();
   else if (id === 'page-stats') loadStatsPage();
   else if (id === 'page-memory') loadMemoryPage();
 }
@@ -1437,6 +1483,7 @@ const PAGE_ACCENTS = {
   'page-log': ['#FF8C7A', '#F0715E'],
   'page-fit': ['#7BC99B', '#4FA873'],
   'page-tickets': ['#E8A33D', '#C9861F'],
+  'page-photos': ['#D88FBE', '#B76B9C'],
   'page-stats': ['#6FA8DC', '#4A85BF'],
   'page-memory': ['#B39DDB', '#8B6FC9'],
   'page-stock': ['#5FA88F', '#3D8570']
@@ -1452,6 +1499,7 @@ function switchTab(pageId) {
   }
   if (pageId === 'page-fit') loadFitnessPage();
   if (pageId === 'page-tickets') loadTicketWall();
+  if (pageId === 'page-photos') loadPhotoWall();
   if (pageId === 'page-stats') loadStatsPage();
   if (pageId === 'page-memory') loadMemoryPage();
   if (pageId === 'page-stock') loadStockPage();
@@ -1752,12 +1800,20 @@ const TAB_META = {
   'page-log': { icon: '📝', label: '紀錄' },
   'page-fit': { icon: '💪', label: '健身' },
   'page-tickets': { icon: '🎟️', label: '票根' },
+  'page-photos': { icon: '🖼️', label: '相片' },
   'page-stats': { icon: '📊', label: '統計' },
   'page-memory': { icon: '🕰️', label: '回顧' },
   'page-stock': { icon: '📈', label: '股票' },
   'page-period': { icon: '🌷', label: '經期' }
 };
-const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-stats', 'page-memory', 'page-stock', 'page-period'];
+const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-photos', 'page-stats', 'page-memory', 'page-stock', 'page-period'];
+// 已經存過自訂分頁順序的人，存檔裡不會有新加的分頁 id；這裡自動把 TAB_META 有、但存檔順序裡沒有的
+// 分頁補到最後面，新分頁才不會因為「使用者以前存過順序」而永遠不出現。
+function mergeTabOrder(order) {
+  const base = (Array.isArray(order) && order.length) ? order.filter(id => TAB_META[id]) : DEFAULT_TAB_ORDER.slice();
+  Object.keys(TAB_META).forEach(id => { if (base.indexOf(id) === -1) base.push(id); });
+  return base;
+}
 
 /**
  * 直接把所有分頁按鈕畫出來，不再分「常用/更多」兩層——全部一次顯示，
@@ -1765,7 +1821,7 @@ const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-stats',
  */
 function renderTabbarButtons(order) {
   const container = document.getElementById('tabbarContainer');
-  const list = (order && order.length ? order : DEFAULT_TAB_ORDER).filter(id => TAB_META[id]);
+  const list = mergeTabOrder(order);
   const activePage = document.querySelector('.page.active');
   const activeId = activePage ? activePage.id : 'page-log';
   container.innerHTML = list.map(id => `
@@ -1784,7 +1840,7 @@ async function loadTabOrderSettings() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getTabOrder`, { cache: 'no-store' });
     const order = await res.json();
-    renderTabOrderList(order);
+    renderTabOrderList(mergeTabOrder(order));
   } catch (err) {
     area.innerHTML = `<div class="empty-state">載入失敗：${escapeHtml(err.message)}</div>`;
   }
@@ -3102,6 +3158,11 @@ function renderTicketWall() {
     divider.innerHTML = `<span>${year}</span><button class="wrap-btn" onclick="generateWrap('${year}')">✨ 年度回顧</button>`;
     area.appendChild(divider);
 
+    const overview = document.createElement('div');
+    overview.className = 'year-ticket-overview';
+    overview.innerHTML = ticketYearOverviewHtml(byYear[year]);
+    area.appendChild(overview);
+
     const wrapArea = document.createElement('div');
     wrapArea.id = 'wrapArea-' + year;
     area.appendChild(wrapArea);
@@ -3125,6 +3186,19 @@ function renderTicketWall() {
     area.appendChild(grid);
   });
 }
+// 年度觀演總覽（Feature 6）：場次數＋常去場地，資料已經在票根牆載入時拿到了，不用再打一次 API
+function ticketYearOverviewHtml(list) {
+  const venueCounts = {};
+  list.forEach(t => {
+    const venue = t.ticketMeta && t.ticketMeta.venue;
+    if (venue) venueCounts[venue] = (venueCounts[venue] || 0) + 1;
+  });
+  const topVenues = Object.keys(venueCounts).sort((a, b) => venueCounts[b] - venueCounts[a]).slice(0, 3);
+  const venueText = topVenues.length
+    ? '常去：' + topVenues.map(v => `${escapeHtml(v)}(${venueCounts[v]})`).join('、')
+    : '';
+  return `<div class="yto-stat">🎫 共 ${list.length} 場${venueText ? '　·　' + venueText : ''}</div>`;
+}
 async function generateWrap(year) {
   const wrapArea = document.getElementById('wrapArea-' + year);
   wrapArea.innerHTML = '<div class="summary-loading">正在回顧 ' + year + ' 年的點點滴滴… ✨</div>';
@@ -3134,15 +3208,85 @@ async function generateWrap(year) {
     if (result.ok === false) { wrapArea.innerHTML = `<div class="empty-state">${result.message}</div>`; return; }
     if (result.error) { wrapArea.innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
     const s = result.stats;
+    const extra = [];
+    if (s.avgMood !== null && s.avgMood !== undefined) extra.push(`平均心情 ${s.avgMood}`);
+    if (s.totalPhotos) extra.push(`${s.totalPhotos} 張照片`);
     wrapArea.innerHTML = `<div class="wrap-narrative">
       ${escapeHtml(result.narrative)}
       <div style="margin-top:10px;font-size:12px;color:var(--ink-soft);">
-        共 ${s.totalEntries} 則紀錄・運動 ${s.exerciseDaysCount} 天・看了 ${s.showCount} 場演出
+        共 ${s.totalEntries} 則紀錄・運動 ${s.exerciseDaysCount} 天・看了 ${s.showCount} 場演出${extra.length ? '・' + extra.join('・') : ''}
       </div>
     </div>`;
   } catch (err) {
     wrapArea.innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
   }
+}
+// ---------- 相片牆 ----------
+let photoWallAll = [];
+let photoWallFilter = 'all';
+async function loadPhotoWall() {
+  if (!checkConfig()) return;
+  const area = document.getElementById('photoWallArea');
+  area.innerHTML = '<div class="empty-state">整理照片中… 🖼️</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getAllPhotos`, { cache: 'no-store' });
+    const result = await res.json();
+    photoWallAll = result.photos || [];
+    renderPhotoWallFilterRow();
+    renderPhotoWall();
+  } catch (err) {
+    area.innerHTML = '<div class="empty-state">讀取失敗：' + escapeHtml(err.message) + '</div>';
+  }
+}
+function renderPhotoWallFilterRow() {
+  const row = document.getElementById('photoWallFilterRow');
+  const presentCats = Array.from(new Set(photoWallAll.map(p => p.category)));
+  if (presentCats.length <= 1) { row.innerHTML = ''; return; }
+  const chips = [{ key: 'all', label: '全部', icon: '' }].concat(
+    presentCats.map(c => ({ key: c, label: c, icon: catIcon(c) }))
+  );
+  row.innerHTML = chips.map(c => {
+    const active = photoWallFilter === c.key;
+    const bg = c.key === 'all' ? 'var(--accent)' : catColor(c.key);
+    return `<div class="cat-chip${active ? ' active' : ''}" style="${active ? `background:${bg};border-color:transparent;` : ''}" onclick="setPhotoWallFilter('${c.key}')">${c.icon ? c.icon + ' ' : ''}${escapeHtml(c.label)}</div>`;
+  }).join('');
+}
+function setPhotoWallFilter(key) {
+  photoWallFilter = key;
+  renderPhotoWallFilterRow();
+  renderPhotoWall();
+}
+function renderPhotoWall() {
+  const area = document.getElementById('photoWallArea');
+  const photos = photoWallFilter === 'all' ? photoWallAll : photoWallAll.filter(p => p.category === photoWallFilter);
+  if (!photos.length) {
+    area.innerHTML = photoWallAll.length
+      ? '<div class="empty-state">這個類別還沒有照片</div>'
+      : '<div class="empty-state">還沒有任何照片唷<br>寫紀錄時加張照片，之後都會出現在這裡 📷</div>';
+    return;
+  }
+  area.innerHTML = `<div class="photo-wall-grid">${photos.map((p, i) => `
+    <div class="photo-wall-item" onclick="openPhotoLightbox(${photoWallFilter === 'all' ? i : photoWallAll.indexOf(p)})">
+      <img src="${p.url}" loading="lazy">
+      <div class="photo-wall-date">${p.date}</div>
+    </div>
+  `).join('')}</div>`;
+}
+function openPhotoLightbox(index) {
+  const p = photoWallAll[index];
+  if (!p) return;
+  document.getElementById('photoLightboxImg').src = p.url;
+  document.getElementById('photoLightboxMeta').textContent = `${catIcon(p.category)} ${p.category}　${p.date}`;
+  document.getElementById('photoLightbox').dataset.date = p.date;
+  document.getElementById('photoLightbox').classList.add('show');
+}
+function closePhotoLightbox() {
+  document.getElementById('photoLightbox').classList.remove('show');
+}
+function jumpToPhotoEntry() {
+  const ds = document.getElementById('photoLightbox').dataset.date;
+  closePhotoLightbox();
+  if (ds) jumpToDate(ds);
 }
 
 async function loadMemoryPage() {
@@ -3225,6 +3369,7 @@ async function loadStatsPage() {
   if (!checkConfig()) return;
   const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
   document.getElementById('monthLabel').textContent = statsMonth.getFullYear() + ' 年 ' + (statsMonth.getMonth() + 1) + ' 月';
+  document.getElementById('monthWrapArea').innerHTML = ''; // 換月份了，舊的回顧內容先清掉，避免看起來像是這個月的
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`, { cache: 'no-store' });
     const stats = await res.json();
@@ -3232,6 +3377,30 @@ async function loadStatsPage() {
     renderDonut(stats.categoryCounts);
     renderMoodChart(stats.moodTrend);
   } catch (err) {}
+}
+async function generateMonthWrap() {
+  const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
+  const area = document.getElementById('monthWrapArea');
+  area.innerHTML = '<div class="summary-loading">正在回顧這個月的點點滴滴… ✨</div>';
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateMonthWrap', month: ym }) });
+    const result = await res.json();
+    if (result.ok === false) { area.innerHTML = `<div class="empty-state">${escapeHtml(result.message)}</div>`; return; }
+    if (result.error) { area.innerHTML = `<div class="empty-state">錯誤：${escapeHtml(result.error)}</div>`; return; }
+    const s = result.stats;
+    const extra = [];
+    if (s.avgMood !== null && s.avgMood !== undefined) extra.push(`平均心情 ${s.avgMood}`);
+    if (s.totalPhotos) extra.push(`${s.totalPhotos} 張照片`);
+    if (s.showCount) extra.push(`${s.showCount} 場演出`);
+    area.innerHTML = `<div class="wrap-narrative">
+      ${escapeHtml(result.narrative)}
+      <div style="margin-top:10px;font-size:12px;color:var(--ink-soft);">
+        共 ${s.totalEntries} 則紀錄・運動 ${s.exerciseDaysCount} 天${extra.length ? '・' + extra.join('・') : ''}
+      </div>
+    </div>`;
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">生成失敗：${escapeHtml(err.message)}</div>`;
+  }
 }
 function renderHeatmap(ym, dayCounts) {
   const area = document.getElementById('heatmapArea');
@@ -3449,8 +3618,13 @@ async function initAuth() {
   showLockScreen();
 }
 function logoutApp() {
+  const token = APP_TOKEN;
   localStorage.removeItem(REMEMBER_TOKEN_KEY);
   APP_TOKEN = '';
+  if (token) {
+    // 順便讓後端把這組 session token 作廢，不留著給人撿到繼續用；不等結果，登出這件事本身不該被網路卡住
+    fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'logout', token: token }) }).catch(() => {});
+  }
   location.reload();
 }
 // Google Identity 的 <script> 是用 async 載入，執行時機跟這段 inline script 誰先誰後不一定，
@@ -3494,18 +3668,18 @@ async function showLockScreen() {
 async function handleGoogleCredential(response) {
   const errEl = document.getElementById('lockError');
   errEl.style.display = 'none';
-  const testToken = response.credential;
   try {
-    const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories&token=${encodeURIComponent(testToken)}`, { cache: 'no-store' });
-    const result = await res.json();
-    if (result && result.error === 'AUTH_REQUIRED') {
+    // Google 給的 idToken 大概 1 小時就過期，不能拿來當「記住登入」的長期憑證，
+    // 所以登入成功後跟後端換一組後端自己發的長效 session token（30 天）來用
+    const result = await postJSON({ action: 'exchangeGoogleSession', idToken: response.credential });
+    if (!result || result.error === 'AUTH_REQUIRED' || !result.sessionToken) {
       errEl.textContent = '這個 Google 帳號沒有被授權使用';
       errEl.style.display = 'block';
       return;
     }
-    APP_TOKEN = testToken;
-    localStorage.setItem(REMEMBER_TOKEN_KEY, testToken);
-    PRELOADED_CATEGORIES = result; // 驗證時已經拿到類別了，直接沿用
+    APP_TOKEN = result.sessionToken;
+    localStorage.setItem(REMEMBER_TOKEN_KEY, result.sessionToken);
+    PRELOADED_CATEGORIES = result.categories; // 換 session 時已經拿到類別了，直接沿用
     document.getElementById('lockOverlay').classList.remove('show');
     startApp();
   } catch (err) {
