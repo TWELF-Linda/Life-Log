@@ -529,6 +529,13 @@
     border-radius:14px;padding:5px 12px;font-size:12px;cursor:pointer;flex-shrink:0;
   }
 
+  /* ---- 離線暫存佇列小提示 ---- */
+  .offline-queue-badge{
+    position:fixed;top:8px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:#fff;padding:7px 14px;border-radius:16px;font-size:12px;font-weight:700;
+    z-index:180;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.2);display:none;align-items:center;gap:6px;
+  }
+
   /* ---- 浮動快速記錄按鈕 ---- */
   .fab{
     position:fixed;right:18px;bottom:88px;width:54px;height:54px;border-radius:50%;
@@ -745,6 +752,7 @@
 <div class="ptr-indicator" id="ptrIndicator">🔄</div>
 
 <div class="toast" id="toast"><span id="toastText"></span><button id="toastAction" class="toast-action" style="display:none;"></button></div>
+<div class="offline-queue-badge" id="offlineQueueBadge" onclick="flushOfflineQueue()"></div>
 
 <button class="fab" id="fabBtn" onclick="quickRecord()">＋</button>
 
@@ -2401,6 +2409,83 @@ async function postJSON(bodyObj, timeoutMs) {
     clearTimeout(timer);
   }
 }
+
+/* ================= 離線暫存佇列 ================= */
+// 沒網路時新增紀錄不會直接失敗消失：先存在裝置本機，恢復連線後自動補送出去
+const OFFLINE_QUEUE_KEY = 'lifelog_offline_queue';
+let offlineSyncing = false;
+
+function getOfflineQueue() {
+  try {
+    const raw = localStorage.getItem(OFFLINE_QUEUE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch (err) {
+    return [];
+  }
+}
+function saveOfflineQueue(queue) {
+  try {
+    localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+    return true;
+  } catch (err) {
+    return false; // 裝置暫存空間不夠等狀況
+  }
+}
+function queueOfflineEntry(body) {
+  const queue = getOfflineQueue();
+  queue.push({ localId: 'off_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8), body: body, queuedAt: Date.now() });
+  const ok = saveOfflineQueue(queue);
+  renderOfflineBadge();
+  return ok;
+}
+function renderOfflineBadge() {
+  const badge = document.getElementById('offlineQueueBadge');
+  if (!badge) return;
+  const queue = getOfflineQueue();
+  if (offlineSyncing) {
+    badge.style.display = 'flex';
+    badge.textContent = '🔄 同步離線紀錄中…';
+  } else if (queue.length) {
+    badge.style.display = 'flex';
+    badge.textContent = `📴 ${queue.length} 筆待同步，點我重試`;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+async function flushOfflineQueue() {
+  if (offlineSyncing) return;
+  const queue = getOfflineQueue();
+  if (!queue.length) return;
+  if (!navigator.onLine) { renderOfflineBadge(); return; }
+  offlineSyncing = true;
+  renderOfflineBadge();
+  let stoppedReason = '';
+  for (const item of queue) {
+    try {
+      const result = await postJSON(item.body, 20000);
+      if (result && result.error) {
+        stoppedReason = result.error; // 伺服器明確拒絕：先停下來，這筆跟後面的都留在佇列裡，不能刪掉
+        break;
+      }
+      const remaining = getOfflineQueue().filter(q => q.localId !== item.localId);
+      saveOfflineQueue(remaining);
+    } catch (err) {
+      stoppedReason = '網路連線問題'; // 還是連不上，這輪先停下來，剩下的等下次再試
+      break;
+    }
+  }
+  offlineSyncing = false;
+  renderOfflineBadge();
+  if (!stoppedReason) {
+    await loadEntries();
+    if (!getOfflineQueue().length) showToast('離線紀錄都同步好了 ✨');
+  } else if (stoppedReason !== '網路連線問題') {
+    showToast('離線紀錄同步時發生問題：' + stoppedReason);
+    await loadEntries();
+  }
+}
+window.addEventListener('online', flushOfflineQueue);
 async function submitEntry() {
   const text = document.getElementById('textInput').value.trim();
   const selectedPhotos = pendingPhotos.filter(p => p.selected);
@@ -2440,7 +2525,20 @@ async function submitEntry() {
       } catch (err) {}
     }
   } catch (err) {
-    alert('儲存失敗：' + err.message);
+    const isNetworkFailure = !navigator.onLine || (err instanceof TypeError) || err.message === '連線逾時，請檢查網路連線後再試一次';
+    if (!isEdit && isNetworkFailure) {
+      const queued = queueOfflineEntry(body);
+      if (queued) {
+        document.getElementById('textInput').value = '';
+        pendingPhotos = []; renderPhotoGrid();
+        currentFieldValues = {}; renderExtraFields();
+        showToast('📴 沒有網路，先存在裝置上，恢復連線會自動送出');
+      } else {
+        alert('沒有網路，而且裝置暫存空間不夠，這筆沒能存住，請恢復連線後再試一次：' + err.message);
+      }
+    } else {
+      alert('儲存失敗：' + err.message);
+    }
   } finally {
     btn.disabled = false; btn.textContent = editingEntryId ? '更新這筆紀錄' : '記下這一刻';
   }
@@ -3578,6 +3676,8 @@ function startApp() {
   renderTabbarButtons(DEFAULT_TAB_ORDER);
   loadSavedTabOrder();
   loadTodayAffirmation();
+  renderOfflineBadge();
+  flushOfflineQueue();
   loadCategories().then(refresh).then(() => {
     if (location.hash === '#quick') quickRecord();
     if (location.hash === '#today') switchTab('page-log');
