@@ -168,6 +168,20 @@
   .cat-chip[data-cat="閱讀／追劇／娛樂"].active{background:var(--c-culture);}
   .cat-chip[data-cat="其他"].active{background:var(--c-other);}
 
+  .opt-chip{
+    padding:7px 13px;border-radius:18px;font-size:12.5px;font-weight:500;
+    border:1.5px solid var(--line);cursor:pointer;color:var(--ink-soft);
+    background:var(--input-bg);transition:.15s;display:inline-block;
+  }
+  .opt-chip.active{background:var(--coral);color:#fff;border-color:transparent;font-weight:700;}
+  .opt-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;margin-bottom:12px;}
+  .opt-row:last-of-type{margin-bottom:0;}
+  .period-daily-history-item{
+    display:flex;justify-content:space-between;align-items:center;padding:8px 0;
+    border-bottom:1px solid var(--line);font-size:12px;color:var(--ink-soft);
+  }
+  .period-daily-history-item:last-child{border-bottom:none;}
+
   textarea{
     width:100%;min-height:60px;background:var(--card);
     border:1.5px solid var(--line);border-radius:16px;color:var(--ink);
@@ -1184,10 +1198,29 @@
     <div class="card" id="periodStatusCard">
       <div class="field-label" style="margin-top:0;">🌷 目前狀態</div>
       <div id="periodStatusArea" class="empty-state">還沒有任何紀錄，記一筆開始追蹤吧</div>
+      <button class="submit-btn" id="periodToggleBtn" style="width:100%;margin-top:10px;" onclick="togglePeriodOpen()">🌸 今天開始經期</button>
     </div>
 
     <div class="card">
-      <div class="field-label" style="margin-top:0;">📝 記錄經期</div>
+      <div class="field-label" style="margin-top:0;">📋 今日身體狀況</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">出血量</div>
+      <div class="opt-row" id="flowOptRow"></div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">經痛程度</div>
+      <div class="opt-row" id="painOptRow"></div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">其他症狀（可複選）</div>
+      <div class="opt-row" id="symptomOptRow"></div>
+      <textarea id="periodDailyNote" placeholder="備註（選填）" style="min-height:40px;"></textarea>
+      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存今天的狀況</button>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📈 最近身體狀況</div>
+      <div id="periodDailyHistoryArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">🗓️ 手動補登過去的紀錄</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 6px;">忘了在開始/結束當天按按鈕嗎？可以在這裡直接補一筆完整的區間</div>
       <div class="stock-form-row">
         <div style="flex:1;">
           <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">開始日期</div>
@@ -1198,8 +1231,8 @@
           <input type="date" id="periodEnd" class="stock-date-input" style="width:100%;">
         </div>
       </div>
-      <textarea id="periodNote" placeholder="備註（選填），例如經痛程度、量多寡" style="min-height:44px;margin-top:8px;"></textarea>
-      <button class="submit-btn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">記錄這次經期</button>
+      <textarea id="periodNote" placeholder="備註（選填）" style="min-height:40px;margin-top:8px;"></textarea>
+      <button class="submit-btn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">補登這筆紀錄</button>
     </div>
 
     <div class="card">
@@ -1419,6 +1452,8 @@ function reloadCurrentTab() {
   else if (id === 'page-photos') loadPhotoWall();
   else if (id === 'page-stats') loadStatsPage();
   else if (id === 'page-memory') loadMemoryPage();
+  else if (id === 'page-stock') loadStockPage();
+  else if (id === 'page-period') loadPeriodPage();
 }
 document.addEventListener('touchstart', e => {
   if (window.scrollY <= 0) { ptrStartY = e.touches[0].clientY; ptrPulling = true; ptrDist = 0; }
@@ -2743,7 +2778,11 @@ function selectStockAction(v) {
 async function loadPeriodPage() {
   if (!checkConfig()) return;
   loadPeriodStatus();
+  loadPeriodOpenState();
   loadPeriodLogList();
+  renderPeriodOptionChips();
+  loadPeriodDailyToday();
+  loadPeriodDailyHistory();
 }
 async function loadPeriodStatus() {
   const area = document.getElementById('periodStatusArea');
@@ -2777,6 +2816,45 @@ async function loadPeriodStatus() {
     area.textContent = '讀取失敗：' + err.message;
   }
 }
+// 開始／結束經期用同一顆按鈕，狀態從後端問「目前有沒有還沒結束的紀錄」決定
+let periodOpenState = { hasOpen: false };
+async function loadPeriodOpenState() {
+  const btn = document.getElementById('periodToggleBtn');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getOpenPeriod`, { cache: 'no-store' });
+    periodOpenState = await res.json();
+    if (periodOpenState.hasOpen) {
+      const days = Math.floor((new Date(fmtDate(new Date()) + 'T00:00:00') - new Date(periodOpenState.startDate + 'T00:00:00')) / 86400000) + 1;
+      btn.textContent = `✅ 結束經期（已經第 ${days} 天）`;
+      btn.style.background = 'var(--ink-soft)';
+    } else {
+      btn.textContent = '🌸 今天開始經期';
+      btn.style.background = '';
+    }
+  } catch (err) {}
+}
+async function togglePeriodOpen() {
+  const btn = document.getElementById('periodToggleBtn');
+  btn.disabled = true;
+  try {
+    if (periodOpenState.hasOpen) {
+      const result = await postJSON({ action: 'endPeriod', date: fmtDate(new Date()) });
+      if (result && result.error) throw new Error(result.error);
+      showToast('辛苦了，這次記錄好了 🌷');
+    } else {
+      const result = await postJSON({ action: 'startPeriod', date: fmtDate(new Date()) });
+      if (result && result.error) throw new Error(result.error);
+      showToast(result.alreadyOpen ? '本來就在進行中囉' : '開始記錄這次經期 🌸');
+    }
+    loadPeriodStatus();
+    loadPeriodOpenState();
+    loadPeriodLogList();
+  } catch (err) {
+    alert('操作失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
 async function loadPeriodLogList() {
   const area = document.getElementById('periodLogArea');
   area.innerHTML = '<div class="empty-state">載入中…</div>';
@@ -2787,7 +2865,7 @@ async function loadPeriodLogList() {
     area.innerHTML = logs.map(l => `
       <div class="stock-log-item">
         <div>
-          <div class="sl-code">${l.startDate}${l.endDate ? ' ～ ' + l.endDate : ''}</div>
+          <div class="sl-code">${l.startDate}${l.endDate ? ' ～ ' + l.endDate : '（進行中）'}</div>
           ${l.note ? `<div class="sl-detail">${escapeHtml(l.note)}</div>` : ''}
         </div>
         <button class="sl-del" onclick="deletePeriodLogItem('${l.id}')">✕</button>
@@ -2810,6 +2888,7 @@ async function submitPeriodLog() {
     document.getElementById('periodNote').value = '';
     showToast('記錄好了 🌷');
     loadPeriodStatus();
+    loadPeriodOpenState();
     loadPeriodLogList();
   } catch (err) {
     alert('記錄失敗：' + err.message);
@@ -2821,9 +2900,85 @@ async function deletePeriodLogItem(id) {
     await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deletePeriodLog', id }) });
     showToast('已刪除 🗑️');
     loadPeriodStatus();
+    loadPeriodOpenState();
     loadPeriodLogList();
   } catch (err) {
     alert('刪除失敗：' + err.message);
+  }
+}
+
+// ---------- 經期：每日身體狀況 ----------
+const PERIOD_FLOW_OPTIONS = ['無', '少量', '中等', '大量'];
+const PERIOD_PAIN_OPTIONS = ['無', '輕微', '中等', '劇烈'];
+const PERIOD_SYMPTOM_OPTIONS = ['頭痛', '腰痠', '噁心', '疲倦', '脹氣', '情緒低落', '長痘', '失眠'];
+let periodDailyState = { flow: '', pain: '', symptoms: [] };
+
+function renderPeriodOptionChips() {
+  document.getElementById('flowOptRow').innerHTML = PERIOD_FLOW_OPTIONS.map(opt =>
+    `<div class="opt-chip${periodDailyState.flow === opt ? ' active' : ''}" onclick="setPeriodFlow('${opt}')">${opt}</div>`
+  ).join('');
+  document.getElementById('painOptRow').innerHTML = PERIOD_PAIN_OPTIONS.map(opt =>
+    `<div class="opt-chip${periodDailyState.pain === opt ? ' active' : ''}" onclick="setPeriodPain('${opt}')">${opt}</div>`
+  ).join('');
+  document.getElementById('symptomOptRow').innerHTML = PERIOD_SYMPTOM_OPTIONS.map(opt =>
+    `<div class="opt-chip${periodDailyState.symptoms.includes(opt) ? ' active' : ''}" onclick="togglePeriodSymptom('${opt}')">${opt}</div>`
+  ).join('');
+}
+function setPeriodFlow(opt) {
+  periodDailyState.flow = periodDailyState.flow === opt ? '' : opt;
+  renderPeriodOptionChips();
+}
+function setPeriodPain(opt) {
+  periodDailyState.pain = periodDailyState.pain === opt ? '' : opt;
+  renderPeriodOptionChips();
+}
+function togglePeriodSymptom(opt) {
+  const i = periodDailyState.symptoms.indexOf(opt);
+  if (i === -1) periodDailyState.symptoms.push(opt); else periodDailyState.symptoms.splice(i, 1);
+  renderPeriodOptionChips();
+}
+async function loadPeriodDailyToday() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodDaily&date=${fmtDate(new Date())}`, { cache: 'no-store' });
+    const d = await res.json();
+    periodDailyState = { flow: d.flow || '', pain: d.pain || '', symptoms: d.symptoms || [] };
+    document.getElementById('periodDailyNote').value = d.note || '';
+    renderPeriodOptionChips();
+  } catch (err) {}
+}
+async function submitPeriodDaily() {
+  const note = document.getElementById('periodDailyNote').value.trim();
+  try {
+    const result = await postJSON({
+      action: 'savePeriodDaily', date: fmtDate(new Date()),
+      flow: periodDailyState.flow, pain: periodDailyState.pain, symptoms: periodDailyState.symptoms, note: note
+    });
+    if (result && result.error) throw new Error(result.error);
+    showToast('今天的狀況記錄好了 📋');
+    loadPeriodDailyHistory();
+  } catch (err) {
+    alert('儲存失敗：' + err.message);
+  }
+}
+async function loadPeriodDailyHistory() {
+  const area = document.getElementById('periodDailyHistoryArea');
+  area.innerHTML = '<div class="empty-state">載入中…</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodDailyRecent&limit=14`, { cache: 'no-store' });
+    const rows = await res.json();
+    if (!rows.length || rows.error) { area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>'; return; }
+    area.innerHTML = rows.map(r => {
+      const parts = [];
+      if (r.flow) parts.push('出血' + r.flow);
+      if (r.pain) parts.push('經痛' + r.pain);
+      if (r.symptoms && r.symptoms.length) parts.push(r.symptoms.join('、'));
+      return `<div class="period-daily-history-item">
+        <span style="color:var(--ink);font-weight:600;">${r.date}</span>
+        <span>${parts.length ? escapeHtml(parts.join('・')) : '（無症狀）'}</span>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
 }
 async function loadStockPage() {
@@ -2896,10 +3051,8 @@ async function submitStockLog() {
   const note = document.getElementById('stockNote').value.trim();
   if (!code || !shares || !price) { alert('至少填代號、股數、成交價喔'); return; }
   try {
-    await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'addStockLog', code, name, action: selectedStockAction, shares, price, fee, date, note })
-    });
+    const result = await postJSON({ action: 'addStockLog', code, name, stockAction: selectedStockAction, shares, price, fee, date, note });
+    if (result && result.error) throw new Error(result.error);
     document.getElementById('stockCode').value = '';
     document.getElementById('stockName').value = '';
     document.getElementById('stockShares').value = '';
