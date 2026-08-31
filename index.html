@@ -238,6 +238,26 @@
   .pl-info{margin-top:14px;text-align:center;}
   .pl-info > div{color:#fff;font-size:13px;margin-bottom:10px;opacity:.9;}
 
+  .barcode-scanner-overlay{
+    display:none;position:fixed;inset:0;background:#000;z-index:210;
+    align-items:center;justify-content:center;flex-direction:column;
+  }
+  .barcode-scanner-overlay.show{display:flex;}
+  .barcode-scanner-overlay video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+  .barcode-scan-frame{
+    position:relative;width:78vw;max-width:340px;height:120px;border:3px solid var(--coral);
+    border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.45);
+  }
+  .barcode-scan-hint{position:relative;color:#fff;font-size:13px;margin-top:16px;background:rgba(0,0,0,.4);padding:6px 14px;border-radius:12px;}
+  .food-log-item{
+    display:flex;justify-content:space-between;align-items:center;padding:9px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .food-log-item:last-child{border-bottom:none;}
+  .food-log-item .fl-name{font-size:13.5px;color:var(--ink);}
+  .food-log-item .fl-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .food-log-item .fl-cal{font-size:14px;font-weight:700;color:var(--accent-dark);white-space:nowrap;margin-left:10px;}
+
   .ticket{
     position:relative;
     background:var(--card);
@@ -1111,6 +1131,54 @@
     </div>
   </div>
 
+  <div class="page" id="page-food">
+    <div class="card" style="text-align:center;">
+      <div class="cute-font" style="font-size:15px;font-weight:700;">🍱 飲食紀錄</div>
+      <div class="date-nav" style="margin-top:6px;">
+        <button onclick="changeFoodDate(-1)">‹</button>
+        <div class="date-label" id="foodDateLabel">今天</div>
+        <button onclick="changeFoodDate(1)">›</button>
+      </div>
+      <div id="foodTotalArea" style="margin-top:8px;font-size:24px;font-weight:800;color:var(--accent-dark);font-family:'Chiron GoRound TC';"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📝 打字記錄</div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="foodDescInput" placeholder="例如：雞腿便當" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
+        <button class="tool-btn" onclick="estimateFoodCalories()" id="foodEstimateBtn">AI 估算</button>
+      </div>
+      <div id="foodEstimateResult"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📷 掃描條碼</div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 8px;">部分手機瀏覽器不支援鏡頭掃描，可以改用手動輸入</div>
+      <button class="submit-btn" style="width:100%;" onclick="startBarcodeScan()">開始掃描</button>
+      <div style="text-align:center;margin-top:8px;">
+        <a href="javascript:void(0)" onclick="toggleManualBarcodeInput()" style="font-size:12px;color:var(--ink-soft);text-decoration:underline;">或手動輸入條碼數字</a>
+      </div>
+      <div id="manualBarcodeArea" style="display:none;margin-top:8px;">
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="manualBarcodeInput" placeholder="輸入條碼數字" inputmode="numeric" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
+          <button class="tool-btn" onclick="lookupBarcodeManual()">查詢</button>
+        </div>
+      </div>
+      <div id="barcodeResult"></div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📋 這天的紀錄</div>
+      <div id="foodListArea"></div>
+    </div>
+  </div>
+  <div class="barcode-scanner-overlay" id="barcodeScannerOverlay">
+    <video id="barcodeVideo" autoplay playsinline muted></video>
+    <div class="barcode-scan-frame"></div>
+    <div class="barcode-scan-hint" id="barcodeScanHint">將條碼對準框內</div>
+    <button class="pl-close" onclick="stopBarcodeScan()">✕</button>
+  </div>
+
   <div class="page" id="page-stats">
     <div class="month-nav">
       <button onclick="changeMonth(-1)">‹</button>
@@ -1450,6 +1518,7 @@ function reloadCurrentTab() {
   else if (id === 'page-fit') loadFitnessPage();
   else if (id === 'page-tickets') loadTicketWall();
   else if (id === 'page-photos') loadPhotoWall();
+  else if (id === 'page-food') loadFoodPage();
   else if (id === 'page-stats') loadStatsPage();
   else if (id === 'page-memory') loadMemoryPage();
   else if (id === 'page-stock') loadStockPage();
@@ -1527,6 +1596,7 @@ const PAGE_ACCENTS = {
   'page-fit': ['#7BC99B', '#4FA873'],
   'page-tickets': ['#E8A33D', '#C9861F'],
   'page-photos': ['#D88FBE', '#B76B9C'],
+  'page-food': ['#E8916A', '#C96F49'],
   'page-stats': ['#6FA8DC', '#4A85BF'],
   'page-memory': ['#B39DDB', '#8B6FC9'],
   'page-stock': ['#5FA88F', '#3D8570']
@@ -1543,6 +1613,7 @@ function switchTab(pageId) {
   if (pageId === 'page-fit') loadFitnessPage();
   if (pageId === 'page-tickets') loadTicketWall();
   if (pageId === 'page-photos') loadPhotoWall();
+  if (pageId === 'page-food') loadFoodPage();
   if (pageId === 'page-stats') loadStatsPage();
   if (pageId === 'page-memory') loadMemoryPage();
   if (pageId === 'page-stock') loadStockPage();
@@ -1844,12 +1915,13 @@ const TAB_META = {
   'page-fit': { icon: '💪', label: '健身' },
   'page-tickets': { icon: '🎟️', label: '票根' },
   'page-photos': { icon: '🖼️', label: '相片' },
+  'page-food': { icon: '🍱', label: '飲食' },
   'page-stats': { icon: '📊', label: '統計' },
   'page-memory': { icon: '🕰️', label: '回顧' },
   'page-stock': { icon: '📈', label: '股票' },
   'page-period': { icon: '🌷', label: '經期' }
 };
-const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-photos', 'page-stats', 'page-memory', 'page-stock', 'page-period'];
+const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-photos', 'page-food', 'page-stats', 'page-memory', 'page-stock', 'page-period'];
 // 已經存過自訂分頁順序的人，存檔裡不會有新加的分頁 id；這裡自動把 TAB_META 有、但存檔順序裡沒有的
 // 分頁補到最後面，新分頁才不會因為「使用者以前存過順序」而永遠不出現。
 function mergeTabOrder(order) {
@@ -2981,6 +3053,194 @@ async function loadPeriodDailyHistory() {
     area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
 }
+// ---------- 飲食／卡路里紀錄 ----------
+let foodDate = new Date();
+function changeFoodDate(delta) {
+  foodDate.setDate(foodDate.getDate() + delta);
+  loadFoodPage();
+}
+async function loadFoodPage() {
+  if (!checkConfig()) return;
+  document.getElementById('foodDateLabel').textContent = dateLabel(foodDate);
+  document.getElementById('foodEstimateResult').innerHTML = '';
+  document.getElementById('barcodeResult').innerHTML = '';
+  const ds = fmtDate(foodDate);
+  const listEl = document.getElementById('foodListArea');
+  listEl.innerHTML = '<div class="empty-state">載入中…</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getFoodLogByDate&date=${ds}`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result.error) { listEl.innerHTML = `<div class="empty-state">${escapeHtml(result.error)}</div>`; return; }
+    document.getElementById('foodTotalArea').textContent = `${result.total || 0} 大卡`;
+    if (!result.items || !result.items.length) {
+      listEl.innerHTML = '<div class="empty-state">這天還沒有任何飲食紀錄</div>';
+      return;
+    }
+    listEl.innerHTML = result.items.map(it => `
+      <div class="food-log-item">
+        <div>
+          <div class="fl-name">${escapeHtml(it.name)}</div>
+          <div class="fl-sub">${it.time}${it.source === 'ai' ? '・AI估算' : it.source === 'barcode' ? '・條碼查詢' : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="fl-cal">${it.calories} 大卡</div>
+          <button class="sl-del" onclick="deleteFoodLogItem('${it.id}')">✕</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (err) {
+    listEl.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+async function deleteFoodLogItem(id) {
+  if (!confirm('刪除這筆飲食紀錄？')) return;
+  try {
+    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFoodLog', id }) });
+    showToast('已刪除 🗑️');
+    loadFoodPage();
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
+}
+// AI 文字估算跟條碼查詢，最後都導到同一張「確認/微調後再存」卡片，避免估算不準時沒得改
+function renderFoodConfirmCard(containerId, entry) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `
+    <div class="tool-result-box" style="margin-top:10px;">
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">名稱</div>
+      <input type="text" id="pfName_${containerId}" value="${escapeHtml(entry.name)}" style="width:100%;margin-bottom:8px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;">
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">熱量（大卡，估算值，可自行調整）</div>
+      <input type="number" id="pfCal_${containerId}" value="${entry.calories}" style="width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;">
+      ${entry.servingNote ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">${escapeHtml(entry.servingNote)}</div>` : ''}
+      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="confirmAddFood('${containerId}','${entry.source}')">✅ 加入紀錄</button>
+    </div>
+  `;
+}
+async function confirmAddFood(containerId, source) {
+  const name = document.getElementById('pfName_' + containerId).value.trim();
+  const calories = Number(document.getElementById('pfCal_' + containerId).value) || 0;
+  if (!name) { alert('請輸入食物名稱'); return; }
+  try {
+    const result = await postJSON({ action: 'addFoodLog', date: fmtDate(foodDate), name, calories, source });
+    if (result && result.error) throw new Error(result.error);
+    document.getElementById(containerId).innerHTML = '';
+    if (containerId === 'foodEstimateResult') document.getElementById('foodDescInput').value = '';
+    if (containerId === 'barcodeResult') document.getElementById('manualBarcodeInput').value = '';
+    showToast('記錄好了 🍱');
+    loadFoodPage();
+  } catch (err) {
+    alert('儲存失敗：' + err.message);
+  }
+}
+async function estimateFoodCalories() {
+  const desc = document.getElementById('foodDescInput').value.trim();
+  if (!desc) { alert('請先描述吃了什麼喔'); return; }
+  const btn = document.getElementById('foodEstimateBtn');
+  const resultEl = document.getElementById('foodEstimateResult');
+  btn.disabled = true; btn.textContent = '估算中…';
+  resultEl.innerHTML = '';
+  try {
+    const result = await postJSON({ action: 'estimateCalories', description: desc });
+    if (result && result.error) throw new Error(result.error);
+    renderFoodConfirmCard('foodEstimateResult', { name: result.name, calories: result.calories, servingNote: result.servingNote, source: 'ai' });
+  } catch (err) {
+    resultEl.innerHTML = `<div class="empty-state">估算失敗：${escapeHtml(err.message)}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'AI 估算';
+  }
+}
+function toggleManualBarcodeInput() {
+  const area = document.getElementById('manualBarcodeArea');
+  area.style.display = area.style.display === 'none' ? 'block' : 'none';
+}
+async function lookupBarcodeManual() {
+  const val = document.getElementById('manualBarcodeInput').value.trim();
+  if (!val) { alert('請輸入條碼數字'); return; }
+  lookupBarcode(val);
+}
+// 條碼查詢用公開的 Open Food Facts 資料庫，不需要 API Key；查不到就讓使用者自己手動填
+async function lookupBarcode(barcode) {
+  const resultEl = document.getElementById('barcodeResult');
+  resultEl.innerHTML = '<div class="empty-state">查詢中…</div>';
+  try {
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,product_name_zh,nutriments,quantity`);
+    const data = await res.json();
+    if (!data || data.status !== 1 || !data.product) {
+      resultEl.innerHTML = '<div class="empty-state">查不到這個條碼的資料</div>';
+      renderFoodConfirmCard('barcodeResult', { name: '條碼 ' + barcode, calories: 0, servingNote: '資料庫查不到，請手動填寫名稱跟熱量', source: 'barcode' });
+      return;
+    }
+    const p = data.product;
+    const name = p.product_name_zh || p.product_name || ('條碼 ' + barcode);
+    const n = p.nutriments || {};
+    let calories, note;
+    if (n['energy-kcal_serving'] != null) {
+      calories = Math.round(n['energy-kcal_serving']);
+      note = '這是資料庫提供的單份熱量';
+    } else if (n['energy-kcal_100g'] != null) {
+      calories = Math.round(n['energy-kcal_100g']);
+      note = `每 100g 熱量約 ${calories} 大卡，先用 100g 估算，請依實際吃的份量調整上面的數字`;
+    } else {
+      calories = 0;
+      note = '查不到熱量資料，請手動輸入';
+    }
+    renderFoodConfirmCard('barcodeResult', { name: name, calories: calories, servingNote: note, source: 'barcode' });
+  } catch (err) {
+    resultEl.innerHTML = `<div class="empty-state">查詢失敗：${escapeHtml(err.message)}，可以改手動輸入名稱跟熱量</div>`;
+    renderFoodConfirmCard('barcodeResult', { name: '條碼 ' + barcode, calories: 0, servingNote: '查詢失敗，請手動填寫', source: 'barcode' });
+  }
+}
+// 即時鏡頭掃描：用瀏覽器原生的 BarcodeDetector，部分瀏覽器（如 iOS Safari）不支援，會提示改用手動輸入
+let barcodeStream = null;
+let barcodeDetector = null;
+let barcodeScanRAF = null;
+async function startBarcodeScan() {
+  if (!('BarcodeDetector' in window)) {
+    alert('這個瀏覽器不支援即時掃描條碼，改用下面的手動輸入喔');
+    document.getElementById('manualBarcodeArea').style.display = 'block';
+    return;
+  }
+  try {
+    barcodeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+  } catch (err) {
+    alert('無法開啟鏡頭：' + err.message + '，改用手動輸入吧');
+    document.getElementById('manualBarcodeArea').style.display = 'block';
+    return;
+  }
+  const video = document.getElementById('barcodeVideo');
+  video.srcObject = barcodeStream;
+  document.getElementById('barcodeScannerOverlay').classList.add('show');
+  try {
+    barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
+  } catch (err) {
+    barcodeDetector = new BarcodeDetector();
+  }
+  scanBarcodeFrame();
+}
+async function scanBarcodeFrame() {
+  if (!barcodeStream) return;
+  const video = document.getElementById('barcodeVideo');
+  try {
+    const codes = await barcodeDetector.detect(video);
+    if (codes && codes.length) {
+      const value = codes[0].rawValue;
+      stopBarcodeScan();
+      lookupBarcode(value);
+      return;
+    }
+  } catch (err) {}
+  barcodeScanRAF = requestAnimationFrame(scanBarcodeFrame);
+}
+function stopBarcodeScan() {
+  document.getElementById('barcodeScannerOverlay').classList.remove('show');
+  if (barcodeScanRAF) cancelAnimationFrame(barcodeScanRAF);
+  barcodeScanRAF = null;
+  if (barcodeStream) {
+    barcodeStream.getTracks().forEach(t => t.stop());
+    barcodeStream = null;
+  }
+}
+
 async function loadStockPage() {
   if (!checkConfig()) return;
   renderStockActionRow();
