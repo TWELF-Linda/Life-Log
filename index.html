@@ -330,7 +330,7 @@
   .plan-day .d-title{font-weight:700;font-size:13.5px;color:var(--accent-dark);margin-bottom:4px;}
   .plan-day ul{margin:4px 0 0;padding-left:18px;font-size:13.5px;line-height:1.7;color:var(--ink);}
   .plan-tip{
-    background:#FFF6E8;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7;color:var(--ink);margin-top:6px;
+    background:#FFF6E8;border-radius:16px;padding:12px 14px;font-size:13px;line-height:1.7;color:#4A3F35;margin-top:6px;
   }
 
   .year-card .y-head{display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
@@ -369,6 +369,43 @@
     font-size:17px;color:var(--ink-soft);padding:0 6px 0 0;cursor:grab;touch-action:none;flex-shrink:0;
     user-select:none;
   }
+  .tab-order-divider{
+    font-size:11px;color:var(--ink-soft);text-align:center;padding:8px 0;margin:2px 0;
+    border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);
+  }
+
+  /* ---- 更多分頁選單 ---- */
+  .more-menu-overlay{
+    position:fixed;inset:0;background:rgba(20,15,12,.4);z-index:170;display:none;align-items:flex-end;
+  }
+  .more-menu-overlay.show{display:flex;}
+  .more-menu-sheet{
+    background:var(--card);width:100%;border-radius:22px 22px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(0,0,0,.15);
+  }
+  .more-menu-title{font-family:'Chiron GoRound TC';font-size:15px;font-weight:800;color:var(--ink);margin-bottom:12px;}
+  .more-menu-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .more-menu-item{
+    display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border-radius:16px;
+    background:var(--input-bg);cursor:pointer;
+  }
+  .more-menu-item .icon{font-size:22px;}
+  .more-menu-item .label{font-size:12px;color:var(--ink);font-weight:600;}
+
+  /* ---- 月曆總覽 ---- */
+  .cal-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+  .cal-cell{
+    aspect-ratio:1/1;border-radius:10px;background:var(--input-bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:flex-start;padding-top:5px;cursor:pointer;position:relative;
+  }
+  .cal-cell.empty{background:none;cursor:default;}
+  .cal-cell.today{box-shadow:inset 0 0 0 2px var(--accent);}
+  .cal-cell .cal-daynum{font-size:11.5px;color:var(--ink);font-weight:600;}
+  .cal-dots{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:3px;max-width:90%;}
+  .cal-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .cal-legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px;font-size:11.5px;color:var(--ink-soft);}
+  .cal-legend-item{display:flex;align-items:center;gap:4px;}
   .color-row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px;}
   .color-swatch{
     width:28px;height:28px;border-radius:10px;cursor:pointer;border:2px solid transparent;
@@ -574,9 +611,23 @@
   .fab{
     position:fixed;right:18px;bottom:88px;width:54px;height:54px;border-radius:50%;
     background:var(--accent);color:#fff;font-size:26px;border:none;cursor:pointer;
-    box-shadow:0 8px 20px rgba(0,0,0,0.25);z-index:60;display:flex;align-items:center;justify-content:center;
-    line-height:1;
+    box-shadow:0 8px 20px rgba(0,0,0,0.25);z-index:160;display:flex;align-items:center;justify-content:center;
+    line-height:1;transition:transform .2s;
   }
+  .fab.open{transform:rotate(45deg);}
+  .fab-backdrop{
+    position:fixed;inset:0;background:rgba(20,15,12,.25);z-index:150;display:none;
+  }
+  .fab-backdrop.show{display:block;}
+  .fab-mini{
+    position:fixed;right:16px;display:flex;align-items:center;gap:8px;
+    background:var(--card);color:var(--ink);border:none;cursor:pointer;
+    padding:10px 16px 10px 14px;border-radius:24px;font-size:13px;font-weight:700;
+    box-shadow:0 6px 16px rgba(0,0,0,0.2);z-index:160;
+    opacity:0;pointer-events:none;transform:translateY(10px) scale(.85);transition:all .18s;
+  }
+  .fab-mini .icon{font-size:18px;}
+  .fab-mini.show{opacity:1;pointer-events:auto;transform:translateY(0) scale(1);}
 
   /* ---- 下拉重新整理 ---- */
   .ptr-indicator{
@@ -671,10 +722,30 @@
   }
   .wrap-narrative{
     background:linear-gradient(160deg,#FFF6E8,#FFEDE4);border-radius:16px;padding:14px;
-    font-size:13.5px;line-height:1.75;color:var(--ink);margin-bottom:14px;
+    font-size:13.5px;line-height:1.75;color:#4A3F35;margin-bottom:14px;
   }
   .year-ticket-overview{margin:-4px 2px 10px;}
   .yto-stat{font-size:12px;color:var(--ink-soft);}
+  .today-overview-card{padding:14px 16px;}
+  .tov-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .tov-chip{
+    flex:1;min-width:76px;background:var(--input-bg);border-radius:14px;padding:9px 10px;text-align:center;
+  }
+  .tov-chip .tov-icon{font-size:17px;margin-bottom:2px;}
+  .tov-chip .tov-value{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.3;}
+  .tov-chip .tov-label{font-size:10px;color:var(--ink-soft);margin-top:1px;}
+
+  .search-section-header{
+    font-size:11.5px;font-weight:700;color:var(--ink-soft);letter-spacing:.5px;
+    margin:16px 2px 6px;
+  }
+  .search-section-header:first-child{margin-top:0;}
+  .search-mini-item{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    background:var(--card);border-radius:14px;padding:11px 14px;margin-bottom:6px;
+    font-size:13px;color:var(--ink);cursor:pointer;border:1px solid var(--line);
+  }
+  .search-mini-item .smi-right{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;flex-shrink:0;}
 
   /* ---- 搜尋 ---- */
   .search-toggle{
@@ -713,7 +784,7 @@
     padding:14px 16px;margin:0 0 16px;text-align:center;
   }
   .affirmation-icon{font-size:20px;margin-bottom:4px;}
-  .affirmation-text{font-size:14px;line-height:1.6;color:var(--ink);font-weight:600;margin-bottom:8px;}
+  .affirmation-text{font-size:14px;line-height:1.6;color:#4A3F35;font-weight:600;margin-bottom:8px;}
   .affirmation-refresh{
     background:none;border:1px solid #E8C99A;color:#B8863D;border-radius:14px;
     padding:5px 12px;font-size:11.5px;cursor:pointer;font-weight:700;
@@ -788,7 +859,9 @@
 <div class="toast" id="toast"><span id="toastText"></span><button id="toastAction" class="toast-action" style="display:none;"></button></div>
 <div class="offline-queue-badge" id="offlineQueueBadge" onclick="flushOfflineQueue()"></div>
 
-<button class="fab" id="fabBtn" onclick="quickRecord()">＋</button>
+<div class="fab-backdrop" id="fabBackdrop" onclick="closeFabMenu()"></div>
+<div id="fabMiniContainer"></div>
+<button class="fab" id="fabBtn" onclick="toggleFabMenu()">＋</button>
 
 <div class="onboarding-overlay" id="onboardingOverlay">
   <div class="onboarding-card">
@@ -979,6 +1052,11 @@
     </div>
     <div style="text-align:center;margin-top:-6px;margin-bottom:8px;">
       <button class="today-btn" onclick="jumpToDateInput(fmtDate(new Date()))">回到今天</button>
+    </div>
+
+    <div class="card today-overview-card" id="todayOverviewCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;">📋 今日總覽</div>
+      <div class="tov-row" id="tovRow"></div>
     </div>
 
     <div class="card">
@@ -1179,6 +1257,19 @@
     <button class="pl-close" onclick="stopBarcodeScan()">✕</button>
   </div>
 
+  <div class="page" id="page-calendar">
+    <div class="month-nav">
+      <button onclick="changeCalMonth(-1)">‹</button>
+      <div class="m-label" id="calMonthLabel">—</div>
+      <button onclick="changeCalMonth(1)">›</button>
+    </div>
+    <div class="card">
+      <div class="cal-weekday-row"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend" id="calLegend"></div>
+    </div>
+  </div>
+
   <div class="page" id="page-stats">
     <div class="month-nav">
       <button onclick="changeMonth(-1)">‹</button>
@@ -1314,6 +1405,12 @@
 </div>
 
 <div class="tabbar" id="tabbarContainer"></div>
+<div class="more-menu-overlay" id="moreMenuOverlay" onclick="if(event.target===this) closeMoreMenu()">
+  <div class="more-menu-sheet">
+    <div class="more-menu-title">更多</div>
+    <div class="more-menu-grid" id="moreMenuGrid"></div>
+  </div>
+</div>
 
 <script>
 /* ============================================================
@@ -1508,6 +1605,60 @@ function quickRecord() {
   }, 80);
 }
 
+// 快速新增選單：日記／飲食／經期／股票，不用先自己切分頁找輸入框
+const FAB_MENU_ITEMS = [
+  { icon: '📝', label: '寫日記', action: 'log' },
+  { icon: '🍱', label: '記錄飲食', action: 'food' },
+  { icon: '🌸', label: '經期', action: 'period' },
+  { icon: '📈', label: '股票交易', action: 'stock' }
+];
+let fabMenuOpen = false;
+function toggleFabMenu() {
+  fabMenuOpen ? closeFabMenu() : openFabMenu();
+}
+function openFabMenu() {
+  fabMenuOpen = true;
+  document.getElementById('fabBtn').classList.add('open');
+  document.getElementById('fabBackdrop').classList.add('show');
+  const container = document.getElementById('fabMiniContainer');
+  container.innerHTML = FAB_MENU_ITEMS.map((item, i) => `
+    <button class="fab-mini" style="bottom:${88 + 60 * (i + 1)}px;" onclick="fabMenuAction('${item.action}')">
+      <span class="icon">${item.icon}</span>${item.label}
+    </button>
+  `).join('');
+  // 讓 CSS transition 有機會跑起來，不要一插入 DOM 就直接是展開狀態
+  requestAnimationFrame(() => {
+    container.querySelectorAll('.fab-mini').forEach(el => el.classList.add('show'));
+  });
+}
+function closeFabMenu() {
+  fabMenuOpen = false;
+  document.getElementById('fabBtn').classList.remove('open');
+  document.getElementById('fabBackdrop').classList.remove('show');
+  document.querySelectorAll('.fab-mini').forEach(el => el.classList.remove('show'));
+  setTimeout(() => { if (!fabMenuOpen) document.getElementById('fabMiniContainer').innerHTML = ''; }, 200);
+}
+function fabMenuAction(action) {
+  closeFabMenu();
+  if (action === 'log') {
+    quickRecord();
+  } else if (action === 'food') {
+    switchTab('page-food');
+    setTimeout(() => {
+      const el = document.getElementById('foodDescInput');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+    }, 80);
+  } else if (action === 'period') {
+    switchTab('page-period');
+  } else if (action === 'stock') {
+    switchTab('page-stock');
+    setTimeout(() => {
+      const el = document.getElementById('stockCode');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+    }, 80);
+  }
+}
+
 /* ================= 下拉重新整理 ================= */
 let ptrStartY = 0, ptrPulling = false, ptrDist = 0;
 function reloadCurrentTab() {
@@ -1597,6 +1748,7 @@ const PAGE_ACCENTS = {
   'page-tickets': ['#E8A33D', '#C9861F'],
   'page-photos': ['#D88FBE', '#B76B9C'],
   'page-food': ['#E8916A', '#C96F49'],
+  'page-calendar': ['#8FB8D8', '#5F92BB'],
   'page-stats': ['#6FA8DC', '#4A85BF'],
   'page-memory': ['#B39DDB', '#8B6FC9'],
   'page-stock': ['#5FA88F', '#3D8570']
@@ -1605,6 +1757,8 @@ function switchTab(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+  const moreBtn = document.getElementById('moreTabBtn');
+  if (moreBtn) moreBtn.classList.toggle('active', (window._tabOverflowList || []).indexOf(pageId) !== -1);
   const accent = PAGE_ACCENTS[pageId];
   if (accent) {
     document.documentElement.style.setProperty('--accent', accent[0]);
@@ -1614,6 +1768,7 @@ function switchTab(pageId) {
   if (pageId === 'page-tickets') loadTicketWall();
   if (pageId === 'page-photos') loadPhotoWall();
   if (pageId === 'page-food') loadFoodPage();
+  if (pageId === 'page-calendar') loadCalendarPage();
   if (pageId === 'page-stats') loadStatsPage();
   if (pageId === 'page-memory') loadMemoryPage();
   if (pageId === 'page-stock') loadStockPage();
@@ -1916,12 +2071,16 @@ const TAB_META = {
   'page-tickets': { icon: '🎟️', label: '票根' },
   'page-photos': { icon: '🖼️', label: '相片' },
   'page-food': { icon: '🍱', label: '飲食' },
+  'page-calendar': { icon: '📅', label: '月曆' },
   'page-stats': { icon: '📊', label: '統計' },
   'page-memory': { icon: '🕰️', label: '回顧' },
   'page-stock': { icon: '📈', label: '股票' },
   'page-period': { icon: '🌷', label: '經期' }
 };
-const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-tickets', 'page-photos', 'page-food', 'page-stats', 'page-memory', 'page-stock', 'page-period'];
+// 底部列只直接顯示前 MAX_PRIMARY_TABS 個，其餘收進「更多」選單——分頁變多之後全部擠在
+// 底下要一直左右滑很麻煩，所以只留最常用的幾個，其他點「更多」再選
+const MAX_PRIMARY_TABS = 4;
+const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-food', 'page-memory', 'page-stock', 'page-period'];
 // 已經存過自訂分頁順序的人，存檔裡不會有新加的分頁 id；這裡自動把 TAB_META 有、但存檔順序裡沒有的
 // 分頁補到最後面，新分頁才不會因為「使用者以前存過順序」而永遠不出現。
 function mergeTabOrder(order) {
@@ -1931,23 +2090,44 @@ function mergeTabOrder(order) {
 }
 
 /**
- * 直接把所有分頁按鈕畫出來，不再分「常用/更多」兩層——全部一次顯示，
- * 太多個放不下時選單列本身可以左右滑動，設定固定放在最後面。
+ * 底部列只顯示前 MAX_PRIMARY_TABS 個常用分頁，其餘收進「更多」選單（點了跳出選單，
+ * 不會佔掉底部列空間），分頁太多也不用一直左右滑。
  */
 function renderTabbarButtons(order) {
   const container = document.getElementById('tabbarContainer');
   const list = mergeTabOrder(order);
+  const primary = list.slice(0, MAX_PRIMARY_TABS);
+  const overflow = list.slice(MAX_PRIMARY_TABS);
+  window._tabOverflowList = overflow; // 給「更多」選單跟 switchTab 判斷 active 狀態用
   const activePage = document.querySelector('.page.active');
   const activeId = activePage ? activePage.id : 'page-log';
-  container.innerHTML = list.map(id => `
+  const isOverflowActive = overflow.indexOf(activeId) !== -1;
+  container.innerHTML = primary.map(id => `
     <button class="tab-btn${id === activeId ? ' active' : ''}" data-page="${id}" onclick="switchTab('${id}')">
       <span class="icon">${TAB_META[id].icon}</span>${TAB_META[id].label}
     </button>
-  `).join('') + `
+  `).join('') + (overflow.length ? `
+    <button class="tab-btn${isOverflowActive ? ' active' : ''}" id="moreTabBtn" onclick="openMoreMenu()">
+      <span class="icon">⋯</span>更多
+    </button>
+  ` : '') + `
     <button class="tab-btn" onclick="toggleSettings()">
       <span class="icon">⚙️</span>設定
     </button>
   `;
+}
+function openMoreMenu() {
+  const overflow = window._tabOverflowList || [];
+  document.getElementById('moreMenuGrid').innerHTML = overflow.map(id => `
+    <div class="more-menu-item" onclick="switchTab('${id}');closeMoreMenu();">
+      <span class="icon">${TAB_META[id].icon}</span>
+      <span class="label">${TAB_META[id].label}</span>
+    </div>
+  `).join('');
+  document.getElementById('moreMenuOverlay').classList.add('show');
+}
+function closeMoreMenu() {
+  document.getElementById('moreMenuOverlay').classList.remove('show');
 }
 async function loadTabOrderSettings() {
   const area = document.getElementById('tabOrderList');
@@ -1962,9 +2142,15 @@ async function loadTabOrderSettings() {
 }
 function renderTabOrderList(order) {
   const area = document.getElementById('tabOrderList');
-  area.innerHTML = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">拖曳調整順序，會依照這個順序排在下方選單（放不下時選單可以左右滑動）</div>`;
-  order.forEach((id) => {
+  area.innerHTML = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">拖曳調整順序，前 ${MAX_PRIMARY_TABS} 個會直接顯示在下方選單，其餘收進「更多」</div>`;
+  order.forEach((id, i) => {
     const meta = TAB_META[id] || { icon: '✦', label: id };
+    if (i === MAX_PRIMARY_TABS) {
+      const divider = document.createElement('div');
+      divider.className = 'tab-order-divider';
+      divider.textContent = '⋯ 以下收進「更多」';
+      area.appendChild(divider);
+    }
     const row = document.createElement('div');
     row.className = 'cat-manager-row';
     row.dataset.id = id;
@@ -2136,6 +2322,29 @@ function jumpToDateInput(val) {
   const [y, m, d] = val.split('-').map(Number);
   currentDate = new Date(y, m - 1, d);
   refresh();
+}
+async function loadTodayOverview() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getTodayOverview`, { cache: 'no-store' });
+    const d = await res.json();
+    if (d.error) return;
+    const card = document.getElementById('todayOverviewCard');
+    const row = document.getElementById('tovRow');
+    const moodObj = MOODS.find(m => String(m.v) === String(d.mood));
+    let periodHtml = '';
+    if (d.periodStatus) {
+      periodHtml = d.periodStatus.inPeriod
+        ? `<div class="tov-chip"><div class="tov-icon">🌸</div><div class="tov-value">第 ${d.periodStatus.day} 天</div><div class="tov-label">經期中</div></div>`
+        : `<div class="tov-chip"><div class="tov-icon">🌷</div><div class="tov-value">${d.periodStatus.daysUntilNext >= 0 ? d.periodStatus.daysUntilNext + ' 天後' : '已延遲'}</div><div class="tov-label">預估經期</div></div>`;
+    }
+    row.innerHTML = `
+      <div class="tov-chip"><div class="tov-icon">🍱</div><div class="tov-value">${d.calories || 0} kcal</div><div class="tov-label">今日飲食</div></div>
+      <div class="tov-chip"><div class="tov-icon">💪</div><div class="tov-value">${d.hasExercise ? '已運動' : '尚未運動'}</div><div class="tov-label">運動</div></div>
+      ${periodHtml}
+      ${moodObj ? `<div class="tov-chip"><div class="tov-icon">${moodObj.e}</div><div class="tov-value">已記錄</div><div class="tov-label">今日心情</div></div>` : ''}
+    `;
+    card.style.display = 'block';
+  } catch (err) {}
 }
 async function refresh() {
   document.getElementById('dateLabel').textContent = dateLabel(currentDate);
@@ -2623,6 +2832,7 @@ async function submitEntry() {
     currentFieldValues = {}; renderExtraFields();
     if (isEdit) cancelEditEntry();
     showToast(isEdit ? pick(UPDATE_MSGS) : pick(SAVE_MSGS));
+    loadTodayOverview();
     await loadEntries();
     if (!isEdit && isTicketCat && result.photoUrl && result.id) {
       btn.textContent = 'AI 辨識票根中…';
@@ -2921,6 +3131,7 @@ async function togglePeriodOpen() {
     loadPeriodStatus();
     loadPeriodOpenState();
     loadPeriodLogList();
+    loadTodayOverview();
   } catch (err) {
     alert('操作失敗：' + err.message);
   } finally {
@@ -3128,6 +3339,7 @@ async function confirmAddFood(containerId, source) {
     if (containerId === 'barcodeResult') document.getElementById('manualBarcodeInput').value = '';
     showToast('記錄好了 🍱');
     loadFoodPage();
+    if (fmtDate(foodDate) === fmtDate(new Date())) loadTodayOverview();
   } catch (err) {
     alert('儲存失敗：' + err.message);
   }
@@ -3861,17 +4073,123 @@ async function doSearch() {
   if (!q) { area.innerHTML = ''; return; }
   area.innerHTML = '<div class="empty-state">搜尋中… 🔍</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=searchEntries&q=${encodeURIComponent(q)}`, { cache: 'no-store' });
+    const res = await fetch(`${CONFIG.GAS_URL}?action=searchAll&q=${encodeURIComponent(q)}`, { cache: 'no-store' });
     const results = await res.json();
-    if (!results.length) { area.innerHTML = '<div class="empty-state">找不到符合的紀錄</div>'; return; }
+    const totalCount = (results.entries || []).length + (results.food || []).length + (results.stock || []).length + (results.period || []).length;
+    if (!totalCount) { area.innerHTML = '<div class="empty-state">找不到符合的紀錄</div>'; return; }
     area.innerHTML = '';
-    results.forEach(e => area.appendChild(renderTicket(e)));
+    if (results.entries && results.entries.length) {
+      area.appendChild(searchSectionHeader('📔 日記'));
+      results.entries.forEach(e => area.appendChild(renderTicket(e)));
+    }
+    if (results.food && results.food.length) {
+      area.appendChild(searchSectionHeader('🍱 飲食'));
+      const box = document.createElement('div');
+      box.innerHTML = results.food.map(f => `
+        <div class="search-mini-item" onclick="switchTab('page-food');jumpFoodDate('${f.date}');">
+          <span>${escapeHtml(f.name)}</span>
+          <span class="smi-right">${f.calories} kcal・${f.date}</span>
+        </div>
+      `).join('');
+      area.appendChild(box);
+    }
+    if (results.stock && results.stock.length) {
+      area.appendChild(searchSectionHeader('📈 股票'));
+      const box = document.createElement('div');
+      box.innerHTML = results.stock.map(s => `
+        <div class="search-mini-item" onclick="switchTab('page-stock');">
+          <span>${escapeHtml(s.code)} ${escapeHtml(s.name || '')}</span>
+          <span class="smi-right">${s.stockAction === 'sell' ? '賣出' : '買進'}・${s.date}</span>
+        </div>
+      `).join('');
+      area.appendChild(box);
+    }
+    if (results.period && results.period.length) {
+      area.appendChild(searchSectionHeader('🌸 經期'));
+      const box = document.createElement('div');
+      box.innerHTML = results.period.map(p => `
+        <div class="search-mini-item" onclick="switchTab('page-period');">
+          <span>${escapeHtml(p.note)}</span>
+          <span class="smi-right">${p.startDate}${p.endDate ? '～' + p.endDate : ''}</span>
+        </div>
+      `).join('');
+      area.appendChild(box);
+    }
   } catch (err) {
-    area.innerHTML = '<div class="empty-state">搜尋失敗：' + err.message + '</div>';
+    area.innerHTML = '<div class="empty-state">搜尋失敗：' + escapeHtml(err.message) + '</div>';
   }
+}
+function searchSectionHeader(label) {
+  const h = document.createElement('div');
+  h.className = 'search-section-header';
+  h.textContent = label;
+  return h;
+}
+function jumpFoodDate(ds) {
+  const [y, m, d] = ds.split('-').map(Number);
+  foodDate = new Date(y, m - 1, d);
+  loadFoodPage();
 }
 
 /* ================= 統計頁 ================= */
+// ---------- 月曆總覽 ----------
+let calMonth = new Date();
+function changeCalMonth(delta) {
+  calMonth.setMonth(calMonth.getMonth() + delta);
+  loadCalendarPage();
+}
+async function loadCalendarPage() {
+  if (!checkConfig()) return;
+  const ym = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
+  document.getElementById('calMonthLabel').textContent = calMonth.getFullYear() + ' 年 ' + (calMonth.getMonth() + 1) + ' 月';
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">載入中…</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getCalendarOverview&month=${ym}`, { cache: 'no-store' });
+    const overview = await res.json();
+    renderCalendarGrid(ym, overview);
+  } catch (err) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+function renderCalendarGrid(ym, overview) {
+  const grid = document.getElementById('calGrid');
+  const [y, m] = ym.split('-').map(Number);
+  const firstWeekday = new Date(y, m - 1, 1).getDay(); // 0=日
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const todayStr = fmtDate(new Date());
+  let html = '';
+  for (let i = 0; i < firstWeekday; i++) html += '<div class="cal-cell empty"></div>';
+  const legendSet = {};
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = ym + '-' + String(d).padStart(2, '0');
+    const day = overview[ds];
+    let dots = '';
+    if (day) {
+      (day.cats || []).forEach(c => {
+        dots += `<span class="cal-dot" style="background:${c.color};"></span>`;
+        legendSet[c.name] = c.color;
+      });
+      if (day.hasFood) { dots += `<span class="cal-dot" style="background:#E8916A;"></span>`; legendSet['飲食'] = '#E8916A'; }
+      if (day.hasPeriod) { dots += `<span class="cal-dot" style="background:#FF8FB3;"></span>`; legendSet['經期'] = '#FF8FB3'; }
+    }
+    html += `<div class="cal-cell${ds === todayStr ? ' today' : ''}" onclick="jumpFromCalendar('${ds}')">
+      <span class="cal-daynum">${d}</span>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+  const legend = document.getElementById('calLegend');
+  const keys = Object.keys(legendSet);
+  legend.innerHTML = keys.length ? keys.map(name =>
+    `<div class="cal-legend-item"><span class="cal-dot" style="background:${legendSet[name]};"></span>${escapeHtml(name)}</div>`
+  ).join('') : '<div style="color:var(--ink-soft);">這個月還沒有任何紀錄</div>';
+}
+function jumpFromCalendar(ds) {
+  switchTab('page-log');
+  jumpToDate(ds);
+}
+
 function changeMonth(delta) {
   statsMonth.setMonth(statsMonth.getMonth() + delta);
   loadStatsPage();
@@ -4089,6 +4407,7 @@ function startApp() {
   renderTabbarButtons(DEFAULT_TAB_ORDER);
   loadSavedTabOrder();
   loadTodayAffirmation();
+  loadTodayOverview();
   renderOfflineBadge();
   flushOfflineQueue();
   loadCategories().then(refresh).then(() => {
