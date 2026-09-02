@@ -498,12 +498,19 @@
   .holding-item .h-name{font-size:11.5px;color:var(--ink-soft);}
   .holding-item .h-right{text-align:right;font-size:12.5px;color:var(--ink);}
   .holding-item .h-right .h-sub{font-size:11px;color:var(--ink-soft);}
+  .stock-overview-row{
+    background:var(--input-bg);border-radius:12px;padding:10px 12px;margin-bottom:8px;
+  }
+  .stock-overview-row .sov-name{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:6px;}
+  .stock-overview-row .sov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;}
+  .stock-overview-row .sov-label{font-size:10px;color:var(--ink-soft);}
+  .stock-overview-row .sov-value{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:1px;}
   .pl-item{
     display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;
   }
   .pl-item:last-child{border-bottom:none;}
-  .pl-pos{color:#3E8C5B;font-weight:700;}
-  .pl-neg{color:var(--accent-dark);font-weight:700;}
+  .pl-pos{color:#D93A3A;font-weight:700;}
+  .pl-neg{color:#3E8C5B;font-weight:700;}
   .stock-log-item{
     background:var(--input-bg);border-radius:12px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;
     display:flex;justify-content:space-between;align-items:center;
@@ -550,7 +557,9 @@
   .batch-bar.show{display:flex;}
   .batch-cancel-btn{background:none;border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:12px;padding:6px 12px;font-size:12px;cursor:pointer;}
   .batch-delete-btn{background:var(--accent);border:none;color:#fff;border-radius:12px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+  .stock-log-item .sl-actions{display:flex;gap:8px;flex-shrink:0;}
   .stock-log-item .sl-del{background:none;border:none;color:#D8CABB;font-size:13px;cursor:pointer;}
+  .stock-log-item .sl-edit{background:none;border:none;color:var(--ink-soft);font-size:13px;cursor:pointer;}
   .gym-form-row input{margin-bottom:8px;}
   .gym-log-day{margin-top:14px;}
   .gym-log-day .gl-date{font-size:11.5px;color:var(--ink-soft);font-weight:700;margin:10px 0 6px;letter-spacing:.5px;}
@@ -773,6 +782,35 @@
   }
   .settings-header h2{font-family:'Chiron GoRound TC';font-size:18px;margin:0;color:var(--ink);}
   .settings-close{background:none;border:none;font-size:22px;color:var(--ink-soft);cursor:pointer;}
+
+  /* ---- 股票批次新增 ---- */
+  .batch-overlay{
+    position:fixed;inset:0;display:none;background:var(--bg);z-index:250;overflow-y:auto;
+  }
+  .batch-overlay.show{display:block;}
+  .batch-header{
+    display:flex;align-items:center;justify-content:space-between;padding:20px 16px 10px;
+    position:sticky;top:0;background:var(--bg);z-index:2;
+  }
+  .batch-header h2{font-family:'Chiron GoRound TC';font-size:18px;margin:0;color:var(--ink);}
+  .batch-row-card{
+    background:var(--card);border-radius:16px;padding:12px;margin-bottom:10px;border:1.5px solid var(--line);
+  }
+  .batch-row-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .batch-row-grid input, .batch-row-grid select{
+    background:var(--input-bg);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;
+    font-size:12.5px;color:var(--ink);font-family:inherit;box-sizing:border-box;width:100%;min-width:0;
+  }
+  .batch-row-note{
+    width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:10px;
+    padding:8px 10px;font-size:12.5px;color:var(--ink);font-family:inherit;
+  }
+  .batch-row-remove{background:none;border:none;color:var(--accent-dark);font-size:11.5px;font-weight:700;cursor:pointer;float:right;padding:0;margin-bottom:6px;}
+  .batch-footer{
+    position:fixed;bottom:0;left:0;right:0;background:var(--bg);padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    border-top:1px solid var(--line);
+  }
+  .batch-trigger-link{background:none;border:none;color:var(--accent-dark);font-size:12.5px;font-weight:700;cursor:pointer;padding:0;}
   .settings-tabs{display:flex;gap:8px;padding:0 16px 12px;}
   .settings-tab-btn{
     flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:14px;
@@ -1023,6 +1061,34 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<div class="batch-overlay" id="batchOverlay">
+  <div class="batch-header">
+    <h2>📥 批次新增交易</h2>
+    <button class="settings-close" onclick="closeBatchModal()">✕</button>
+  </div>
+  <div class="wrap" style="padding-bottom:110px;">
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📋 貼上多行資料</div>
+      <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;line-height:1.6;">
+        每行一筆，欄位用 Tab 或逗號分隔，順序：代號,名稱,買/賣,股數,成交價,手續費,交易稅,日期,備註（從手續費開始都可以省略，日期省略預設今天）
+      </div>
+      <textarea id="batchPasteArea" placeholder="2330,台積電,買,1000,600,20&#10;0050,元大台灣50,賣,500,140,15,5" style="min-height:90px;"></textarea>
+      <button class="gen-btn" style="width:100%;margin-top:8px;" onclick="parseBatchPaste()">解析並加入下面清單</button>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;">
+        <span>📝 待送出清單（<span id="batchRowCount">0</span> 筆）</span>
+        <button class="gen-btn" onclick="addBatchRow()">＋ 新增一列</button>
+      </div>
+      <div id="batchRowsArea"></div>
+    </div>
+  </div>
+  <div class="batch-footer">
+    <button class="submit-btn" id="batchSubmitBtn" style="width:100%;" onclick="submitBatchStockLog()">全部送出</button>
   </div>
 </div>
 
@@ -1335,7 +1401,10 @@
 
   <div class="page" id="page-stock">
     <div class="card">
-      <div class="field-label" style="margin-top:0;">📈 新增買賣紀錄</div>
+      <div class="field-label" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;">
+        <span>📈 新增買賣紀錄</span>
+        <button class="batch-trigger-link" onclick="openBatchModal()">📥 批次新增</button>
+      </div>
       <div class="stock-form-row">
         <input type="text" id="stockCode" placeholder="代號，例如 2330" onblur="fillStockPair('code')">
         <input type="text" id="stockName" placeholder="名稱，例如 台積電" onblur="fillStockPair('name')">
@@ -1354,6 +1423,7 @@
       </div>
       <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
       <button class="submit-btn" id="stockSubmitBtn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
+      <button class="gen-btn" id="stockCancelEditBtn" style="display:none;margin-top:8px;width:100%;" onclick="cancelEditStockLog()">取消編輯</button>
     </div>
 
     <div class="card">
@@ -1361,6 +1431,12 @@
       <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">每筆交易後的持股總成本變化</div>
       <svg class="mood-chart" id="stockCostChart"></svg>
       <div id="stockCostChartEmpty" class="empty-state" style="display:none;">還沒有足夠的交易紀錄可以畫圖</div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📋 股票總覽</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 8px;">目前市價來自證交所公開資料，抓不到時會顯示「—」，僅供參考</div>
+      <div id="stockOverviewArea"></div>
     </div>
 
     <div class="card">
@@ -3541,6 +3617,134 @@ function fillStockPair(source) {
     }
   }
 }
+// ---------- 股票批次新增 ----------
+let batchRows = [];
+function openBatchModal() {
+  document.getElementById('batchOverlay').classList.add('show');
+  renderBatchRows();
+}
+function closeBatchModal() {
+  document.getElementById('batchOverlay').classList.remove('show');
+}
+function addBatchRowSilent(prefill) {
+  batchRows.push(Object.assign(
+    { code: '', name: '', stockAction: 'buy', shares: '', price: '', fee: '', tax: '', date: fmtDate(new Date()), note: '' },
+    prefill || {}
+  ));
+}
+function addBatchRow() {
+  addBatchRowSilent({});
+  renderBatchRows();
+}
+function removeBatchRow(i) {
+  batchRows.splice(i, 1);
+  renderBatchRows();
+}
+function updateBatchRow(i, key, value) {
+  if (batchRows[i]) batchRows[i][key] = value;
+}
+function renderBatchRows() {
+  const area = document.getElementById('batchRowsArea');
+  document.getElementById('batchRowCount').textContent = batchRows.length;
+  if (!batchRows.length) { area.innerHTML = '<div class="empty-state">還沒有任何待送出的紀錄，貼上資料或按「＋新增一列」開始</div>'; return; }
+  area.innerHTML = batchRows.map((r, i) => `
+    <div class="batch-row-card">
+      <button class="batch-row-remove" onclick="removeBatchRow(${i})">✕ 移除</button>
+      <div class="batch-row-grid">
+        <input type="text" placeholder="代號" value="${escapeHtml(r.code)}" oninput="updateBatchRow(${i},'code',this.value)">
+        <input type="text" placeholder="名稱" value="${escapeHtml(r.name)}" oninput="updateBatchRow(${i},'name',this.value)">
+        <select onchange="updateBatchRow(${i},'stockAction',this.value)">
+          <option value="buy"${r.stockAction === 'buy' ? ' selected' : ''}>買進</option>
+          <option value="sell"${r.stockAction === 'sell' ? ' selected' : ''}>賣出</option>
+        </select>
+        <input type="date" value="${r.date}" oninput="updateBatchRow(${i},'date',this.value)">
+        <input type="number" placeholder="股數" value="${r.shares}" oninput="updateBatchRow(${i},'shares',this.value)">
+        <input type="number" step="0.01" placeholder="成交價" value="${r.price}" oninput="updateBatchRow(${i},'price',this.value)">
+        <input type="number" step="0.01" placeholder="手續費" value="${r.fee}" oninput="updateBatchRow(${i},'fee',this.value)">
+        <input type="number" step="0.01" placeholder="交易稅" value="${r.tax}" oninput="updateBatchRow(${i},'tax',this.value)">
+      </div>
+      <input type="text" class="batch-row-note" placeholder="備註（選填）" value="${escapeHtml(r.note)}" oninput="updateBatchRow(${i},'note',this.value)">
+    </div>
+  `).join('');
+}
+function parseBatchPaste() {
+  const text = document.getElementById('batchPasteArea').value;
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  if (!lines.length) return;
+  let addedCount = 0;
+  lines.forEach(line => {
+    const parts = (line.indexOf('\t') !== -1 ? line.split('\t') : line.split(',')).map(p => p.trim());
+    if (parts.length < 4) return; // 至少要有 代號,名稱,買賣,股數
+    const [code, name, actionRaw, shares, price, fee, tax, date, note] = parts;
+    const stockAction = /賣|sell|^s$/i.test(actionRaw) ? 'sell' : 'buy';
+    addBatchRowSilent({
+      code: code || '', name: name || '', stockAction, shares: shares || '', price: price || '',
+      fee: fee || '', tax: tax || '', date: date || fmtDate(new Date()), note: note || ''
+    });
+    addedCount++;
+  });
+  renderBatchRows();
+  document.getElementById('batchPasteArea').value = '';
+  if (addedCount) showToast(`已解析 ${addedCount} 筆，加進下面清單囉`);
+  else alert('沒有解析出任何資料，請確認格式（至少要有：代號,名稱,買/賣,股數）');
+}
+async function submitBatchStockLog() {
+  if (!batchRows.length) { alert('清單是空的，請先加幾筆再送出'); return; }
+  const invalidIndex = batchRows.findIndex(r => !r.code || !r.shares || !r.price);
+  if (invalidIndex !== -1) { alert(`第 ${invalidIndex + 1} 筆缺少代號／股數／成交價，請補齊再送出`); return; }
+  const btn = document.getElementById('batchSubmitBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = `送出中…（共 ${batchRows.length} 筆）`;
+  try {
+    const result = await postJSON({ action: 'addStockLogBatch', items: batchRows }, 60000);
+    if (result && result.error) throw new Error(result.error);
+    showToast(`成功新增 ${result.count} 筆交易 📈`);
+    batchRows = [];
+    renderBatchRows();
+    closeBatchModal();
+    loadStockSummary();
+    loadStockLogList();
+    loadStockNameMap();
+    loadStockCostChart();
+  } catch (err) {
+    alert('批次新增失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+let editingStockId = null;
+function editStockLog(id) {
+  const r = stockLogAll.find(x => x.id === id);
+  if (!r) return;
+  editingStockId = id;
+  document.getElementById('stockCode').value = r.code;
+  document.getElementById('stockName').value = r.name || '';
+  selectStockAction(r.action === 'sell' ? 'sell' : 'buy');
+  document.getElementById('stockShares').value = r.shares;
+  document.getElementById('stockPrice').value = r.price;
+  document.getElementById('stockFee').value = r.fee || '';
+  document.getElementById('stockTax').value = r.tax || '';
+  document.getElementById('stockDate').value = r.date;
+  document.getElementById('stockNote').value = r.note || '';
+  document.getElementById('stockSubmitBtn').textContent = '更新這筆交易';
+  document.getElementById('stockCancelEditBtn').style.display = 'block';
+  document.getElementById('stockCode').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function cancelEditStockLog() {
+  editingStockId = null;
+  document.getElementById('stockCode').value = '';
+  document.getElementById('stockName').value = '';
+  document.getElementById('stockShares').value = '';
+  document.getElementById('stockPrice').value = '';
+  document.getElementById('stockFee').value = '';
+  document.getElementById('stockTax').value = '';
+  document.getElementById('stockNote').value = '';
+  document.getElementById('stockSubmitBtn').textContent = '記錄這筆交易';
+  document.getElementById('stockCancelEditBtn').style.display = 'none';
+}
 async function submitStockLog() {
   const btn = document.getElementById('stockSubmitBtn');
   if (btn.disabled) return; // 防呆：正在送出中就不要理會重複點擊
@@ -3553,29 +3757,40 @@ async function submitStockLog() {
   const date = document.getElementById('stockDate').value || fmtDate(new Date());
   const note = document.getElementById('stockNote').value.trim();
   if (!code || !shares || !price) { alert('至少填代號、股數、成交價喔'); return; }
+  const isEdit = !!editingStockId;
   btn.disabled = true;
   const originalText = btn.textContent;
-  btn.textContent = '記錄中…';
+  btn.textContent = isEdit ? '更新中…' : '記錄中…';
   try {
-    const result = await postJSON({ action: 'addStockLog', code, name, stockAction: selectedStockAction, shares, price, fee, tax, date, note });
+    const body = isEdit
+      ? { action: 'updateStockLog', id: editingStockId, code, name, stockAction: selectedStockAction, shares, price, fee, tax, date, note }
+      : { action: 'addStockLog', code, name, stockAction: selectedStockAction, shares, price, fee, tax, date, note };
+    const result = await postJSON(body);
     if (result && result.error) throw new Error(result.error);
-    document.getElementById('stockCode').value = '';
-    document.getElementById('stockName').value = '';
-    document.getElementById('stockShares').value = '';
-    document.getElementById('stockPrice').value = '';
-    document.getElementById('stockFee').value = '';
-    document.getElementById('stockTax').value = '';
-    document.getElementById('stockNote').value = '';
-    showToast(selectedStockAction === 'buy' ? '買進記錄好了 📈' : '賣出記錄好了 📉');
+    if (isEdit) cancelEditStockLog();
+    else {
+      document.getElementById('stockCode').value = '';
+      document.getElementById('stockName').value = '';
+      document.getElementById('stockShares').value = '';
+      document.getElementById('stockPrice').value = '';
+      document.getElementById('stockFee').value = '';
+      document.getElementById('stockTax').value = '';
+      document.getElementById('stockNote').value = '';
+    }
+    showToast(isEdit ? '更新好了 ✏️' : (selectedStockAction === 'buy' ? '買進記錄好了 📈' : '賣出記錄好了 📉'));
     loadStockSummary();
     loadStockLogList();
     loadStockNameMap();
     loadStockCostChart();
   } catch (err) {
-    alert('記錄失敗：' + err.message);
+    alert((isEdit ? '更新失敗：' : '記錄失敗：') + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = originalText;
+    if (!isEdit || editingStockId) {
+      // 新增模式一律還原文字；編輯模式則只有「失敗、還在編輯中」才需要還原——
+      // 編輯成功的話 cancelEditStockLog() 已經把文字設對了，這裡不要再蓋回去
+      btn.textContent = originalText;
+    }
   }
 }
 let stockRealizedTx = []; // 已實現損益明細（每筆賣出一筆），供篩選用
@@ -3602,8 +3817,37 @@ async function loadStockSummary() {
     stockRealizedTx = result.realizedTransactions || [];
     renderStockFilterRow('realizedFilterRow', stockRealizedTx, stockRealizedFilter, 'Realized');
     renderStockRealized();
+    renderStockOverview(result.overview || []);
   } catch (err) {
     holdArea.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+async function renderStockOverview(overview) {
+  const area = document.getElementById('stockOverviewArea');
+  if (!overview.length) { area.innerHTML = '<div class="empty-state">還沒有任何交易紀錄</div>'; return; }
+  area.innerHTML = overview.map(o => `
+    <div class="stock-overview-row">
+      <div class="sov-name">${escapeHtml(o.code)} ${escapeHtml(o.name || '')}</div>
+      <div class="sov-grid">
+        <div><div class="sov-label">平均購入</div><div class="sov-value">${o.avgBuyPrice !== null ? o.avgBuyPrice : '—'}</div></div>
+        <div><div class="sov-label">平均賣出</div><div class="sov-value">${o.avgSellPrice !== null ? o.avgSellPrice : '—'}</div></div>
+        <div><div class="sov-label">目前市價</div><div class="sov-value" id="sov-price-${escapeHtml(o.code)}">…</div></div>
+      </div>
+    </div>
+  `).join('');
+  const codes = overview.map(o => o.code);
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getCurrentStockPrices&codes=${encodeURIComponent(codes.join(','))}`, { cache: 'no-store' });
+    const prices = await res.json();
+    overview.forEach(o => {
+      const el = document.getElementById('sov-price-' + o.code);
+      if (el) el.textContent = (prices[o.code] !== undefined && prices[o.code] !== null) ? prices[o.code] : '—';
+    });
+  } catch (err) {
+    overview.forEach(o => {
+      const el = document.getElementById('sov-price-' + o.code);
+      if (el) el.textContent = '—';
+    });
   }
 }
 function renderStockRealized() {
@@ -3655,7 +3899,10 @@ function renderStockLog() {
         <span class="sl-tag ${r.action}">${r.action === 'buy' ? '買' : '賣'}</span>
         ${escapeHtml(r.code)} ${escapeHtml(r.name || '')}　${r.shares}股 @ ${r.price}${r.tax ? `　稅 ${r.tax}` : ''}${r.fee ? `　費 ${r.fee}` : ''}　<span style="color:var(--ink-soft);">${r.date}</span>
       </div>
-      <button class="sl-del" onclick="deleteStockLogItem('${r.id}')">✕</button>
+      <div class="sl-actions">
+        <button class="sl-edit" onclick="editStockLog('${r.id}')">✎</button>
+        <button class="sl-del" onclick="deleteStockLogItem('${r.id}')">✕</button>
+      </div>
     </div>
   `).join('');
   area.innerHTML = html;
