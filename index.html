@@ -798,12 +798,18 @@
     background:none;border:1px solid #E8C99A;color:#B8863D;border-radius:14px;
     padding:5px 12px;font-size:11.5px;cursor:pointer;font-weight:700;
   }
-  .search-bar{display:none;padding:0 16px 10px;}
+  .search-bar{display:none;padding:0 16px 10px;position:relative;}
   .search-bar.show{display:block;}
   .search-bar input{
     width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:14px;
-    padding:10px 14px;font-size:14px;color:var(--ink);font-family:inherit;
+    padding:10px 38px 10px 14px;font-size:14px;color:var(--ink);font-family:inherit;box-sizing:border-box;
   }
+  .search-clear-btn{
+    display:none;position:absolute;right:26px;top:50%;transform:translateY(-50%);
+    background:var(--input-bg);color:var(--ink-soft);border:none;width:22px;height:22px;border-radius:50%;
+    font-size:12px;cursor:pointer;align-items:center;justify-content:center;padding:0;
+  }
+  .search-clear-btn.show{display:flex;}
 
   /* ---- 統計頁 ---- */
   .month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
@@ -820,6 +826,7 @@
   }
   .heatmap .hm-day.empty{background:none;}
   .heatmap .hm-day.today{box-shadow:0 0 0 2px var(--accent) inset;font-weight:700;}
+  .heatmap .hm-day.selected{box-shadow:0 0 0 2.5px var(--coral-dark) inset;font-weight:700;transform:scale(1.05);}
 
   .donut-wrap{display:flex;align-items:center;gap:16px;}
   .donut{width:96px;height:96px;border-radius:50%;flex-shrink:0;}
@@ -858,6 +865,7 @@
 
 <div class="search-bar" id="searchBar">
   <input type="text" id="searchInput" placeholder="搜尋所有紀錄…" oninput="handleSearchInput()">
+  <button class="search-clear-btn" id="searchClearBtn" onclick="clearSearchInput()">✕</button>
 </div>
 <div class="wrap" id="searchResults"></div>
 
@@ -4150,9 +4158,18 @@ function toggleSearch() {
   } else {
     document.getElementById('searchInput').value = '';
     document.getElementById('searchResults').innerHTML = '';
+    document.getElementById('searchClearBtn').classList.remove('show');
   }
 }
+function clearSearchInput() {
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  input.focus();
+  document.getElementById('searchClearBtn').classList.remove('show');
+  document.getElementById('searchResults').innerHTML = '';
+}
 function handleSearchInput() {
+  document.getElementById('searchClearBtn').classList.toggle('show', !!document.getElementById('searchInput').value);
   clearTimeout(searchDebounce);
   searchDebounce = setTimeout(doSearch, 350);
 }
@@ -4286,6 +4303,8 @@ function changeMonth(delta) {
 let statsCalendarOverview = {};
 let statsMoodTrend = [];
 let statsSelectedDay = null;
+let statsYm = '';
+let statsDayCounts = {};
 async function loadStatsPage() {
   if (!checkConfig()) return;
   const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
@@ -4301,6 +4320,8 @@ async function loadStatsPage() {
     const stats = await statsRes.json();
     statsCalendarOverview = await calRes.json();
     statsMoodTrend = stats.moodTrend || [];
+    statsYm = ym;
+    statsDayCounts = stats.dayCounts || {};
     renderHeatmap(ym, stats.dayCounts);
     renderDonut(stats.categoryCounts);
     renderMoodChart(statsMoodTrend);
@@ -4347,9 +4368,45 @@ function renderHeatmap(ym, dayCounts) {
     if (count >= 3) bg = '#FFC0AC';
     if (count >= 5) bg = '#FF9C82';
     const isToday = ds === todayStr ? ' today' : '';
-    html += `<div class="hm-day${isToday}" style="background:${bg};cursor:pointer;" title="${ds}：${count} 則" onclick="jumpToDate('${ds}')">${d}</div>`;
+    const isSelected = ds === statsSelectedDay ? ' selected' : '';
+    html += `<div class="hm-day${isToday}${isSelected}" style="background:${bg};cursor:pointer;" title="${ds}：${count} 則" onclick="selectStatsDay('${ds}')">${d}</div>`;
   }
   area.innerHTML = html;
+}
+// 點熱力圖某一天：這一天在心情趨勢圖上會被標出來，並顯示當天各類別的紀錄明細（圖表聯動），
+// 不會直接跳頁——真的要看完整內容再從下面的按鈕過去
+function selectStatsDay(ds) {
+  statsSelectedDay = statsSelectedDay === ds ? null : ds; // 再點一次同一天＝取消選取
+  renderHeatmap(statsYm, statsDayCounts);
+  renderMoodChart(statsMoodTrend);
+  renderStatsDayDetail();
+}
+function renderStatsDayDetail() {
+  const card = document.getElementById('statsDayDetail');
+  if (!statsSelectedDay) { card.style.display = 'none'; return; }
+  const ds = statsSelectedDay;
+  const dayInfo = statsCalendarOverview[ds];
+  const cats = (dayInfo && dayInfo.cats) || [];
+  const moodEntry = statsMoodTrend.find(m => m.date === ds);
+  document.getElementById('statsDayDetailTitle').textContent = `📌 ${ds}`;
+  let bodyHtml = '';
+  if (cats.length) {
+    bodyHtml += cats.map(c => `
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 0;font-size:13px;color:var(--ink);">
+        <span style="width:8px;height:8px;border-radius:50%;background:${c.color};flex-shrink:0;"></span>
+        ${c.icon || ''} ${escapeHtml(c.name)}
+      </div>
+    `).join('');
+  } else {
+    bodyHtml += '<div class="empty-state" style="padding:6px 0;">這天沒有紀錄</div>';
+  }
+  if (moodEntry) {
+    const moodObj = MOODS.find(m => m.v === moodEntry.mood);
+    bodyHtml += `<div style="margin-top:4px;font-size:13px;color:var(--ink-soft);">${moodObj ? moodObj.e : ''} 心情：${moodEntry.mood}/5</div>`;
+  }
+  document.getElementById('statsDayDetailBody').innerHTML = bodyHtml;
+  document.getElementById('statsDayDetailJumpBtn').onclick = () => jumpToDate(ds);
+  card.style.display = 'block';
 }
 function jumpToDate(ds) {
   const [y, m, d] = ds.split('-').map(Number);
@@ -4389,7 +4446,10 @@ function renderMoodChart(moodTrend) {
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   svg.innerHTML = `
     <polyline points="${points}" fill="none" stroke="#D3C0FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    ${moodTrend.map((m, i) => `<circle cx="${pad + i * stepX}" cy="${yFor(m.mood)}" r="3.5" fill="#B39DDB"/>`).join('')}
+    ${moodTrend.map((m, i) => {
+      const isSel = m.date === statsSelectedDay;
+      return `<circle cx="${pad + i * stepX}" cy="${yFor(m.mood)}" r="${isSel ? 5.5 : 3.5}" fill="${isSel ? '#F0715E' : '#B39DDB'}"/>`;
+    }).join('')}
   `;
 }
 
