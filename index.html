@@ -466,6 +466,15 @@
     padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;box-sizing:border-box;min-width:0;
   }
   .stock-date-input{max-width:150px;}
+  .stock-filter-row{display:flex;gap:8px;margin-bottom:10px;}
+  .stock-filter-row select{
+    flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;
+    padding:8px 10px;font-size:12.5px;color:var(--ink);font-family:inherit;
+  }
+  .stock-subtotal{
+    display:flex;justify-content:space-between;align-items:center;padding:8px 0 10px;
+    border-bottom:1.5px solid var(--line);margin-bottom:6px;font-size:13px;font-weight:700;
+  }
   .period-phase-badge{
     display:inline-flex;align-items:center;gap:6px;background:color-mix(in srgb, var(--accent) 16%, white);
     color:var(--accent-dark);padding:8px 16px;border-radius:20px;font-size:15px;font-weight:700;margin-bottom:10px;
@@ -1282,6 +1291,12 @@
       <div class="heatmap" id="heatmapArea"></div>
     </div>
 
+    <div class="card" id="statsDayDetail" style="display:none;">
+      <div class="field-label" style="margin-top:0;" id="statsDayDetailTitle"></div>
+      <div id="statsDayDetailBody"></div>
+      <button class="gen-btn" style="width:100%;margin-top:8px;" id="statsDayDetailJumpBtn">查看這天的完整紀錄 →</button>
+    </div>
+
     <div class="card">
       <div class="field-label" style="margin-top:0;">🍩 類別佔比</div>
       <div class="donut-wrap" id="donutArea"></div>
@@ -1323,11 +1338,14 @@
         <input type="number" step="0.01" id="stockPrice" placeholder="成交價">
       </div>
       <div class="stock-form-row">
-        <input type="number" step="0.01" id="stockFee" placeholder="手續費/稅（選填）">
-        <input type="date" id="stockDate" class="stock-date-input">
+        <input type="number" step="0.01" id="stockFee" placeholder="手續費（選填）">
+        <input type="number" step="0.01" id="stockTax" placeholder="交易稅（選填）">
+      </div>
+      <div class="stock-form-row">
+        <input type="date" id="stockDate" class="stock-date-input" style="flex:1;">
       </div>
       <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
-      <button class="submit-btn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
+      <button class="submit-btn" id="stockSubmitBtn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
     </div>
 
     <div class="card">
@@ -1344,11 +1362,13 @@
 
     <div class="card">
       <div class="field-label" style="margin-top:0;">💰 已實現損益</div>
+      <div class="stock-filter-row" id="realizedFilterRow"></div>
       <div id="stockRealizedArea"></div>
     </div>
 
     <div class="card">
       <div class="field-label" style="margin-top:0;">📜 交易紀錄</div>
+      <div class="stock-filter-row" id="logFilterRow"></div>
       <div id="stockLogArea"></div>
     </div>
   </div>
@@ -3514,22 +3534,29 @@ function fillStockPair(source) {
   }
 }
 async function submitStockLog() {
+  const btn = document.getElementById('stockSubmitBtn');
+  if (btn.disabled) return; // 防呆：正在送出中就不要理會重複點擊
   const code = document.getElementById('stockCode').value.trim();
   const name = document.getElementById('stockName').value.trim();
   const shares = document.getElementById('stockShares').value;
   const price = document.getElementById('stockPrice').value;
   const fee = document.getElementById('stockFee').value;
+  const tax = document.getElementById('stockTax').value;
   const date = document.getElementById('stockDate').value || fmtDate(new Date());
   const note = document.getElementById('stockNote').value.trim();
   if (!code || !shares || !price) { alert('至少填代號、股數、成交價喔'); return; }
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '記錄中…';
   try {
-    const result = await postJSON({ action: 'addStockLog', code, name, stockAction: selectedStockAction, shares, price, fee, date, note });
+    const result = await postJSON({ action: 'addStockLog', code, name, stockAction: selectedStockAction, shares, price, fee, tax, date, note });
     if (result && result.error) throw new Error(result.error);
     document.getElementById('stockCode').value = '';
     document.getElementById('stockName').value = '';
     document.getElementById('stockShares').value = '';
     document.getElementById('stockPrice').value = '';
     document.getElementById('stockFee').value = '';
+    document.getElementById('stockTax').value = '';
     document.getElementById('stockNote').value = '';
     showToast(selectedStockAction === 'buy' ? '買進記錄好了 📈' : '賣出記錄好了 📉');
     loadStockSummary();
@@ -3538,11 +3565,18 @@ async function submitStockLog() {
     loadStockCostChart();
   } catch (err) {
     alert('記錄失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
+let stockRealizedTx = []; // 已實現損益明細（每筆賣出一筆），供篩選用
+let stockRealizedFilter = { year: 'all', code: 'all' };
+let stockLogAll = []; // 全部交易紀錄，供篩選用
+let stockLogFilter = { year: 'all', code: 'all' };
+
 async function loadStockSummary() {
   const holdArea = document.getElementById('stockHoldingsArea');
-  const plArea = document.getElementById('stockRealizedArea');
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getStockSummary`, { cache: 'no-store' });
     const result = await res.json();
@@ -3557,20 +3591,28 @@ async function loadStockSummary() {
         </div>
       `).join('');
     }
-    if (!result.realized.length) {
-      plArea.innerHTML = '<div class="empty-state">還沒有已實現損益紀錄</div>';
-    } else {
-      const totalClass = result.totalRealizedPL >= 0 ? 'pl-pos' : 'pl-neg';
-      let html = `<div class="pl-item"><span style="font-weight:700;">總計</span><span class="${totalClass}">${result.totalRealizedPL >= 0 ? '+' : ''}${result.totalRealizedPL.toLocaleString()}</span></div>`;
-      html += result.realized.map(r => {
-        const cls = r.realizedPL >= 0 ? 'pl-pos' : 'pl-neg';
-        return `<div class="pl-item"><span>${escapeHtml(r.code)} ${escapeHtml(r.name || '')}</span><span class="${cls}">${r.realizedPL >= 0 ? '+' : ''}${r.realizedPL.toLocaleString()}</span></div>`;
-      }).join('');
-      plArea.innerHTML = html;
-    }
+    stockRealizedTx = result.realizedTransactions || [];
+    renderStockFilterRow('realizedFilterRow', stockRealizedTx, stockRealizedFilter, 'Realized');
+    renderStockRealized();
   } catch (err) {
     holdArea.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
+}
+function renderStockRealized() {
+  const plArea = document.getElementById('stockRealizedArea');
+  const filtered = stockRealizedTx.filter(r =>
+    (stockRealizedFilter.year === 'all' || r.year === stockRealizedFilter.year) &&
+    (stockRealizedFilter.code === 'all' || r.code === stockRealizedFilter.code)
+  );
+  if (!filtered.length) { plArea.innerHTML = '<div class="empty-state">這個篩選條件下還沒有已實現損益紀錄</div>'; return; }
+  const subtotal = filtered.reduce((s, r) => s + r.pl, 0);
+  const subClass = subtotal >= 0 ? 'pl-pos' : 'pl-neg';
+  let html = `<div class="stock-subtotal"><span>篩選加總</span><span class="${subClass}">${subtotal >= 0 ? '+' : ''}${subtotal.toLocaleString()}</span></div>`;
+  html += filtered.map(r => {
+    const cls = r.pl >= 0 ? 'pl-pos' : 'pl-neg';
+    return `<div class="pl-item"><span>${r.date}　${escapeHtml(r.code)} ${escapeHtml(r.name || '')}　${r.shares}股</span><span class="${cls}">${r.pl >= 0 ? '+' : ''}${r.pl.toLocaleString()}</span></div>`;
+  }).join('');
+  plArea.innerHTML = html;
 }
 async function loadStockLogList() {
   const area = document.getElementById('stockLogArea');
@@ -3579,18 +3621,65 @@ async function loadStockLogList() {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getStockLog`, { cache: 'no-store' });
     const rows = await res.json();
     if (rows.error) { area.innerHTML = `<div class="empty-state">${escapeHtml(rows.error)}</div>`; return; }
-    if (!rows.length) { area.innerHTML = '<div class="empty-state">還沒有任何交易紀錄</div>'; return; }
-    area.innerHTML = rows.map(r => `
-      <div class="stock-log-item">
-        <div class="sl-main">
-          <span class="sl-tag ${r.action}">${r.action === 'buy' ? '買' : '賣'}</span>
-          ${escapeHtml(r.code)} ${escapeHtml(r.name || '')}　${r.shares}股 @ ${r.price}　<span style="color:var(--ink-soft);">${r.date}</span>
-        </div>
-        <button class="sl-del" onclick="deleteStockLogItem('${r.id}')">✕</button>
-      </div>
-    `).join('');
+    stockLogAll = rows.map(r => Object.assign({}, r, { year: r.date.substring(0, 4) }));
+    renderStockFilterRow('logFilterRow', stockLogAll, stockLogFilter, 'Log');
+    renderStockLog();
   } catch (err) {
     area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+function renderStockLog() {
+  const area = document.getElementById('stockLogArea');
+  const filtered = stockLogAll.filter(r =>
+    (stockLogFilter.year === 'all' || r.year === stockLogFilter.year) &&
+    (stockLogFilter.code === 'all' || r.code === stockLogFilter.code)
+  );
+  if (!filtered.length) { area.innerHTML = '<div class="empty-state">這個篩選條件下還沒有交易紀錄</div>'; return; }
+  const buyTotal = filtered.filter(r => r.action === 'buy').reduce((s, r) => s + r.shares * r.price + r.fee + r.tax, 0);
+  const sellTotal = filtered.filter(r => r.action === 'sell').reduce((s, r) => s + r.shares * r.price - r.fee - r.tax, 0);
+  let html = `<div class="stock-subtotal" style="display:block;">
+    <div style="display:flex;justify-content:space-between;"><span>買進金額合計</span><span>${Math.round(buyTotal).toLocaleString()}</span></div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px;"><span>賣出金額合計</span><span>${Math.round(sellTotal).toLocaleString()}</span></div>
+  </div>`;
+  html += filtered.map(r => `
+    <div class="stock-log-item">
+      <div class="sl-main">
+        <span class="sl-tag ${r.action}">${r.action === 'buy' ? '買' : '賣'}</span>
+        ${escapeHtml(r.code)} ${escapeHtml(r.name || '')}　${r.shares}股 @ ${r.price}${r.tax ? `　稅 ${r.tax}` : ''}${r.fee ? `　費 ${r.fee}` : ''}　<span style="color:var(--ink-soft);">${r.date}</span>
+      </div>
+      <button class="sl-del" onclick="deleteStockLogItem('${r.id}')">✕</button>
+    </div>
+  `).join('');
+  area.innerHTML = html;
+}
+// 依目前資料動態算出有哪些年份／股票代號可以篩選，年份新到舊排、代號照字母排
+function renderStockFilterRow(rowId, list, filterState, kind) {
+  const row = document.getElementById(rowId);
+  const years = Array.from(new Set(list.map(r => r.year))).sort().reverse();
+  const codes = Array.from(new Set(list.map(r => r.code))).sort();
+  if (!years.length) { row.innerHTML = ''; return; }
+  const codeLabel = code => {
+    const item = list.find(r => r.code === code);
+    return item && item.name ? `${code} ${item.name}` : code;
+  };
+  row.innerHTML = `
+    <select onchange="setStockFilter('${kind}','year',this.value)">
+      <option value="all">全部年份</option>
+      ${years.map(y => `<option value="${y}"${filterState.year === y ? ' selected' : ''}>${y}</option>`).join('')}
+    </select>
+    <select onchange="setStockFilter('${kind}','code',this.value)">
+      <option value="all">全部股票</option>
+      ${codes.map(c => `<option value="${escapeHtml(c)}"${filterState.code === c ? ' selected' : ''}>${escapeHtml(codeLabel(c))}</option>`).join('')}
+    </select>
+  `;
+}
+function setStockFilter(kind, key, value) {
+  if (kind === 'Realized') {
+    stockRealizedFilter[key] = value;
+    renderStockRealized();
+  } else {
+    stockLogFilter[key] = value;
+    renderStockLog();
   }
 }
 async function deleteStockLogItem(id) {
@@ -4194,17 +4283,27 @@ function changeMonth(delta) {
   statsMonth.setMonth(statsMonth.getMonth() + delta);
   loadStatsPage();
 }
+let statsCalendarOverview = {};
+let statsMoodTrend = [];
+let statsSelectedDay = null;
 async function loadStatsPage() {
   if (!checkConfig()) return;
   const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
   document.getElementById('monthLabel').textContent = statsMonth.getFullYear() + ' 年 ' + (statsMonth.getMonth() + 1) + ' 月';
   document.getElementById('monthWrapArea').innerHTML = ''; // 換月份了，舊的回顧內容先清掉，避免看起來像是這個月的
+  statsSelectedDay = null;
+  document.getElementById('statsDayDetail').style.display = 'none';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`, { cache: 'no-store' });
-    const stats = await res.json();
+    const [statsRes, calRes] = await Promise.all([
+      fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`, { cache: 'no-store' }),
+      fetch(`${CONFIG.GAS_URL}?action=getCalendarOverview&month=${ym}`, { cache: 'no-store' })
+    ]);
+    const stats = await statsRes.json();
+    statsCalendarOverview = await calRes.json();
+    statsMoodTrend = stats.moodTrend || [];
     renderHeatmap(ym, stats.dayCounts);
     renderDonut(stats.categoryCounts);
-    renderMoodChart(stats.moodTrend);
+    renderMoodChart(statsMoodTrend);
   } catch (err) {}
 }
 async function generateMonthWrap() {
