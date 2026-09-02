@@ -729,7 +729,7 @@
   .today-overview-card{padding:14px 16px;}
   .tov-row{display:flex;flex-wrap:wrap;gap:8px;}
   .tov-chip{
-    flex:1;min-width:76px;background:var(--input-bg);border-radius:14px;padding:9px 10px;text-align:center;
+    flex:1;min-width:76px;background:var(--input-bg);border-radius:14px;padding:9px 10px;text-align:center;cursor:pointer;
   }
   .tov-chip .tov-icon{font-size:17px;margin-bottom:2px;}
   .tov-chip .tov-value{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.3;}
@@ -807,7 +807,7 @@
   .heatmap .hm-wd{font-size:10.5px;color:var(--ink-soft);text-align:center;padding-bottom:2px;}
   .heatmap .hm-day{
     aspect-ratio:1;border-radius:8px;font-size:10.5px;display:flex;align-items:center;justify-content:center;
-    color:var(--ink-soft);background:#F6EFE2;
+    color:#6B5D4F;background:#F6EFE2;
   }
   .heatmap .hm-day.empty{background:none;}
   .heatmap .hm-day.today{box-shadow:0 0 0 2px var(--accent) inset;font-weight:700;}
@@ -1531,7 +1531,7 @@ function dateLabel(d) {
   return ds + ` (週${weekday})`;
 }
 function escapeHtml(s) {
-  return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 // 產生某則紀錄的照片區塊 HTML：優先用 photoUrls（可能多張），
 // 沒有的話（例如舊快取資料）退回單張 photoUrl，確保不會漏顯示。
@@ -2334,14 +2334,14 @@ async function loadTodayOverview() {
     let periodHtml = '';
     if (d.periodStatus) {
       periodHtml = d.periodStatus.inPeriod
-        ? `<div class="tov-chip"><div class="tov-icon">🌸</div><div class="tov-value">第 ${d.periodStatus.day} 天</div><div class="tov-label">經期中</div></div>`
-        : `<div class="tov-chip"><div class="tov-icon">🌷</div><div class="tov-value">${d.periodStatus.daysUntilNext >= 0 ? d.periodStatus.daysUntilNext + ' 天後' : '已延遲'}</div><div class="tov-label">預估經期</div></div>`;
+        ? `<div class="tov-chip" onclick="switchTab('page-period')"><div class="tov-icon">🌸</div><div class="tov-value">第 ${d.periodStatus.day} 天</div><div class="tov-label">經期中</div></div>`
+        : `<div class="tov-chip" onclick="switchTab('page-period')"><div class="tov-icon">🌷</div><div class="tov-value">${d.periodStatus.daysUntilNext >= 0 ? d.periodStatus.daysUntilNext + ' 天後' : '已延遲'}</div><div class="tov-label">預估經期</div></div>`;
     }
     row.innerHTML = `
-      <div class="tov-chip"><div class="tov-icon">🍱</div><div class="tov-value">${d.calories || 0} kcal</div><div class="tov-label">今日飲食</div></div>
-      <div class="tov-chip"><div class="tov-icon">💪</div><div class="tov-value">${d.hasExercise ? '已運動' : '尚未運動'}</div><div class="tov-label">運動</div></div>
+      <div class="tov-chip" onclick="switchTab('page-food')"><div class="tov-icon">🍱</div><div class="tov-value">${d.calories || 0} kcal</div><div class="tov-label">今日飲食</div></div>
+      <div class="tov-chip" onclick="switchTab('page-fit')"><div class="tov-icon">💪</div><div class="tov-value">${d.hasExercise ? '已運動' : '尚未運動'}</div><div class="tov-label">運動</div></div>
       ${periodHtml}
-      ${moodObj ? `<div class="tov-chip"><div class="tov-icon">${moodObj.e}</div><div class="tov-value">已記錄</div><div class="tov-label">今日心情</div></div>` : ''}
+      ${moodObj ? `<div class="tov-chip" onclick="quickRecord()"><div class="tov-icon">${moodObj.e}</div><div class="tov-value">已記錄</div><div class="tov-label">今日心情</div></div>` : ''}
     `;
     card.style.display = 'block';
   } catch (err) {}
