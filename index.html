@@ -1400,60 +1400,75 @@
   </div>
 
   <div class="page" id="page-stock">
-    <div class="card">
-      <div class="field-label" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;">
-        <span>📈 新增買賣紀錄</span>
-        <button class="batch-trigger-link" onclick="openBatchModal()">📥 批次新增</button>
-      </div>
-      <div class="stock-form-row">
-        <input type="text" id="stockCode" placeholder="代號，例如 2330" onblur="fillStockPair('code')">
-        <input type="text" id="stockName" placeholder="名稱，例如 台積電" onblur="fillStockPair('name')">
-      </div>
-      <div class="choice-row" id="stockActionRow"></div>
-      <div class="stock-form-row">
-        <input type="number" id="stockShares" placeholder="股數">
-        <input type="number" step="0.01" id="stockPrice" placeholder="成交價">
-      </div>
-      <div class="stock-form-row">
-        <input type="number" step="0.01" id="stockFee" placeholder="手續費（選填）">
-        <input type="number" step="0.01" id="stockTax" placeholder="交易稅（選填）">
-      </div>
-      <div class="stock-form-row">
-        <input type="date" id="stockDate" class="stock-date-input" style="flex:1;">
-      </div>
-      <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
-      <button class="submit-btn" id="stockSubmitBtn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
-      <button class="gen-btn" id="stockCancelEditBtn" style="display:none;margin-top:8px;width:100%;" onclick="cancelEditStockLog()">取消編輯</button>
+    <div class="settings-tabs">
+      <button class="settings-tab-btn active" id="stockTabRecord" onclick="switchStockSubTab('record')">✍️ 紀錄</button>
+      <button class="settings-tab-btn" id="stockTabOverview" onclick="switchStockSubTab('overview')">📋 總覽</button>
+      <button class="settings-tab-btn" id="stockTabPl" onclick="switchStockSubTab('pl')">💰 損益</button>
+      <button class="settings-tab-btn" id="stockTabLog" onclick="switchStockSubTab('log')">📜 明細</button>
     </div>
 
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📈 總成本走勢</div>
-      <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">每筆交易後的持股總成本變化</div>
-      <svg class="mood-chart" id="stockCostChart"></svg>
-      <div id="stockCostChartEmpty" class="empty-state" style="display:none;">還沒有足夠的交易紀錄可以畫圖</div>
+    <div id="stockSubRecord">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;">
+          <span>📈 新增買賣紀錄</span>
+          <button class="batch-trigger-link" onclick="openBatchModal()">📥 批次新增</button>
+        </div>
+        <div class="stock-form-row">
+          <input type="text" id="stockCode" placeholder="代號，例如 2330" onblur="fillStockPair('code')">
+          <input type="text" id="stockName" placeholder="名稱，例如 台積電" onblur="fillStockPair('name')">
+        </div>
+        <div class="choice-row" id="stockActionRow"></div>
+        <div class="stock-form-row">
+          <input type="number" id="stockShares" placeholder="股數">
+          <input type="number" step="0.01" id="stockPrice" placeholder="成交價">
+        </div>
+        <div class="stock-form-row">
+          <input type="number" step="0.01" id="stockFee" placeholder="手續費（選填）">
+          <input type="number" step="0.01" id="stockTax" placeholder="交易稅（選填）">
+        </div>
+        <div class="stock-form-row">
+          <input type="date" id="stockDate" class="stock-date-input" style="flex:1;">
+        </div>
+        <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
+        <button class="submit-btn" id="stockSubmitBtn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
+        <button class="gen-btn" id="stockCancelEditBtn" style="display:none;margin-top:8px;width:100%;" onclick="cancelEditStockLog()">取消編輯</button>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📋 股票總覽</div>
-      <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 8px;">目前市價來自證交所公開資料，抓不到時會顯示「—」，僅供參考</div>
-      <div id="stockOverviewArea"></div>
+    <div id="stockSubOverview" style="display:none;">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📈 總成本走勢</div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">每筆交易後的持股總成本變化</div>
+        <svg class="mood-chart" id="stockCostChart"></svg>
+        <div id="stockCostChartEmpty" class="empty-state" style="display:none;">還沒有足夠的交易紀錄可以畫圖</div>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📋 股票總覽</div>
+        <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 8px;">目前市價來自證交所公開資料，抓不到時會顯示「—」，僅供參考</div>
+        <div id="stockOverviewArea"></div>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">💼 目前持股</div>
+        <div id="stockHoldingsArea"></div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">💼 目前持股</div>
-      <div id="stockHoldingsArea"></div>
+    <div id="stockSubPl" style="display:none;">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">💰 已實現損益</div>
+        <div class="stock-filter-row" id="realizedFilterRow"></div>
+        <div id="stockRealizedArea"></div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">💰 已實現損益</div>
-      <div class="stock-filter-row" id="realizedFilterRow"></div>
-      <div id="stockRealizedArea"></div>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📜 交易紀錄</div>
-      <div class="stock-filter-row" id="logFilterRow"></div>
-      <div id="stockLogArea"></div>
+    <div id="stockSubLog" style="display:none;">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📜 交易紀錄</div>
+        <div class="stock-filter-row" id="logFilterRow"></div>
+        <div id="stockLogArea"></div>
+      </div>
     </div>
   </div>
 
@@ -1997,6 +2012,17 @@ function toggleSettings() {
   const isOpen = overlay.classList.contains('show');
   overlay.classList.toggle('show', !isOpen);
   if (!isOpen) switchSettingsTab('tabs');
+}
+// 股票頁分成四個子分頁，避免全部卡片疊在一起要滑很久
+function switchStockSubTab(tab) {
+  document.getElementById('stockSubRecord').style.display = tab === 'record' ? 'block' : 'none';
+  document.getElementById('stockSubOverview').style.display = tab === 'overview' ? 'block' : 'none';
+  document.getElementById('stockSubPl').style.display = tab === 'pl' ? 'block' : 'none';
+  document.getElementById('stockSubLog').style.display = tab === 'log' ? 'block' : 'none';
+  document.getElementById('stockTabRecord').classList.toggle('active', tab === 'record');
+  document.getElementById('stockTabOverview').classList.toggle('active', tab === 'overview');
+  document.getElementById('stockTabPl').classList.toggle('active', tab === 'pl');
+  document.getElementById('stockTabLog').classList.toggle('active', tab === 'log');
 }
 function switchSettingsTab(tab) {
   document.getElementById('settingsPageTabs').style.display = tab === 'tabs' ? 'block' : 'none';
