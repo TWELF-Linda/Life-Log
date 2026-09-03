@@ -98,6 +98,8 @@
     scrollbar-width:none;
     padding:8px 8px calc(8px + env(safe-area-inset-bottom));
     z-index:50;
+    max-width:520px;margin:0 auto;
+    justify-content:center;
   }
   .tabbar::-webkit-scrollbar{display:none;}
   .tab-btn{
@@ -228,6 +230,23 @@
     position:absolute;bottom:0;left:0;right:0;padding:3px 5px;font-size:9.5px;color:#fff;
     background:linear-gradient(transparent,rgba(0,0,0,.55));
   }
+  .app-modal-overlay{
+    position:fixed;inset:0;background:rgba(20,15,12,.45);z-index:500;display:none;
+    align-items:center;justify-content:center;padding:24px;
+  }
+  .app-modal-overlay.show{display:flex;}
+  .app-modal-card{
+    background:var(--card);border-radius:20px;padding:22px 20px;width:min(320px,88vw);
+    box-shadow:0 16px 40px rgba(0,0,0,0.2);text-align:center;
+  }
+  .app-modal-message{font-size:14px;line-height:1.7;color:var(--ink);margin-bottom:18px;white-space:pre-wrap;}
+  .app-modal-buttons{display:flex;gap:10px;}
+  .app-modal-buttons button{
+    flex:1;border:none;border-radius:14px;padding:11px 0;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;
+  }
+  .app-modal-btn-primary{background:var(--accent);color:#fff;}
+  .app-modal-btn-secondary{background:var(--input-bg);color:var(--ink);}
+
   .photo-lightbox{
     display:none;position:fixed;inset:0;background:rgba(20,15,12,.92);z-index:200;
     flex-direction:column;align-items:center;justify-content:center;padding:20px;
@@ -369,6 +388,12 @@
     font-size:17px;color:var(--ink-soft);padding:0 6px 0 0;cursor:grab;touch-action:none;flex-shrink:0;
     user-select:none;
   }
+  .cm-order-arrows{display:flex;flex-direction:column;gap:2px;flex-shrink:0;}
+  .cm-arrow-btn{
+    background:var(--input-bg);border:1px solid var(--line);color:var(--ink);border-radius:6px;
+    width:26px;height:20px;font-size:10px;line-height:1;cursor:pointer;padding:0;
+  }
+  .cm-arrow-btn:disabled{opacity:.3;cursor:default;}
   .tab-order-divider{
     font-size:11px;color:var(--ink-soft);text-align:center;padding:8px 0;margin:2px 0;
     border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);
@@ -502,7 +527,7 @@
     background:var(--input-bg);border-radius:12px;padding:10px 12px;margin-bottom:8px;
   }
   .stock-overview-row .sov-name{font-weight:700;font-size:13px;color:var(--ink);margin-bottom:6px;}
-  .stock-overview-row .sov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;}
+  .stock-overview-row .sov-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 6px;text-align:center;}
   .stock-overview-row .sov-label{font-size:10px;color:var(--ink-soft);}
   .stock-overview-row .sov-value{font-size:12.5px;font-weight:700;color:var(--ink);margin-top:1px;}
   .pl-item{
@@ -553,6 +578,7 @@
     position:fixed;left:16px;right:16px;bottom:82px;background:var(--ink);color:#fff;
     border-radius:18px;padding:12px 16px;display:none;align-items:center;justify-content:space-between;
     box-shadow:0 8px 20px rgba(0,0,0,0.2);z-index:120;font-size:13px;
+    max-width:488px;margin:0 auto;
   }
   .batch-bar.show{display:flex;}
   .batch-cancel-btn{background:none;border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:12px;padding:6px 12px;font-size:12px;cursor:pointer;}
@@ -601,7 +627,7 @@
 
   /* ---- 溫暖提示 toast ---- */
   .help-fab{
-    position:fixed;right:18px;bottom:154px;width:34px;height:34px;border-radius:50%;
+    position:fixed;right:max(18px, calc(50vw - 260px + 18px));bottom:154px;width:34px;height:34px;border-radius:50%;
     background:var(--card);color:var(--ink-soft);border:1px solid var(--line);font-size:14px;font-weight:700;
     box-shadow:0 4px 12px rgba(0,0,0,0.12);z-index:150;cursor:pointer;
   }
@@ -627,7 +653,7 @@
 
   /* ---- 浮動快速記錄按鈕 ---- */
   .fab{
-    position:fixed;right:18px;bottom:88px;width:54px;height:54px;border-radius:50%;
+    position:fixed;right:max(18px, calc(50vw - 260px + 18px));bottom:88px;width:54px;height:54px;border-radius:50%;
     background:var(--accent);color:#fff;font-size:26px;border:none;cursor:pointer;
     box-shadow:0 8px 20px rgba(0,0,0,0.25);z-index:160;display:flex;align-items:center;justify-content:center;
     line-height:1;transition:transform .2s;
@@ -638,7 +664,7 @@
   }
   .fab-backdrop.show{display:block;}
   .fab-mini{
-    position:fixed;right:16px;display:flex;align-items:center;gap:8px;
+    position:fixed;right:max(16px, calc(50vw - 260px + 16px));display:flex;align-items:center;gap:8px;
     background:var(--card);color:var(--ink);border:none;cursor:pointer;
     padding:10px 16px 10px 14px;border-radius:24px;font-size:13px;font-weight:700;
     box-shadow:0 6px 16px rgba(0,0,0,0.2);z-index:160;
@@ -809,6 +835,7 @@
   .batch-footer{
     position:fixed;bottom:0;left:0;right:0;background:var(--bg);padding:12px 16px calc(12px + env(safe-area-inset-bottom));
     border-top:1px solid var(--line);
+    max-width:520px;margin:0 auto;box-sizing:border-box;
   }
   .batch-trigger-link{background:none;border:none;color:var(--accent-dark);font-size:12.5px;font-weight:700;cursor:pointer;padding:0;}
   .settings-tabs{display:flex;gap:8px;padding:0 16px 12px;}
@@ -913,6 +940,12 @@
 
 <div class="toast" id="toast"><span id="toastText"></span><button id="toastAction" class="toast-action" style="display:none;"></button></div>
 <div class="offline-queue-badge" id="offlineQueueBadge" onclick="flushOfflineQueue()"></div>
+<div class="app-modal-overlay" id="appModalOverlay">
+  <div class="app-modal-card">
+    <div class="app-modal-message" id="appModalMessage"></div>
+    <div class="app-modal-buttons" id="appModalButtons"></div>
+  </div>
+</div>
 
 <div class="fab-backdrop" id="fabBackdrop" onclick="closeFabMenu()"></div>
 <div id="fabMiniContainer"></div>
@@ -1195,74 +1228,86 @@
     <div id="streakBadgeArea"></div>
     <div id="restBannerArea"></div>
 
-    <div class="card">
-      <div class="progress-ring-wrap">
-        <div class="progress-ring">
-          <svg width="74" height="74">
-            <circle cx="37" cy="37" r="30" stroke="#F1E6D8" stroke-width="8" fill="none"/>
-            <circle id="progressCircle" cx="37" cy="37" r="30" stroke="#A8DDB5" stroke-width="8" fill="none"
-              stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-          </svg>
-          <div class="pct" id="progressPct">-</div>
+    <div class="settings-tabs">
+      <button class="settings-tab-btn active" id="fitTabGoal" onclick="switchFitSubTab('goal')">🎯 目標</button>
+      <button class="settings-tab-btn" id="fitTabGym" onclick="switchFitSubTab('gym')">🏋️ 重訓</button>
+      <button class="settings-tab-btn" id="fitTabWeight" onclick="switchFitSubTab('weight')">⚖️ 體重</button>
+    </div>
+
+    <div id="fitSubGoal">
+      <div class="card">
+        <div class="progress-ring-wrap">
+          <div class="progress-ring">
+            <svg width="74" height="74">
+              <circle cx="37" cy="37" r="30" stroke="#F1E6D8" stroke-width="8" fill="none"/>
+              <circle id="progressCircle" cx="37" cy="37" r="30" stroke="#A8DDB5" stroke-width="8" fill="none"
+                stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+            </svg>
+            <div class="pct" id="progressPct">-</div>
+          </div>
+          <div class="progress-text" id="progressText">還沒有設定每週目標唷</div>
         </div>
-        <div class="progress-text" id="progressText">還沒有設定每週目標唷</div>
+      </div>
+
+      <div class="card">
+        <div class="field-label">🎯 主要目標</div>
+        <div class="choice-row" id="goalRow"></div>
+        <div class="field-label">📍 運動地點</div>
+        <div class="choice-row" id="locationRow"></div>
+        <div class="field-label">📅 每週想運動幾天</div>
+        <div class="choice-row" id="daysRow"></div>
+        <button class="submit-btn" style="width:100%;margin-top:6px;" id="fitSubmitBtn" onclick="submitFitnessProfile()">為我生成專屬建議</button>
+      </div>
+
+      <div id="fitnessPlanArea"></div>
+
+      <div class="card" id="checklistCard" style="display:none;">
+        <div class="field-label" style="margin-top:0;">✅ 今天的訓練菜單</div>
+        <div id="checklistArea"></div>
       </div>
     </div>
 
-    <div class="card">
-      <div class="field-label">🎯 主要目標</div>
-      <div class="choice-row" id="goalRow"></div>
-      <div class="field-label">📍 運動地點</div>
-      <div class="choice-row" id="locationRow"></div>
-      <div class="field-label">📅 每週想運動幾天</div>
-      <div class="choice-row" id="daysRow"></div>
-      <button class="submit-btn" style="width:100%;margin-top:6px;" id="fitSubmitBtn" onclick="submitFitnessProfile()">為我生成專屬建議</button>
-    </div>
+    <div id="fitSubGym" style="display:none;">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">🏋️ 重量訓練紀錄</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">先選練哪個部位，挑一個常用器械，或直接手動輸入</div>
 
-    <div id="fitnessPlanArea"></div>
+        <div class="field-label" style="margin-top:0;">練哪個部位？</div>
+        <div class="choice-row" id="gymPartRow"></div>
+        <div class="gym-equip-grid" id="gymEquipGrid"></div>
+        <div id="gymEquipTip" class="plan-tip" style="display:none;"></div>
 
-    <div class="card" id="checklistCard" style="display:none;">
-      <div class="field-label" style="margin-top:0;">✅ 今天的訓練菜單</div>
-      <div id="checklistArea"></div>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">🏋️ 重量訓練紀錄</div>
-      <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">先選練哪個部位，挑一個常用器械，或直接手動輸入</div>
-
-      <div class="field-label" style="margin-top:0;">練哪個部位？</div>
-      <div class="choice-row" id="gymPartRow"></div>
-      <div class="gym-equip-grid" id="gymEquipGrid"></div>
-      <div id="gymEquipTip" class="plan-tip" style="display:none;"></div>
-
-      <div class="gym-form">
-        <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
-        <datalist id="gymExerciseList"></datalist>
-        <div class="gym-form-row">
-          <input type="number" step="0.5" id="gymWeightInput" placeholder="重量(kg)">
-          <input type="number" id="gymSetsInput" placeholder="組數">
-          <input type="number" id="gymRepsInput" placeholder="次數/組">
+        <div class="gym-form">
+          <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
+          <datalist id="gymExerciseList"></datalist>
+          <div class="gym-form-row">
+            <input type="number" step="0.5" id="gymWeightInput" placeholder="重量(kg)">
+            <input type="number" id="gymSetsInput" placeholder="組數">
+            <input type="number" id="gymRepsInput" placeholder="次數/組">
+          </div>
+          <button class="submit-btn" id="gymLogSubmitBtn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
+          <button class="gen-btn" id="repeatSetBtn" style="width:100%;margin-top:8px;display:none;" onclick="repeatLastSet()">🔁 重複上一組</button>
         </div>
-        <button class="submit-btn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
-        <button class="gen-btn" id="repeatSetBtn" style="width:100%;margin-top:8px;display:none;" onclick="repeatLastSet()">🔁 重複上一組</button>
+        <div id="gymLogList"></div>
       </div>
-      <div id="gymLogList"></div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📈 動作重量趨勢</div>
+        <select id="gymTrendSelect" class="choice-chip" style="width:100%;margin-bottom:10px;" onchange="loadGymTrend(this.value)"></select>
+        <svg class="mood-chart" id="gymTrendSvg"></svg>
+        <div id="gymTrendEmpty" class="empty-state" style="display:none;">選一個動作看看重量變化</div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📈 動作重量趨勢</div>
-      <select id="gymTrendSelect" class="choice-chip" style="width:100%;margin-bottom:10px;" onchange="loadGymTrend(this.value)"></select>
-      <svg class="mood-chart" id="gymTrendSvg"></svg>
-      <div id="gymTrendEmpty" class="empty-state" style="display:none;">選一個動作看看重量變化</div>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">⚖️ 體重紀錄</div>
-      <div class="weight-row">
-        <input type="number" step="0.1" id="weightInput" placeholder="今天的體重 (kg)">
-        <button class="submit-btn" onclick="submitWeight()">記錄</button>
+    <div id="fitSubWeight" style="display:none;">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">⚖️ 體重紀錄</div>
+        <div class="weight-row">
+          <input type="number" step="0.1" id="weightInput" placeholder="今天的體重 (kg)">
+          <button class="submit-btn" id="weightSubmitBtn" onclick="submitWeight()">記錄</button>
+        </div>
+        <div class="weight-list" id="weightList"></div>
       </div>
-      <div class="weight-list" id="weightList"></div>
     </div>
   </div>
 
@@ -1446,6 +1491,7 @@
       <div class="card">
         <div class="field-label" style="margin-top:0;">📋 股票總覽</div>
         <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 8px;">目前市價來自證交所公開資料，抓不到時會顯示「—」，僅供參考</div>
+        <div class="stock-filter-row" id="stockOverviewSortRow"></div>
         <div id="stockOverviewArea"></div>
       </div>
 
@@ -1488,7 +1534,7 @@
       <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">其他症狀（可複選）</div>
       <div class="opt-row" id="symptomOptRow"></div>
       <textarea id="periodDailyNote" placeholder="備註（選填）" style="min-height:40px;"></textarea>
-      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存今天的狀況</button>
+      <button class="submit-btn" id="periodDailySubmitBtn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存今天的狀況</button>
     </div>
 
     <div class="card">
@@ -1510,7 +1556,7 @@
         </div>
       </div>
       <textarea id="periodNote" placeholder="備註（選填）" style="min-height:40px;margin-top:8px;"></textarea>
-      <button class="submit-btn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">補登這筆紀錄</button>
+      <button class="submit-btn" id="periodLogSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">補登這筆紀錄</button>
     </div>
 
     <div class="card">
@@ -1649,6 +1695,39 @@ function dateLabel(d) {
   const weekday = ['日','一','二','三','四','五','六'][d.getDay()];
   return ds + ` (週${weekday})`;
 }
+// ================= 自訂樣式的 alert / confirm =================
+// 原生 alert()/confirm() 跳出來是很生硬的系統對話框，跟整體溫暖手繪風格不搭，
+// 改成自己畫的浮層。alert 直接覆寫全域 window.alert，所有既有呼叫都不用改；
+// confirm 因為原本是同步回傳布林值、現在改成非同步回傳 Promise，
+// 這裡刻意不覆寫 window.confirm（會讓舊的 `if (!confirm(...))` 邏輯悄悄失效變成永遠不觸發），
+// 改用 showConfirm()，呼叫的地方都已經手動改成 await。
+function showAlert(message) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('appModalOverlay');
+    document.getElementById('appModalMessage').textContent = message;
+    document.getElementById('appModalButtons').innerHTML = '<button class="app-modal-btn-primary" id="appModalOkBtn">好</button>';
+    overlay.classList.add('show');
+    document.getElementById('appModalOkBtn').onclick = () => {
+      overlay.classList.remove('show');
+      resolve();
+    };
+  });
+}
+function showConfirm(message) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById('appModalOverlay');
+    document.getElementById('appModalMessage').textContent = message;
+    document.getElementById('appModalButtons').innerHTML = `
+      <button class="app-modal-btn-secondary" id="appModalCancelBtn">取消</button>
+      <button class="app-modal-btn-primary" id="appModalOkBtn">確定</button>
+    `;
+    overlay.classList.add('show');
+    document.getElementById('appModalOkBtn').onclick = () => { overlay.classList.remove('show'); resolve(true); };
+    document.getElementById('appModalCancelBtn').onclick = () => { overlay.classList.remove('show'); resolve(false); };
+  });
+}
+window.alert = showAlert;
+
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
@@ -2013,6 +2092,15 @@ function toggleSettings() {
   overlay.classList.toggle('show', !isOpen);
   if (!isOpen) switchSettingsTab('tabs');
 }
+// 健身頁也拆成三個子分頁，一樣是為了避免卡片全部疊在一起要滑很久
+function switchFitSubTab(tab) {
+  document.getElementById('fitSubGoal').style.display = tab === 'goal' ? 'block' : 'none';
+  document.getElementById('fitSubGym').style.display = tab === 'gym' ? 'block' : 'none';
+  document.getElementById('fitSubWeight').style.display = tab === 'weight' ? 'block' : 'none';
+  document.getElementById('fitTabGoal').classList.toggle('active', tab === 'goal');
+  document.getElementById('fitTabGym').classList.toggle('active', tab === 'gym');
+  document.getElementById('fitTabWeight').classList.toggle('active', tab === 'weight');
+}
 // 股票頁分成四個子分頁，避免全部卡片疊在一起要滑很久
 function switchStockSubTab(tab) {
   document.getElementById('stockSubRecord').style.display = tab === 'record' ? 'block' : 'none';
@@ -2272,7 +2360,7 @@ async function loadTabOrderSettings() {
 }
 function renderTabOrderList(order) {
   const area = document.getElementById('tabOrderList');
-  area.innerHTML = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">拖曳調整順序，前 ${MAX_PRIMARY_TABS} 個會直接顯示在下方選單，其餘收進「更多」</div>`;
+  area.innerHTML = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">拖曳圖示、或直接點右邊的箭頭調整順序，前 ${MAX_PRIMARY_TABS} 個會直接顯示在下方選單，其餘收進「更多」</div>`;
   order.forEach((id, i) => {
     const meta = TAB_META[id] || { icon: '✦', label: id };
     if (i === MAX_PRIMARY_TABS) {
@@ -2288,6 +2376,10 @@ function renderTabOrderList(order) {
       <div class="cm-drag-handle">⠿</div>
       <div class="cm-swatch" style="background:var(--input-bg);">${meta.icon}</div>
       <div class="cm-name">${escapeHtml(meta.label)}</div>
+      <div class="cm-order-arrows">
+        <button class="cm-arrow-btn" ${i === 0 ? 'disabled' : ''} onclick="moveTabRow('${id}',-1)">▲</button>
+        <button class="cm-arrow-btn" ${i === order.length - 1 ? 'disabled' : ''} onclick="moveTabRow('${id}',1)">▼</button>
+      </div>
     `;
     attachTabDragHandle(row);
     area.appendChild(row);
@@ -2346,6 +2438,18 @@ function startTabDrag(row, e) {
   document.addEventListener('pointermove', onMove);
   document.addEventListener('pointerup', onUp);
   document.addEventListener('pointercancel', onUp);
+}
+// 用箭頭調整順序：直接操作 DOM 排列後交給 persistTabOrder 存檔，跟拖曳共用同一套邏輯
+function moveTabRow(id, direction) {
+  const area = document.getElementById('tabOrderList');
+  const rows = Array.from(area.querySelectorAll('.cat-manager-row'));
+  const idx = rows.findIndex(r => r.dataset.id === id);
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= rows.length) return;
+  const row = rows[idx];
+  if (direction < 0) area.insertBefore(row, rows[newIdx]);
+  else area.insertBefore(row, rows[newIdx].nextSibling);
+  persistTabOrder();
 }
 async function persistTabOrder() {
   const area = document.getElementById('tabOrderList');
@@ -2434,9 +2538,11 @@ async function saveCategoryHandler() {
   }
 }
 async function deleteCategoryHandler(id) {
-  if (!confirm('刪除這個類別？已經記錄的紀錄不會被刪除，但會顯示為未分類。')) return;
+  if (!(await showConfirm('刪除這個類別？已經記錄的紀錄不會被刪除，但會顯示為未分類。'))) return;
   try {
-    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteCategory', id }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteCategory', id }) });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
     await loadCategories();
     renderCatManagerList();
   } catch (err) {
@@ -2602,7 +2708,7 @@ function updateBatchBar() {
 }
 async function batchDeleteEntries() {
   if (!selectedEntryIds.size) return;
-  if (!confirm(`確定要刪除這 ${selectedEntryIds.size} 筆紀錄？`)) return;
+  if (!(await showConfirm(`確定要刪除這 ${selectedEntryIds.size} 筆紀錄？`))) return;
   const ids = Array.from(selectedEntryIds);
   try {
     const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteEntries', ids }) });
@@ -3289,10 +3395,15 @@ async function loadPeriodLogList() {
   }
 }
 async function submitPeriodLog() {
+  const btn = document.getElementById('periodLogSubmitBtn');
+  if (btn.disabled) return;
   const startDate = document.getElementById('periodStart').value;
   const endDate = document.getElementById('periodEnd').value;
   const note = document.getElementById('periodNote').value.trim();
   if (!startDate) { alert('請至少選開始日期喔'); return; }
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '記錄中…';
   try {
     const res = await postJSON({ action: 'addPeriodLog', startDate, endDate, note });
     if (res.error || res.ok === false) { alert('記錄失敗：' + (res.error || res.message)); return; }
@@ -3305,12 +3416,18 @@ async function submitPeriodLog() {
     loadPeriodLogList();
   } catch (err) {
     alert('記錄失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 async function deletePeriodLogItem(id) {
-  if (!confirm('刪除這筆經期紀錄？')) return;
+  if (!(await showConfirm('刪除這筆經期紀錄？'))) return;
   try {
-    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deletePeriodLog', id }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deletePeriodLog', id }) });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
+    if (result && result.ok === false) throw new Error(result.message || '找不到這筆紀錄');
     showToast('已刪除 🗑️');
     loadPeriodStatus();
     loadPeriodOpenState();
@@ -3360,7 +3477,12 @@ async function loadPeriodDailyToday() {
   } catch (err) {}
 }
 async function submitPeriodDaily() {
+  const btn = document.getElementById('periodDailySubmitBtn');
+  if (btn.disabled) return;
   const note = document.getElementById('periodDailyNote').value.trim();
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '儲存中…';
   try {
     const result = await postJSON({
       action: 'savePeriodDaily', date: fmtDate(new Date()),
@@ -3371,6 +3493,9 @@ async function submitPeriodDaily() {
     loadPeriodDailyHistory();
   } catch (err) {
     alert('儲存失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 async function loadPeriodDailyHistory() {
@@ -3434,9 +3559,11 @@ async function loadFoodPage() {
   }
 }
 async function deleteFoodLogItem(id) {
-  if (!confirm('刪除這筆飲食紀錄？')) return;
+  if (!(await showConfirm('刪除這筆飲食紀錄？'))) return;
   try {
-    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFoodLog', id }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFoodLog', id }) });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
     showToast('已刪除 🗑️');
     loadFoodPage();
   } catch (err) {
@@ -3453,14 +3580,16 @@ function renderFoodConfirmCard(containerId, entry) {
       <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">熱量（大卡，估算值，可自行調整）</div>
       <input type="number" id="pfCal_${containerId}" value="${entry.calories}" style="width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;">
       ${entry.servingNote ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">${escapeHtml(entry.servingNote)}</div>` : ''}
-      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="confirmAddFood('${containerId}','${entry.source}')">✅ 加入紀錄</button>
+      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="confirmAddFood('${containerId}','${entry.source}',this)">✅ 加入紀錄</button>
     </div>
   `;
 }
-async function confirmAddFood(containerId, source) {
+async function confirmAddFood(containerId, source, btn) {
+  if (btn && btn.disabled) return;
   const name = document.getElementById('pfName_' + containerId).value.trim();
   const calories = Number(document.getElementById('pfCal_' + containerId).value) || 0;
   if (!name) { alert('請輸入食物名稱'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '記錄中…'; }
   try {
     const result = await postJSON({ action: 'addFoodLog', date: fmtDate(foodDate), name, calories, source });
     if (result && result.error) throw new Error(result.error);
@@ -3472,6 +3601,7 @@ async function confirmAddFood(containerId, source) {
     if (fmtDate(foodDate) === fmtDate(new Date())) loadTodayOverview();
   } catch (err) {
     alert('儲存失敗：' + err.message);
+    if (btn) { btn.disabled = false; btn.textContent = '✅ 加入紀錄'; }
   }
 }
 async function estimateFoodCalories() {
@@ -3843,38 +3973,86 @@ async function loadStockSummary() {
     stockRealizedTx = result.realizedTransactions || [];
     renderStockFilterRow('realizedFilterRow', stockRealizedTx, stockRealizedFilter, 'Realized');
     renderStockRealized();
-    renderStockOverview(result.overview || []);
+    renderStockOverview(result.overview || [], result.holdings || []);
   } catch (err) {
     holdArea.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
 }
-async function renderStockOverview(overview) {
+let stockOverviewData = [];
+let stockOverviewSort = 'default';
+async function renderStockOverview(overview, holdings) {
   const area = document.getElementById('stockOverviewArea');
-  if (!overview.length) { area.innerHTML = '<div class="empty-state">還沒有任何交易紀錄</div>'; return; }
-  area.innerHTML = overview.map(o => `
+  if (!overview.length) {
+    document.getElementById('stockOverviewSortRow').innerHTML = '';
+    area.innerHTML = '<div class="empty-state">還沒有任何交易紀錄</div>';
+    return;
+  }
+  const holdingMap = {};
+  holdings.forEach(h => { holdingMap[h.code] = h; });
+  stockOverviewData = overview.map(o => Object.assign({}, o, {
+    avgCost: holdingMap[o.code] ? holdingMap[o.code].avgCost : null,
+    currentPrice: null, unrealizedPL: null, marketValue: null
+  }));
+  renderStockOverviewSortRow();
+  renderStockOverviewTable();
+
+  const codes = overview.map(o => o.code);
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getCurrentStockPrices&codes=${encodeURIComponent(codes.join(','))}`, { cache: 'no-store' });
+    const prices = await res.json();
+    stockOverviewData.forEach(o => {
+      const price = (prices[o.code] !== undefined && prices[o.code] !== null) ? prices[o.code] : null;
+      o.currentPrice = price;
+      if (price !== null && o.currentQty > 0 && o.avgCost !== null) {
+        o.unrealizedPL = Math.round((price - o.avgCost) * o.currentQty);
+        o.marketValue = Math.round(price * o.currentQty);
+      }
+    });
+  } catch (err) {
+    // 抓不到市價就都留 null，畫面上會顯示「—」
+  }
+  renderStockOverviewTable();
+}
+function renderStockOverviewSortRow() {
+  const row = document.getElementById('stockOverviewSortRow');
+  const options = [
+    { v: 'default', label: '預設' },
+    { v: 'unrealizedPL', label: '未實現損益' },
+    { v: 'marketValue', label: '市值' }
+  ];
+  row.innerHTML = options.map(o =>
+    `<div class="cat-chip${stockOverviewSort === o.v ? ' active' : ''}" onclick="setStockOverviewSort('${o.v}')">${o.label}</div>`
+  ).join('');
+}
+function setStockOverviewSort(v) {
+  stockOverviewSort = v;
+  renderStockOverviewSortRow();
+  renderStockOverviewTable();
+}
+function renderStockOverviewTable() {
+  const area = document.getElementById('stockOverviewArea');
+  let list = stockOverviewData.slice();
+  if (stockOverviewSort === 'unrealizedPL') {
+    list.sort((a, b) => (b.unrealizedPL === null ? -Infinity : b.unrealizedPL) - (a.unrealizedPL === null ? -Infinity : a.unrealizedPL));
+  } else if (stockOverviewSort === 'marketValue') {
+    list.sort((a, b) => (b.marketValue === null ? -Infinity : b.marketValue) - (a.marketValue === null ? -Infinity : a.marketValue));
+  }
+  area.innerHTML = list.map(o => {
+    const priceText = o.currentPrice !== null ? o.currentPrice : '…';
+    const hasUnrealized = o.currentQty > 0 && o.unrealizedPL !== null;
+    const uCls = hasUnrealized ? (o.unrealizedPL >= 0 ? 'pl-pos' : 'pl-neg') : '';
+    const uText = hasUnrealized ? `${o.unrealizedPL >= 0 ? '+' : ''}${o.unrealizedPL.toLocaleString()}` : '—';
+    return `
     <div class="stock-overview-row">
       <div class="sov-name">${escapeHtml(o.code)} ${escapeHtml(o.name || '')}</div>
       <div class="sov-grid">
         <div><div class="sov-label">平均購入</div><div class="sov-value">${o.avgBuyPrice !== null ? o.avgBuyPrice : '—'}</div></div>
         <div><div class="sov-label">平均賣出</div><div class="sov-value">${o.avgSellPrice !== null ? o.avgSellPrice : '—'}</div></div>
-        <div><div class="sov-label">目前市價</div><div class="sov-value" id="sov-price-${escapeHtml(o.code)}">…</div></div>
+        <div><div class="sov-label">目前市價</div><div class="sov-value">${priceText}</div></div>
+        <div><div class="sov-label">未實現損益</div><div class="sov-value ${uCls}">${uText}</div></div>
       </div>
-    </div>
-  `).join('');
-  const codes = overview.map(o => o.code);
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getCurrentStockPrices&codes=${encodeURIComponent(codes.join(','))}`, { cache: 'no-store' });
-    const prices = await res.json();
-    overview.forEach(o => {
-      const el = document.getElementById('sov-price-' + o.code);
-      if (el) el.textContent = (prices[o.code] !== undefined && prices[o.code] !== null) ? prices[o.code] : '—';
-    });
-  } catch (err) {
-    overview.forEach(o => {
-      const el = document.getElementById('sov-price-' + o.code);
-      if (el) el.textContent = '—';
-    });
-  }
+    </div>`;
+  }).join('');
 }
 function renderStockRealized() {
   const plArea = document.getElementById('stockRealizedArea');
@@ -3964,9 +4142,11 @@ function setStockFilter(kind, key, value) {
   }
 }
 async function deleteStockLogItem(id) {
-  if (!confirm('刪除這筆交易紀錄？')) return;
+  if (!(await showConfirm('刪除這筆交易紀錄？'))) return;
   try {
-    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteStockLog', id }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteStockLog', id }) });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
     showToast('已刪除 🗑️');
     loadStockSummary();
     loadStockLogList();
@@ -4031,16 +4211,23 @@ function renderGymLog(list) {
   `).join('');
 }
 async function submitGymLog() {
+  const btn = document.getElementById('gymLogSubmitBtn');
+  if (btn.disabled) return;
   const exercise = document.getElementById('gymExerciseInput').value.trim();
   if (!exercise) { alert('請輸入器械/動作名稱'); return; }
   const weight = document.getElementById('gymWeightInput').value;
   const sets = document.getElementById('gymSetsInput').value;
   const reps = document.getElementById('gymRepsInput').value;
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '記錄中…';
   try {
-    await fetch(CONFIG.GAS_URL, {
+    const res = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
       body: JSON.stringify({ action: 'addGymLog', date: fmtDate(new Date()), exercise, weight, sets, reps })
     });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
     document.getElementById('gymExerciseInput').value = '';
     document.getElementById('gymWeightInput').value = '';
     document.getElementById('gymSetsInput').value = '';
@@ -4054,6 +4241,9 @@ async function submitGymLog() {
     loadStreak();
   } catch (err) {
     alert('記錄失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 function repeatLastSet() {
@@ -4065,23 +4255,41 @@ function repeatLastSet() {
   vibrate(10);
 }
 async function deleteGymLogItem(id) {
+  if (!(await showConfirm('刪除這組重訓紀錄？'))) return;
   try {
-    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteGymLog', id }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteGymLog', id }) });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
+    showToast('已刪除 🗑️');
     loadGymLog();
     loadWeekProgress();
     loadStreak();
-  } catch (err) {}
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
 }
 
 async function submitWeight() {
+  const btn = document.getElementById('weightSubmitBtn');
+  if (btn.disabled) return;
   const val = document.getElementById('weightInput').value;
   if (!val) return;
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '記錄中…';
   try {
-    await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: fmtDate(new Date()), weight: val }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: fmtDate(new Date()), weight: val }) });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
     document.getElementById('weightInput').value = '';
     showToast(pick(['體重記錄好了 ⚖️', '收到，辛苦你了 🌷']));
     loadWeightList();
-  } catch (err) { alert('記錄失敗：' + err.message); }
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 async function loadWeekProgress() {
   try {

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'life-log-shell-v2'; // 每次更新 index.html / manifest.json 後，記得手動把這個版本號 +1
+const CACHE_NAME = 'life-log-shell-v3';
 const SHELL_FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -17,15 +17,21 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// 只快取「外殼」檔案本身；API 呼叫（Google Apps Script）一律直接走網路，
-// 確保紀錄資料永遠是最新的，不會被快取住。
+// 網路優先：只要裝置有網路，一律先抓最新版本（抓到就順便把快取更新成最新的）；
+// 只有真的離線、網路要不到的時候，才退回用快取頂著用。
+// 這樣之後更新 App 就不用再手動改版本號了——只要有網路，開啟時一定是最新版，
+// 之前「安裝到主畫面的版本一直是舊的、但瀏覽器分頁卻是新的」就是這裡改的。
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
-  if (url.includes('script.google.com')) return; // 不快取 GAS API 請求
+  if (url.includes('script.google.com')) return; // 不快取 GAS API 請求，一律直接走網路
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).catch(() => cached);
-    })
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
