@@ -916,15 +916,53 @@
 
   .search-section-header{
     font-size:11.5px;font-weight:700;color:var(--ink-soft);letter-spacing:.5px;
-    margin:16px 2px 6px;
+    margin:16px 2px 6px;display:flex;align-items:center;justify-content:space-between;
   }
   .search-section-header:first-child{margin-top:0;}
+  .search-section-header .ssh-count{color:var(--ink-soft);font-weight:600;}
   .search-mini-item{
-    display:flex;justify-content:space-between;align-items:center;gap:10px;
-    background:var(--card);border-radius:14px;padding:11px 14px;margin-bottom:6px;
+    display:flex;align-items:center;gap:10px;
+    background:var(--card);border-radius:14px;padding:11px 14px;margin-bottom:8px;
     font-size:13px;color:var(--ink);cursor:pointer;border:1px solid var(--line);
   }
+  .search-mini-item .smi-icon{font-size:18px;flex-shrink:0;}
+  .search-mini-item .smi-main{flex:1;min-width:0;}
+  .search-mini-item .smi-title{font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .search-mini-item .smi-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
   .search-mini-item .smi-right{font-size:11.5px;color:var(--ink-soft);white-space:nowrap;flex-shrink:0;}
+
+  /* Phase05：搜尋結果的照片項目（縮圖 + 文字資訊） */
+  .search-photo-item{
+    display:flex;align-items:center;gap:10px;
+    background:var(--card);border-radius:14px;padding:8px;margin-bottom:8px;
+    cursor:pointer;border:1px solid var(--line);
+  }
+  .search-photo-item img{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;}
+  .search-photo-item .spi-main{flex:1;min-width:0;}
+  .search-photo-item .spi-cat{font-size:11.5px;font-weight:700;color:var(--accent-dark);}
+  .search-photo-item .spi-text{font-size:12.5px;color:var(--ink);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .search-photo-item .spi-date{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+
+  /* Phase05：搜尋摘要卡（關鍵字 + 全部筆數） */
+  .search-summary{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:12px;border:1px solid var(--line);
+  }
+  .search-summary-title{font-size:14px;font-weight:700;color:var(--ink);}
+  .search-summary-total{font-size:12px;font-weight:700;color:var(--accent-dark);background:var(--input-bg);padding:4px 10px;border-radius:12px;flex-shrink:0;}
+
+  /* Phase05：無搜尋結果 */
+  .search-no-result{padding:36px 20px 30px;}
+  .snr-icon{font-size:30px;margin-bottom:8px;}
+  .snr-title{font-size:14.5px;font-weight:700;color:var(--ink);margin-bottom:12px;}
+  .snr-sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;}
+  .snr-suggestions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .snr-chip{
+    background:var(--input-bg);border:1px solid var(--line);border-radius:16px;
+    padding:6px 14px;font-size:12.5px;color:var(--ink);
+  }
+  .snr-chip.clickable{cursor:pointer;color:var(--accent-dark);font-weight:700;border-color:transparent;background:var(--card);}
+  .search-jump-link{font-size:11.5px;color:var(--accent-dark);font-weight:700;text-align:right;padding:2px 4px 10px;cursor:pointer;}
 
   /* ---- 搜尋 ---- */
   .search-toggle{
@@ -1064,7 +1102,7 @@
 </div>
 
 <div class="search-bar" id="searchBar">
-  <input type="text" id="searchInput" placeholder="搜尋所有紀錄…" oninput="handleSearchInput()">
+  <input type="text" id="searchInput" placeholder="搜尋你的生活……" oninput="handleSearchInput()">
   <button class="search-clear-btn" id="searchClearBtn" onclick="clearSearchInput()">✕</button>
 </div>
 <div class="wrap" id="searchResults"></div>
@@ -3503,8 +3541,12 @@ async function submitEntry() {
 }
 let loadedEntries = [];
 function editEntry(id) {
-  const entry = loadedEntries.find(e => e.id === id);
+  // Phase05：搜尋結果裡的生活紀錄／運動也是用同一顆 ✎ 編輯鈕，但那些資料不在 loadedEntries
+  // （當天日誌用的那份）裡，所以先找不到的話，再去搜尋結果的快取找一次。
+  let entry = loadedEntries.find(e => e.id === id);
+  if (!entry) entry = (searchEntryCache || []).find(e => e.id === id);
   if (!entry) return;
+  switchTab('page-log');
   expandQuickAddCard();
   editingEntryId = id;
   selectedCategory = entry.category;
@@ -5105,17 +5147,40 @@ function renderYearCard(y, currentYear) {
   return div;
 }
 
-/* ================= 搜尋 ================= */
+/* ================= 搜尋（Phase05：生活資料庫搜尋） ================= */
+const SEARCH_FILTERS = [
+  { key: 'all', label: '全部' },
+  { key: 'life', label: '生活' },
+  { key: 'food', label: '飲食' },
+  { key: 'exercise', label: '運動' },
+  { key: 'photo', label: '照片' },
+  { key: 'ticket', label: '票根' },
+  { key: 'stock', label: '股票' },
+  { key: 'period', label: '經期' }
+];
+let currentSearchResults = null;
+let searchFilter = 'all';
+// 生活紀錄／運動這兩類搜尋結果是用 renderTicket() 顯示的完整卡片，裡面的 ✎ 編輯要能正常運作，
+// 但 editEntry() 原本只認得 loadedEntries（當天日誌用的那份），所以另外快取一份給它 fallback 查。
+let searchEntryCache = [];
+
 function toggleSearch() {
   const bar = document.getElementById('searchBar');
   bar.classList.toggle('show');
   if (bar.classList.contains('show')) {
     document.getElementById('searchInput').focus();
   } else {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('searchClearBtn').classList.remove('show');
+    closeSearchUI();
   }
+}
+// 關閉搜尋列＋清空結果，並且在「點搜尋結果跳到資料」時先呼叫，避免搜尋面板疊在目的頁面上方。
+function closeSearchUI() {
+  document.getElementById('searchBar').classList.remove('show');
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('searchClearBtn').classList.remove('show');
+  currentSearchResults = null;
+  searchFilter = 'all';
 }
 function clearSearchInput() {
   const input = document.getElementById('searchInput');
@@ -5123,6 +5188,20 @@ function clearSearchInput() {
   input.focus();
   document.getElementById('searchClearBtn').classList.remove('show');
   document.getElementById('searchResults').innerHTML = '';
+  currentSearchResults = null;
+  searchFilter = 'all';
+}
+// 讓「找不到結果」畫面裡的建議關鍵字可以直接點下去重搜一次
+function setSearchQuery(q) {
+  const input = document.getElementById('searchInput');
+  input.value = q;
+  document.getElementById('searchClearBtn').classList.toggle('show', !!q);
+  clearTimeout(searchDebounce);
+  doSearch();
+}
+function setSearchFilter(key) {
+  searchFilter = key;
+  renderSearchResults();
 }
 function handleSearchInput() {
   document.getElementById('searchClearBtn').classList.toggle('show', !!document.getElementById('searchInput').value);
@@ -5132,60 +5211,189 @@ function handleSearchInput() {
 async function doSearch() {
   const q = document.getElementById('searchInput').value.trim();
   const area = document.getElementById('searchResults');
-  if (!q) { area.innerHTML = ''; return; }
+  searchFilter = 'all';
+  if (!q) { area.innerHTML = ''; currentSearchResults = null; return; }
   area.innerHTML = '<div class="empty-state">搜尋中… 🔍</div>';
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=searchAll&q=${encodeURIComponent(q)}`, { cache: 'no-store' });
-    const results = await res.json();
-    const totalCount = (results.entries || []).length + (results.food || []).length + (results.stock || []).length + (results.period || []).length;
-    if (!totalCount) { area.innerHTML = '<div class="empty-state">找不到符合的紀錄</div>'; return; }
-    area.innerHTML = '';
-    if (results.entries && results.entries.length) {
-      area.appendChild(searchSectionHeader('📔 日記'));
-      results.entries.forEach(e => area.appendChild(renderTicket(e)));
-    }
-    if (results.food && results.food.length) {
-      area.appendChild(searchSectionHeader('🍱 飲食'));
-      const box = document.createElement('div');
-      box.innerHTML = results.food.map(f => `
-        <div class="search-mini-item" onclick="switchTab('page-food');jumpFoodDate('${f.date}');">
-          <span>${escapeHtml(f.name)}</span>
-          <span class="smi-right">${f.calories} kcal・${f.date}</span>
-        </div>
-      `).join('');
-      area.appendChild(box);
-    }
-    if (results.stock && results.stock.length) {
-      area.appendChild(searchSectionHeader('📈 股票'));
-      const box = document.createElement('div');
-      box.innerHTML = results.stock.map(s => `
-        <div class="search-mini-item" onclick="switchTab('page-stock');">
-          <span>${escapeHtml(s.code)} ${escapeHtml(s.name || '')}</span>
-          <span class="smi-right">${s.stockAction === 'sell' ? '賣出' : '買進'}・${s.date}</span>
-        </div>
-      `).join('');
-      area.appendChild(box);
-    }
-    if (results.period && results.period.length) {
-      area.appendChild(searchSectionHeader('🌸 經期'));
-      const box = document.createElement('div');
-      box.innerHTML = results.period.map(p => `
-        <div class="search-mini-item" onclick="switchTab('page-period');">
-          <span>${escapeHtml(p.note)}</span>
-          <span class="smi-right">${p.startDate}${p.endDate ? '～' + p.endDate : ''}</span>
-        </div>
-      `).join('');
-      area.appendChild(box);
-    }
+    currentSearchResults = await res.json();
+    renderSearchResults();
   } catch (err) {
+    currentSearchResults = null;
     area.innerHTML = '<div class="empty-state">搜尋失敗：' + escapeHtml(err.message) + '</div>';
   }
 }
-function searchSectionHeader(label) {
+function renderSearchResults() {
+  const area = document.getElementById('searchResults');
+  const q = document.getElementById('searchInput').value.trim();
+  const r = currentSearchResults;
+  if (!r) { area.innerHTML = ''; return; }
+  const life = r.life || [], exercise = r.exercise || [], food = r.food || [],
+        photo = r.photo || [], ticket = r.ticket || [], stock = r.stock || [], period = r.period || [];
+  const counts = { life: life.length, exercise: exercise.length, food: food.length, photo: photo.length, ticket: ticket.length, stock: stock.length, period: period.length };
+  const total = life.length + exercise.length + food.length + photo.length + ticket.length + stock.length + period.length;
+
+  if (!total) {
+    area.innerHTML = `
+      <div class="empty-state search-no-result">
+        <div class="snr-icon">🔍</div>
+        <div class="snr-title">找不到「${escapeHtml(q)}」</div>
+        <div class="snr-sub">試著搜尋：</div>
+        <div class="snr-suggestions">
+          <span class="snr-chip clickable" onclick="setSearchQuery('餐廳')">餐廳</span>
+          <span class="snr-chip clickable" onclick="setSearchQuery('演唱會')">演唱會</span>
+          <span class="snr-chip clickable" onclick="setSearchQuery('運動')">運動</span>
+          <span class="snr-chip">某個日期</span>
+        </div>
+      </div>`;
+    return;
+  }
+
+  searchEntryCache = life.concat(exercise);
+
+  area.innerHTML = `
+    <div class="search-summary">
+      <div class="search-summary-title">🔎 ${escapeHtml(q)}</div>
+      <div class="search-summary-total">全部 ${total}</div>
+    </div>
+    <div class="cat-row" id="searchFilterRow">
+      ${SEARCH_FILTERS.map(f => {
+        const active = searchFilter === f.key;
+        const c = f.key === 'all' ? total : counts[f.key];
+        return `<div class="cat-chip${active ? ' active' : ''}" style="${active ? 'background:var(--accent);border-color:transparent;color:#fff;' : ''}" onclick="setSearchFilter('${f.key}')">${f.label}${c ? ' ' + c : ''}</div>`;
+      }).join('')}
+    </div>
+    <div id="searchResultList"></div>
+  `;
+  const list = document.getElementById('searchResultList');
+  const show = key => searchFilter === 'all' || searchFilter === key;
+  const appendJumpLink = (container, date) => {
+    const jump = document.createElement('div');
+    jump.className = 'search-jump-link';
+    jump.textContent = `→ 查看 ${date} 這一天`;
+    jump.onclick = () => { closeSearchUI(); jumpToDate(date); };
+    container.appendChild(jump);
+  };
+
+  if (show('life') && life.length) {
+    list.appendChild(searchSectionHeader('📔 生活紀錄', life.length));
+    life.forEach(e => { list.appendChild(renderTicket(e)); appendJumpLink(list, e.date); });
+  }
+  if (show('exercise') && exercise.length) {
+    list.appendChild(searchSectionHeader('💪 運動', exercise.length));
+    exercise.forEach(e => { list.appendChild(renderTicket(e)); appendJumpLink(list, e.date); });
+  }
+  if (show('food') && food.length) {
+    list.appendChild(searchSectionHeader('🍱 飲食', food.length));
+    const box = document.createElement('div');
+    box.innerHTML = food.map(f => `
+      <div class="search-mini-item" onclick="closeSearchUI();switchTab('page-food');jumpFoodDate('${f.date}');">
+        <span class="smi-icon">🍱</span>
+        <div class="smi-main">
+          <div class="smi-title">${escapeHtml(f.name)}</div>
+          <div class="smi-sub">${f.calories} kcal</div>
+        </div>
+        <span class="smi-right">${f.date}</span>
+      </div>
+    `).join('');
+    list.appendChild(box);
+  }
+  if (show('ticket') && ticket.length) {
+    list.appendChild(searchSectionHeader('🎟️ 票根', ticket.length));
+    const box = document.createElement('div');
+    box.className = 'ticket-wall-list';
+    ticket.forEach(t => box.appendChild(renderSearchTicketCard(t)));
+    list.appendChild(box);
+  }
+  if (show('photo') && photo.length) {
+    list.appendChild(searchSectionHeader('📷 照片', photo.length));
+    const box = document.createElement('div');
+    photo.forEach(p => box.appendChild(renderSearchPhotoItem(p)));
+    list.appendChild(box);
+  }
+  if (show('stock') && stock.length) {
+    list.appendChild(searchSectionHeader('📈 股票', stock.length));
+    const box = document.createElement('div');
+    box.innerHTML = stock.map(s => `
+      <div class="search-mini-item" onclick="closeSearchUI();switchTab('page-stock');">
+        <span class="smi-icon">📈</span>
+        <div class="smi-main">
+          <div class="smi-title">${escapeHtml(s.code)} ${escapeHtml(s.name || '')}</div>
+          <div class="smi-sub">${s.stockAction === 'sell' ? '賣出' : '買進'}</div>
+        </div>
+        <span class="smi-right">${s.date}</span>
+      </div>
+    `).join('');
+    list.appendChild(box);
+  }
+  if (show('period') && period.length) {
+    list.appendChild(searchSectionHeader('🌸 經期', period.length));
+    const box = document.createElement('div');
+    box.innerHTML = period.map(p => `
+      <div class="search-mini-item" onclick="closeSearchUI();switchTab('page-period');">
+        <span class="smi-icon">🌸</span>
+        <div class="smi-main">
+          <div class="smi-title">${escapeHtml(p.note || '經期紀錄')}</div>
+        </div>
+        <span class="smi-right">${p.startDate}${p.endDate ? '～' + p.endDate : ''}</span>
+      </div>
+    `).join('');
+    list.appendChild(box);
+  }
+  if (searchFilter !== 'all' && !counts[searchFilter]) {
+    list.innerHTML = '<div class="empty-state">這個類別沒有符合的結果</div>';
+  }
+}
+function searchSectionHeader(label, count) {
   const h = document.createElement('div');
   h.className = 'search-section-header';
-  h.textContent = label;
+  h.innerHTML = `<span>${label}</span><span class="ssh-count">${count} 筆</span>`;
   return h;
+}
+// 票根搜尋結果：外觀沿用票根牆的 .ticket-card，點下去跟票根牆一樣直接跳到當天完整內容
+function renderSearchTicketCard(t) {
+  const { title, performer, venue, seat } = ticketCardInfo(t);
+  const imgUrl = t.photoUrl || (t.photoUrls && t.photoUrls[0]) || '';
+  const titleColor = catColor(t.category);
+  const card = document.createElement('div');
+  card.className = 'ticket-card';
+  card.onclick = () => { closeSearchUI(); jumpToDate(t.date); };
+  card.innerHTML = `
+    <div class="ti-image">
+      ${imgUrl ? `<img src="${imgUrl}" loading="lazy" alt="">` : `<div class="ti-placeholder">${catIcon(t.category)}</div>`}
+    </div>
+    <div class="ticket-info">
+      <div class="ticket-title-bar" style="background:${titleColor};">${escapeHtml(title)}</div>
+      <div class="ticket-body">
+        <div class="ticket-date">${ticketDateLabel(t.date)}${t.time ? ' ' + escapeHtml(t.time) : ''}</div>
+        ${performer ? `<div class="ticket-artist">${escapeHtml(performer)}</div>` : ''}
+        ${venue ? `<div class="ticket-venue">${escapeHtml(venue)}</div>` : ''}
+        ${seat ? `<div class="ticket-seat">${escapeHtml(seat)}</div>` : ''}
+      </div>
+    </div>`;
+  return card;
+}
+// 照片搜尋結果：縮圖 + 摘要，點下去直接開對應的 Photo Lightbox
+function renderSearchPhotoItem(p) {
+  const item = document.createElement('div');
+  item.className = 'search-photo-item';
+  item.onclick = () => jumpToSearchPhoto(p.entryId, p.url);
+  item.innerHTML = `
+    <img src="${p.url}" loading="lazy">
+    <div class="spi-main">
+      <div class="spi-cat">${catIcon(p.category)} ${escapeHtml(p.category)}</div>
+      ${p.text ? `<div class="spi-text">${escapeHtml(p.text)}</div>` : ''}
+      <div class="spi-date">${p.date}</div>
+    </div>`;
+  return item;
+}
+async function jumpToSearchPhoto(entryId, url) {
+  closeSearchUI();
+  switchTab('page-photos');
+  await loadPhotoWall();
+  let idx = photoWallAll.findIndex(p => String(p.entryId) === String(entryId) && p.url === url);
+  if (idx === -1) idx = photoWallAll.findIndex(p => String(p.entryId) === String(entryId));
+  if (idx !== -1) openPhotoLightbox(idx);
 }
 function jumpFoodDate(ds) {
   const [y, m, d] = ds.split('-').map(Number);
