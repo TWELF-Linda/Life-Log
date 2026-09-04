@@ -134,6 +134,46 @@
   /* ---- Phase01: 回顧 子分頁（往年今日／月曆／相片／票根）---- */
   .review-subtabs{margin-bottom:14px;}
 
+  /* ---- Phase04: 回顧生活 整合體驗 ---- */
+  .review-header{
+    text-align:center;font-family:'Chiron GoRound TC';
+    font-size:17px;font-weight:700;color:var(--ink);
+    margin-bottom:12px;
+  }
+  .memory-group-header{
+    font-size:12.5px;font-weight:700;color:var(--accent-dark);
+    margin:18px 4px 8px;display:flex;align-items:center;gap:6px;
+  }
+  .memory-group-header::after{
+    content:'';flex:1;height:1px;background:var(--line);
+  }
+  .cdd-date{
+    font-family:'Chiron GoRound TC';font-size:17px;font-weight:700;color:var(--ink);
+    text-align:center;margin-bottom:10px;
+  }
+  .cdd-stats{display:flex;flex-direction:column;gap:6px;}
+  .cdd-stat-row{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:13.5px;color:var(--ink);background:var(--input-bg);
+    border-radius:10px;padding:9px 12px;
+  }
+  .cal-cell.selected{box-shadow:inset 0 0 0 2px var(--coral);border-radius:10px;}
+  .review-year-footer{
+    text-align:center;margin-top:16px;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--accent) 12%, var(--card)), var(--card));
+  }
+  .ryf-year{font-family:'Chiron GoRound TC';font-size:15px;font-weight:700;color:var(--accent-dark);}
+  .ryf-days{font-size:20px;font-weight:800;color:var(--ink);margin:4px 0 14px;font-family:'Chiron GoRound TC';}
+  .ryf-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .ryf-item{
+    background:var(--input-bg);border-radius:12px;padding:10px 6px;
+    font-size:13px;font-weight:700;color:var(--ink);
+  }
+  #photoLightboxText{
+    font-size:12.5px;color:rgba(255,255,255,.85);margin:-4px 0 10px;
+    max-height:60px;overflow:hidden;text-overflow:ellipsis;
+  }
+
   .date-nav{
     display:flex;align-items:center;justify-content:space-between;
     margin:18px 0 14px;
@@ -685,13 +725,14 @@
   .ticket-wall-list{display:flex;flex-direction:column;}
   .ticket-card{
     display:flex;align-items:stretch;min-height:110px;max-height:145px;
-    background:var(--card);border-radius:10px;overflow:hidden;
+    background:var(--card);border-radius:14px;overflow:hidden;
     border:1px solid var(--line);
-    box-shadow:0 2px 8px rgba(180,150,120,0.12);
-    margin-bottom:13px;cursor:pointer;
+    box-shadow:0 4px 12px rgba(180,150,120,0.16), 0 1px 3px rgba(180,150,120,0.10);
+    margin-bottom:14px;cursor:pointer;
     transition:transform .12s;
   }
   .ticket-card:active{transform:scale(0.985);}
+  .ticket-card .ticket-info{border-left:2px dashed var(--line);}
   .ticket-card .ti-image{
     width:96px;flex-shrink:0;background:var(--input-bg);position:relative;
   }
@@ -1290,7 +1331,7 @@
         <div class="mood-row" id="moodRow"></div>
         <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
         <div class="add-row">
-          <button class="photo-btn" onclick="document.getElementById('fileInput').click()">📷 照片</button>
+          <button class="photo-btn" onclick="document.getElementById('fileInput').click()">🖼️ 相片</button>
           <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
         </div>
         <button class="gen-btn" id="cancelEditBtn" style="display:none;margin-top:8px;" onclick="cancelEditEntry()">取消編輯</button>
@@ -1466,10 +1507,11 @@
   </div>
 
   <div class="page" id="page-tickets">
+    <div class="review-header">🕰️ 回顧你的生活</div>
     <div class="settings-tabs review-subtabs">
-      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 這一天</button>
       <button class="settings-tab-btn review-subtab-btn" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
-      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">📷 照片</button>
       <button class="settings-tab-btn review-subtab-btn active" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
     </div>
     <div class="card" style="text-align:center;">
@@ -1478,13 +1520,15 @@
     </div>
     <div class="cat-row" id="ticketFilterRow" style="margin-bottom:14px;"></div>
     <div id="ticketWallArea"></div>
+    <div class="card review-year-footer" id="reviewYearFooter-tickets"></div>
   </div>
 
   <div class="page" id="page-photos">
+    <div class="review-header">🕰️ 回顧你的生活</div>
     <div class="settings-tabs review-subtabs">
-      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 這一天</button>
       <button class="settings-tab-btn review-subtab-btn" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
-      <button class="settings-tab-btn review-subtab-btn active" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn active" data-page="page-photos" onclick="switchTab('page-photos')">📷 照片</button>
       <button class="settings-tab-btn review-subtab-btn" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
     </div>
     <div class="card" style="text-align:center;">
@@ -1493,12 +1537,14 @@
     </div>
     <div class="cat-row" id="photoWallFilterRow" style="margin-bottom:14px;"></div>
     <div id="photoWallArea"></div>
+    <div class="card review-year-footer" id="reviewYearFooter-photos"></div>
   </div>
   <div class="photo-lightbox" id="photoLightbox" onclick="if(event.target===this) closePhotoLightbox()">
     <button class="pl-close" onclick="closePhotoLightbox()">✕</button>
     <img id="photoLightboxImg" src="">
     <div class="pl-info">
       <div id="photoLightboxMeta"></div>
+      <div id="photoLightboxText"></div>
       <button class="submit-btn" id="photoLightboxJump" onclick="jumpToPhotoEntry()">查看這篇紀錄 →</button>
     </div>
   </div>
@@ -1552,10 +1598,11 @@
   </div>
 
   <div class="page" id="page-calendar">
+    <div class="review-header">🕰️ 回顧你的生活</div>
     <div class="settings-tabs review-subtabs">
-      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 這一天</button>
       <button class="settings-tab-btn review-subtab-btn active" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
-      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">📷 照片</button>
       <button class="settings-tab-btn review-subtab-btn" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
     </div>
     <div class="month-nav">
@@ -1564,10 +1611,17 @@
       <button onclick="changeCalMonth(1)">›</button>
     </div>
     <div class="card">
+      <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 10px;">每天的小點點，是那天留下的生活痕跡</div>
       <div class="cal-weekday-row"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
       <div class="cal-grid" id="calGrid"></div>
       <div class="cal-legend" id="calLegend"></div>
     </div>
+    <div class="card" id="calDayDetail" style="display:none;">
+      <div class="cdd-date" id="calDayDetailDate">—</div>
+      <div class="cdd-stats" id="calDayDetailStats"></div>
+      <button class="gen-btn" style="width:100%;margin-top:10px;" onclick="jumpFromCalendarSelected()">查看這一天 →</button>
+    </div>
+    <div class="card review-year-footer" id="reviewYearFooter-calendar"></div>
   </div>
 
   <div class="page" id="page-stats">
@@ -1609,10 +1663,11 @@
   </div>
 
   <div class="page" id="page-memory">
+    <div class="review-header">🕰️ 回顧你的生活</div>
     <div class="settings-tabs review-subtabs">
-      <button class="settings-tab-btn review-subtab-btn active" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn active" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 這一天</button>
       <button class="settings-tab-btn review-subtab-btn" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
-      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">📷 照片</button>
       <button class="settings-tab-btn review-subtab-btn" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
     </div>
     <div class="card" style="text-align:center;">
@@ -1620,6 +1675,7 @@
       <div style="font-size:12.5px;color:var(--ink-soft);" id="memoryDateLabel">—</div>
     </div>
     <div id="memoryArea"></div>
+    <div class="card review-year-footer" id="reviewYearFooter-memory"></div>
   </div>
 
   <div class="page" id="page-stock">
@@ -2175,6 +2231,47 @@ function navGroupForPage(pageId) {
 // 這裡統一更新所有複本的 active 狀態，未顯示中的複本更新了也不影響畫面）。
 function updateReviewSubtabActive(pageId) {
   document.querySelectorAll('.review-subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+}
+// Phase04：回顧生活整合體驗 —— 年度回顧數字卡（4 個回顧子分頁共用同一份資料，快取起來避免重複打 API）
+let reviewYearOverviewCache = null; // { year, daysActive, totalEntries, totalPhotos, showCount, exerciseDaysCount }
+let reviewYearOverviewLoading = false;
+async function renderReviewYearFooter(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  if (reviewYearOverviewCache) {
+    el.innerHTML = reviewYearFooterHtml(reviewYearOverviewCache);
+    return;
+  }
+  el.innerHTML = '<div class="empty-state" style="padding:20px 0;">整理今年的回顧中… ✨</div>';
+  if (reviewYearOverviewLoading) return;
+  reviewYearOverviewLoading = true;
+  try {
+    const year = new Date().getFullYear();
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getYearOverview&year=${year}`, { cache: 'no-store' });
+    const data = await res.json();
+    reviewYearOverviewCache = data;
+    // 資料回來的當下，使用者可能已經切到別的回顧分頁了，所以每個還在畫面上的 footer 容器都要一起補上
+    document.querySelectorAll('.review-year-footer').forEach(node => {
+      node.innerHTML = reviewYearFooterHtml(data);
+    });
+  } catch (err) {
+    el.innerHTML = '<div class="empty-state" style="padding:20px 0;">年度回顧讀取失敗</div>';
+  } finally {
+    reviewYearOverviewLoading = false;
+  }
+}
+function reviewYearFooterHtml(s) {
+  if (!s) return '';
+  return `
+    <div class="ryf-year">${s.year}</div>
+    <div class="ryf-days">生活了 ${s.daysActive} 天</div>
+    <div class="ryf-grid">
+      <div class="ryf-item">📝 ${s.totalEntries} 則紀錄</div>
+      <div class="ryf-item">📷 ${s.totalPhotos} 張照片</div>
+      <div class="ryf-item">🎟️ ${s.showCount} 個活動</div>
+      <div class="ryf-item">💪 ${s.exerciseDaysCount} 次運動</div>
+    </div>
+  `;
 }
 function switchTab(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -4741,6 +4838,7 @@ async function loadTicketWall() {
   } catch (err) {
     area.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
   }
+  renderReviewYearFooter('reviewYearFooter-tickets');
 }
 function renderTicketFilterRow() {
   const row = document.getElementById('ticketFilterRow');
@@ -4897,6 +4995,7 @@ async function loadPhotoWall() {
   } catch (err) {
     area.innerHTML = '<div class="empty-state">讀取失敗：' + escapeHtml(err.message) + '</div>';
   }
+  renderReviewYearFooter('reviewYearFooter-photos');
 }
 function renderPhotoWallFilterRow() {
   const row = document.getElementById('photoWallFilterRow');
@@ -4937,6 +5036,9 @@ function openPhotoLightbox(index) {
   if (!p) return;
   document.getElementById('photoLightboxImg').src = p.url;
   document.getElementById('photoLightboxMeta').textContent = `${catIcon(p.category)} ${p.category}　${p.date}`;
+  // Phase04：若後端有帶對應紀錄的文字（p.text），在圖片下方顯示一小段預覽
+  const textEl = document.getElementById('photoLightboxText');
+  textEl.textContent = p.text ? p.text : '';
   document.getElementById('photoLightbox').dataset.date = p.date;
   document.getElementById('photoLightbox').classList.add('show');
 }
@@ -4961,13 +5063,27 @@ async function loadMemoryPage() {
     const years = await res.json();
     if (!years.length) {
       area.innerHTML = '<div class="empty-state">還沒有過去這天的紀錄唷<br>明年的今天就會有回憶可以看了 🌱</div>';
-      return;
+    } else {
+      area.innerHTML = '';
+      // Phase04：依「去年今天／前年今天／更早以前」分組加上小標題，年份陣列本來就是新到舊排序
+      let lastGroup = null;
+      years.forEach(y => {
+        const yearsAgo = today.getFullYear() - parseInt(y.year);
+        const group = yearsAgo === 1 ? '去年今天' : yearsAgo === 2 ? '前年今天' : '更早以前';
+        if (group !== lastGroup) {
+          const header = document.createElement('div');
+          header.className = 'memory-group-header';
+          header.textContent = group;
+          area.appendChild(header);
+          lastGroup = group;
+        }
+        area.appendChild(renderYearCard(y, today.getFullYear()));
+      });
     }
-    area.innerHTML = '';
-    years.forEach(y => area.appendChild(renderYearCard(y, today.getFullYear())));
   } catch (err) {
     area.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
   }
+  renderReviewYearFooter('reviewYearFooter-memory');
 }
 function renderYearCard(y, currentYear) {
   const div = document.createElement('div');
@@ -5080,6 +5196,8 @@ function jumpFoodDate(ds) {
 /* ================= 統計頁 ================= */
 // ---------- 月曆總覽 ----------
 let calMonth = new Date();
+let calOverviewData = {}; // Phase04：快取這個月的密度資料，點日期時不用再打一次 API
+let calSelectedDate = null;
 function changeCalMonth(delta) {
   calMonth.setMonth(calMonth.getMonth() + delta);
   loadCalendarPage();
@@ -5088,15 +5206,19 @@ async function loadCalendarPage() {
   if (!checkConfig()) return;
   const ym = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
   document.getElementById('calMonthLabel').textContent = calMonth.getFullYear() + ' 年 ' + (calMonth.getMonth() + 1) + ' 月';
+  calSelectedDate = null;
+  document.getElementById('calDayDetail').style.display = 'none';
   const grid = document.getElementById('calGrid');
   grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">載入中…</div>';
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getCalendarOverview&month=${ym}`, { cache: 'no-store' });
     const overview = await res.json();
+    calOverviewData = overview;
     renderCalendarGrid(ym, overview);
   } catch (err) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
+  renderReviewYearFooter('reviewYearFooter-calendar');
 }
 function renderCalendarGrid(ym, overview) {
   const grid = document.getElementById('calGrid');
@@ -5117,9 +5239,10 @@ function renderCalendarGrid(ym, overview) {
         legendSet[c.name] = c.color;
       });
       if (day.hasFood) { dots += `<span class="cal-dot" style="background:#E8916A;"></span>`; legendSet['飲食'] = '#E8916A'; }
+      if (day.hasExercise) { dots += `<span class="cal-dot" style="background:#3E8C5B;"></span>`; legendSet['運動'] = '#3E8C5B'; }
       if (day.hasPeriod) { dots += `<span class="cal-dot" style="background:#FF8FB3;"></span>`; legendSet['經期'] = '#FF8FB3'; }
     }
-    html += `<div class="cal-cell${ds === todayStr ? ' today' : ''}" onclick="jumpFromCalendar('${ds}')">
+    html += `<div class="cal-cell${ds === todayStr ? ' today' : ''}${ds === calSelectedDate ? ' selected' : ''}" onclick="selectCalendarDay('${ds}', this)">
       <span class="cal-daynum">${d}</span>
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -5130,6 +5253,26 @@ function renderCalendarGrid(ym, overview) {
   legend.innerHTML = keys.length ? keys.map(name =>
     `<div class="cal-legend-item"><span class="cal-dot" style="background:${legendSet[name]};"></span>${escapeHtml(name)}</div>`
   ).join('') : '<div style="color:var(--ink-soft);">這個月還沒有任何紀錄</div>';
+}
+// Phase04：點日期先秀出這一天的小結，而不是直接跳走；再按「查看這一天」才真的跳去紀錄頁
+function selectCalendarDay(ds, cellEl) {
+  calSelectedDate = ds;
+  document.querySelectorAll('#calGrid .cal-cell').forEach(cell => cell.classList.remove('selected'));
+  if (cellEl) cellEl.classList.add('selected');
+  const day = calOverviewData[ds] || {};
+  const parts = ds.split('-');
+  document.getElementById('calDayDetailDate').textContent = `${Number(parts[1])}/${Number(parts[2])}`;
+  const rows = [
+    `📝 ${day.entryCount || 0} 則紀錄`,
+    `🍱 ${day.foodCount || 0} 筆飲食`,
+    `💪 ${day.hasExercise ? '1' : '0'} 次運動`,
+    `📷 ${day.photoCount || 0} 張照片`
+  ];
+  document.getElementById('calDayDetailStats').innerHTML = rows.map(r => `<div class="cdd-stat-row">${r}</div>`).join('');
+  document.getElementById('calDayDetail').style.display = 'block';
+}
+function jumpFromCalendarSelected() {
+  if (calSelectedDate) jumpFromCalendar(calSelectedDate);
 }
 function jumpFromCalendar(ds) {
   switchTab('page-log');
