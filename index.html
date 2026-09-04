@@ -3295,21 +3295,32 @@ function selectStockAction(v) {
 }
 async function loadPeriodPage() {
   if (!checkConfig()) return;
-  loadPeriodStatus();
-  loadPeriodOpenState();
-  loadPeriodLogList();
   renderPeriodOptionChips();
-  loadPeriodDailyToday();
-  loadPeriodDailyHistory();
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodPageData`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    loadPeriodStatus(data.status);
+    loadPeriodOpenState(data.openPeriod);
+    loadPeriodLogList(data.logs);
+    loadPeriodDailyToday(data.daily);
+    loadPeriodDailyHistory(data.dailyRecent);
+  } catch (err) {
+    // 合併請求失敗就退回原本分開打 5 次的做法，至少畫面還看得到東西
+    loadPeriodStatus();
+    loadPeriodOpenState();
+    loadPeriodLogList();
+    loadPeriodDailyToday();
+    loadPeriodDailyHistory();
+  }
 }
-async function loadPeriodStatus() {
+async function loadPeriodStatus(preData) {
   const area = document.getElementById('periodStatusArea');
   area.innerHTML = '';
   area.className = 'empty-state';
   area.textContent = '計算中… 🌷';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodStatus`, { cache: 'no-store' });
-    const s = await res.json();
+    const s = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodStatus`, { cache: 'no-store' })).json();
     if (s.error) { area.textContent = '讀取失敗：' + s.error; return; }
     if (!s.hasData) {
       area.textContent = '還沒有任何紀錄，記一筆開始追蹤吧';
@@ -3336,11 +3347,10 @@ async function loadPeriodStatus() {
 }
 // 開始／結束經期用同一顆按鈕，狀態從後端問「目前有沒有還沒結束的紀錄」決定
 let periodOpenState = { hasOpen: false };
-async function loadPeriodOpenState() {
+async function loadPeriodOpenState(preData) {
   const btn = document.getElementById('periodToggleBtn');
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getOpenPeriod`, { cache: 'no-store' });
-    periodOpenState = await res.json();
+    periodOpenState = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getOpenPeriod`, { cache: 'no-store' })).json();
     if (periodOpenState.hasOpen) {
       const days = Math.floor((new Date(fmtDate(new Date()) + 'T00:00:00') - new Date(periodOpenState.startDate + 'T00:00:00')) / 86400000) + 1;
       btn.textContent = `✅ 結束經期（已經第 ${days} 天）`;
@@ -3374,12 +3384,11 @@ async function togglePeriodOpen() {
     btn.disabled = false;
   }
 }
-async function loadPeriodLogList() {
+async function loadPeriodLogList(preData) {
   const area = document.getElementById('periodLogArea');
   area.innerHTML = '<div class="empty-state">載入中…</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodLogs`, { cache: 'no-store' });
-    const logs = await res.json();
+    const logs = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodLogs`, { cache: 'no-store' })).json();
     if (!logs.length || logs.error) { area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>'; return; }
     area.innerHTML = logs.map(l => `
       <div class="stock-log-item">
@@ -3467,10 +3476,9 @@ function togglePeriodSymptom(opt) {
   if (i === -1) periodDailyState.symptoms.push(opt); else periodDailyState.symptoms.splice(i, 1);
   renderPeriodOptionChips();
 }
-async function loadPeriodDailyToday() {
+async function loadPeriodDailyToday(preData) {
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodDaily&date=${fmtDate(new Date())}`, { cache: 'no-store' });
-    const d = await res.json();
+    const d = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodDaily&date=${fmtDate(new Date())}`, { cache: 'no-store' })).json();
     periodDailyState = { flow: d.flow || '', pain: d.pain || '', symptoms: d.symptoms || [] };
     document.getElementById('periodDailyNote').value = d.note || '';
     renderPeriodOptionChips();
@@ -3498,12 +3506,11 @@ async function submitPeriodDaily() {
     btn.textContent = originalText;
   }
 }
-async function loadPeriodDailyHistory() {
+async function loadPeriodDailyHistory(preData) {
   const area = document.getElementById('periodDailyHistoryArea');
   area.innerHTML = '<div class="empty-state">載入中…</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodDailyRecent&limit=14`, { cache: 'no-store' });
-    const rows = await res.json();
+    const rows = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodDailyRecent&limit=14`, { cache: 'no-store' })).json();
     if (!rows.length || rows.error) { area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>'; return; }
     area.innerHTML = rows.map(r => {
       const parts = [];
@@ -3717,17 +3724,27 @@ async function loadStockPage() {
   if (!checkConfig()) return;
   renderStockActionRow();
   document.getElementById('stockDate').value = fmtDate(new Date());
-  loadStockSummary();
-  loadStockLogList();
-  loadStockNameMap();
-  loadStockCostChart();
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockPageData`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    loadStockSummary(data.summary);
+    loadStockLogList(data.log);
+    loadStockNameMap(data.nameMap);
+    loadStockCostChart(data.history);
+  } catch (err) {
+    // 合併請求失敗的話，退回原本分開打 4 次的做法，至少畫面還看得到東西
+    loadStockSummary();
+    loadStockLogList();
+    loadStockNameMap();
+    loadStockCostChart();
+  }
 }
-async function loadStockCostChart() {
+async function loadStockCostChart(preData) {
   const svg = document.getElementById('stockCostChart');
   const empty = document.getElementById('stockCostChartEmpty');
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockHistory`, { cache: 'no-store' });
-    const series = await res.json();
+    const series = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getStockHistory`, { cache: 'no-store' })).json();
     if (!series || series.error || series.length < 2) {
       svg.innerHTML = ''; empty.style.display = 'block';
       return;
@@ -3751,10 +3768,9 @@ async function loadStockCostChart() {
   }
 }
 let STOCK_NAME_MAP = { codeToName: {}, nameToCode: {} };
-async function loadStockNameMap() {
+async function loadStockNameMap(preData) {
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockNameMap`, { cache: 'no-store' });
-    const map = await res.json();
+    const map = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getStockNameMap`, { cache: 'no-store' })).json();
     if (map && !map.error) STOCK_NAME_MAP = map;
   } catch (err) {}
 }
@@ -3954,11 +3970,10 @@ let stockRealizedFilter = { year: 'all', code: 'all' };
 let stockLogAll = []; // 全部交易紀錄，供篩選用
 let stockLogFilter = { year: 'all', code: 'all' };
 
-async function loadStockSummary() {
+async function loadStockSummary(preData) {
   const holdArea = document.getElementById('stockHoldingsArea');
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockSummary`, { cache: 'no-store' });
-    const result = await res.json();
+    const result = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getStockSummary`, { cache: 'no-store' })).json();
     if (result.error) { holdArea.innerHTML = `<div class="empty-state">${escapeHtml(result.error)}</div>`; return; }
     if (!result.holdings.length) {
       holdArea.innerHTML = '<div class="empty-state">目前沒有持股</div>';
@@ -4070,12 +4085,11 @@ function renderStockRealized() {
   }).join('');
   plArea.innerHTML = html;
 }
-async function loadStockLogList() {
+async function loadStockLogList(preData) {
   const area = document.getElementById('stockLogArea');
   area.innerHTML = '<div class="empty-state">載入中… 🔍</div>';
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockLog`, { cache: 'no-store' });
-    const rows = await res.json();
+    const rows = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getStockLog`, { cache: 'no-store' })).json();
     if (rows.error) { area.innerHTML = `<div class="empty-state">${escapeHtml(rows.error)}</div>`; return; }
     stockLogAll = rows.map(r => Object.assign({}, r, { year: r.date.substring(0, 4) }));
     renderStockFilterRow('logFilterRow', stockLogAll, stockLogFilter, 'Log');
