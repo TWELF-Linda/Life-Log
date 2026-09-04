@@ -1982,12 +1982,14 @@ function quickRecord() {
   }, 80);
 }
 
-// 快速新增選單：日記／飲食／經期／股票，不用先自己切分頁找輸入框
+// 快速新增選單：手指最順手的兩個放最上面（一般紀錄／拍照記錄），其餘依常用度排列
 const FAB_MENU_ITEMS = [
-  { icon: '📝', label: '寫日記', action: 'log' },
-  { icon: '🍱', label: '記錄飲食', action: 'food' },
-  { icon: '🌸', label: '經期', action: 'period' },
-  { icon: '📈', label: '股票交易', action: 'stock' }
+  { icon: '📝', label: '一般紀錄', type: 'log' },
+  { icon: '📷', label: '拍照記錄', type: 'photo' },
+  { icon: '🍱', label: '飲食', type: 'food' },
+  { icon: '💪', label: '運動', type: 'exercise' },
+  { icon: '🌸', label: '身體狀況', type: 'condition' },
+  { icon: '📈', label: '股票交易', type: 'stock' }
 ];
 let fabMenuOpen = false;
 function toggleFabMenu() {
@@ -1999,7 +2001,7 @@ function openFabMenu() {
   document.getElementById('fabBackdrop').classList.add('show');
   const container = document.getElementById('fabMiniContainer');
   container.innerHTML = FAB_MENU_ITEMS.map((item, i) => `
-    <button class="fab-mini" style="bottom:${88 + 60 * (i + 1)}px;" onclick="fabMenuAction('${item.action}')">
+    <button class="fab-mini" style="bottom:${88 + 56 * (i + 1)}px;" onclick="openRecordEntry('${item.type}'); closeFabMenu();">
       <span class="icon">${item.icon}</span>${item.label}
     </button>
   `).join('');
@@ -2015,28 +2017,8 @@ function closeFabMenu() {
   document.querySelectorAll('.fab-mini').forEach(el => el.classList.remove('show'));
   setTimeout(() => { if (!fabMenuOpen) document.getElementById('fabMiniContainer').innerHTML = ''; }, 200);
 }
-function fabMenuAction(action) {
-  closeFabMenu();
-  if (action === 'log') {
-    quickRecord();
-  } else if (action === 'food') {
-    switchTab('page-food');
-    setTimeout(() => {
-      const el = document.getElementById('foodDescInput');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
-    }, 80);
-  } else if (action === 'period') {
-    switchTab('page-period');
-  } else if (action === 'stock') {
-    switchTab('page-stock');
-    setTimeout(() => {
-      const el = document.getElementById('stockCode');
-      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
-    }, 80);
-  }
-}
 
-// Phase01：「紀錄」Hub 卡片點擊後導去對應的既有輸入介面（跟 FAB 快速選單共用同一批跳轉目標）
+// Phase01：「紀錄」Hub 卡片點擊後導去對應的既有輸入介面（Phase03 起 FAB 快速選單也共用這一個函式，避免兩套跳轉邏輯各改各的）
 function openRecordEntry(type) {
   if (type === 'log' || type === 'mood') {
     switchTab('page-log');
@@ -2067,9 +2049,10 @@ function openRecordEntry(type) {
     }, 80);
   } else if (type === 'photo') {
     switchTab('page-log');
+    expandQuickAddCard();
     setTimeout(() => {
       const el = document.getElementById('fileInput');
-      if (el) el.click();
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.click(); }
     }, 80);
   }
 }
@@ -3094,18 +3077,18 @@ async function deleteEntry(id) {
   const wrap = document.querySelector(`[data-entry-id="${id}"]`);
   if (wrap) wrap.style.display = 'none';
   vibrate(15);
-  showUndoToast('已刪除，幾秒內可復原', () => {
+  showUndoToast('已刪除這筆紀錄', () => {
     clearTimeout(pendingDeletes[id]);
     delete pendingDeletes[id];
     if (wrap) wrap.style.display = '';
-  }, 4500);
+  }, 6000);
   pendingDeletes[id] = setTimeout(async () => {
     delete pendingDeletes[id];
     try {
       await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteEntry', id }) });
       loadEntries();
     } catch (err) {}
-  }, 4500);
+  }, 6000);
 }
 function compressImage(file, maxDim, quality) {
   maxDim = maxDim || 1280; quality = quality || 0.72;
