@@ -614,16 +614,44 @@
   .weight-delta.down{color:#3E8C5B;}
   .weight-delta.up{color:var(--accent-dark);}
 
-  /* ---- 票根牆 ---- */
-  .ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-  .ticket-stub{
-    background:var(--card);border-radius:16px;overflow:hidden;
-    box-shadow:0 4px 14px rgba(180,150,120,0.10);
+  /* ---- 票根牆：垂直票券資訊卡列表 ---- */
+  .ticket-wall-list{display:flex;flex-direction:column;}
+  .ticket-card{
+    display:flex;align-items:stretch;min-height:110px;max-height:145px;
+    background:var(--card);border-radius:10px;overflow:hidden;
+    border:1px solid var(--line);
+    box-shadow:0 2px 8px rgba(180,150,120,0.12);
+    margin-bottom:13px;cursor:pointer;
+    transition:transform .12s;
   }
-  .ticket-stub img{width:100%;height:110px;object-fit:cover;display:block;}
-  .ticket-stub .ts-body{padding:10px 12px;}
-  .ticket-stub .ts-name{font-size:12.5px;font-weight:700;color:var(--ink);line-height:1.4;}
-  .ticket-stub .ts-cat{font-size:10px;font-weight:700;margin-bottom:2px;letter-spacing:.3px;}
+  .ticket-card:active{transform:scale(0.985);}
+  .ticket-card .ti-image{
+    width:96px;flex-shrink:0;background:var(--input-bg);position:relative;
+  }
+  .ticket-card .ti-image img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
+  .ticket-card .ti-placeholder{
+    width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:26px;
+  }
+  .ticket-card .ticket-info{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .ticket-card .ticket-title-bar{
+    min-height:28px;max-height:34px;padding:6px 10px;display:flex;align-items:center;
+    font-size:12px;font-weight:700;color:#fff;text-align:left;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    text-shadow:0 1px 2px rgba(0,0,0,0.22);
+  }
+  .ticket-card .ticket-body{
+    flex:1;min-width:0;padding:7px 10px;display:flex;flex-direction:column;
+    justify-content:center;gap:2px;overflow:hidden;
+  }
+  .ticket-card .ticket-date{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ticket-card .ticket-artist{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ticket-card .ticket-venue{font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ticket-card .ticket-seat{font-size:11px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ticket-empty{padding:38px 20px 32px;}
+  .ticket-empty .te-icon{font-size:32px;margin-bottom:10px;}
+  .ticket-empty .te-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .ticket-empty .te-desc{font-size:13px;color:var(--ink-soft);margin-bottom:16px;line-height:1.6;}
+  .ticket-empty .gen-btn{margin:0 auto;display:inline-block;padding:8px 18px;font-size:12.5px;}
 
   /* ---- 溫暖提示 toast ---- */
   .help-fab{
@@ -755,7 +783,6 @@
     font-size:20px;color:#fff;
   }
   .ticket-swipe-wrap .ticket{position:relative;margin-bottom:0;transition:transform .25s;will-change:transform;}
-  .ticket-stub .ts-meta{font-size:11px;color:var(--ink-soft);margin-top:3px;}
   .year-divider{
     font-family:'Chiron GoRound TC';font-size:16px;font-weight:800;color:var(--accent-dark);
     margin:18px 2px 10px;display:flex;align-items:center;gap:8px;
@@ -4451,13 +4478,39 @@ function setTicketFilter(key) {
   renderTicketFilterRow();
   renderTicketWall();
 }
+// 從票根的 AI 辨識結果（ticketMeta）與類別自訂欄位（fields）中，
+// 整理出票券卡片要顯示的標題／表演者／場地／座位，盡量沿用既有資料，不新增資料結構。
+function ticketCardInfo(t) {
+  const meta = t.ticketMeta || {};
+  const fields = t.fields || {};
+  const title = meta.showName || fields.showName || fields.title || fields.exhibitName || fields.tourName || t.text || '未命名紀錄';
+  const performer = fields.artist || fields.cast || fields.starring || fields.guests || fields.director || meta.artist || '';
+  const venue = meta.venue || fields.venue || '';
+  const seat = fields.seat || fields.seatNo || fields.seatNumber || '';
+  return { title, performer, venue, seat };
+}
+// 把 yyyy-MM-dd 轉成「yyyy/MM/dd (週X)」，用本地時間建構避免時區跑掉一天。
+function ticketDateLabel(ds) {
+  const parts = (ds || '').split('-');
+  if (parts.length !== 3) return ds || '';
+  const y = Number(parts[0]), m = Number(parts[1]), d = Number(parts[2]);
+  if (!y || !m || !d) return ds;
+  const dt = new Date(y, m - 1, d);
+  const weekday = ['日', '一', '二', '三', '四', '五', '六'][dt.getDay()];
+  return `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')} (週${weekday})`;
+}
 function renderTicketWall() {
   const area = document.getElementById('ticketWallArea');
   const tickets = ticketWallFilter === 'all' ? ticketWallAll : ticketWallAll.filter(t => t.category === ticketWallFilter);
   if (!tickets.length) {
     area.innerHTML = ticketWallAll.length
       ? '<div class="empty-state">這個類別還沒有紀錄</div>'
-      : '<div class="empty-state">還沒有收藏任何票根唷<br>下次記錄演唱會／音樂劇／展覽／追劇時加張照片，AI 會自動幫你辨識資訊 🎭</div>';
+      : `<div class="empty-state ticket-empty">
+          <div class="te-icon">🎟️</div>
+          <div class="te-title">還沒有收藏票根</div>
+          <div class="te-desc">把看過的演唱會、音樂劇與展覽留下來吧。</div>
+          <button class="gen-btn" onclick="switchTab('page-log')">＋ 新增票根</button>
+        </div>`;
     return;
   }
   const byYear = {};
@@ -4482,23 +4535,33 @@ function renderTicketWall() {
     wrapArea.id = 'wrapArea-' + year;
     area.appendChild(wrapArea);
 
-    const grid = document.createElement('div');
-    grid.className = 'ticket-grid';
+    const list = document.createElement('div');
+    list.className = 'ticket-wall-list';
     byYear[year].forEach(t => {
-      const meta = t.ticketMeta || {};
-      const fieldTitle = (t.fields && (t.fields.title || t.fields.showName)) || '';
-      const stub = document.createElement('div');
-      stub.className = 'ticket-stub';
-      stub.innerHTML = `
-        ${(t.photoUrl || (t.photoUrls && t.photoUrls[0])) ? `<img src="${t.photoUrl || t.photoUrls[0]}" loading="lazy">` : ''}
-        <div class="ts-body">
-          <div class="ts-cat" style="color:${catColor(t.category)};">${catIcon(t.category)} ${escapeHtml(t.category)}</div>
-          <div class="ts-name">${escapeHtml(meta.showName || fieldTitle || t.text || '未命名紀錄')}</div>
-          <div class="ts-meta">${escapeHtml(meta.venue || '')} ${meta.venue ? '・' : ''}${t.date}</div>
+      const { title, performer, venue, seat } = ticketCardInfo(t);
+      const imgUrl = t.photoUrl || (t.photoUrls && t.photoUrls[0]) || '';
+      const titleColor = catColor(t.category);
+      const card = document.createElement('div');
+      card.className = 'ticket-card';
+      card.dataset.entryId = t.id;
+      // 點擊卡片：沿用既有「跳到當天紀錄」功能，那裡本來就有完整的票根詳細內容、編輯與刪除。
+      card.onclick = () => jumpToDate(t.date);
+      card.innerHTML = `
+        <div class="ti-image">
+          ${imgUrl ? `<img src="${imgUrl}" loading="lazy" alt="">` : `<div class="ti-placeholder">${catIcon(t.category)}</div>`}
+        </div>
+        <div class="ticket-info">
+          <div class="ticket-title-bar" style="background:${titleColor};">${escapeHtml(title)}</div>
+          <div class="ticket-body">
+            <div class="ticket-date">${ticketDateLabel(t.date)}${t.time ? ' ' + escapeHtml(t.time) : ''}</div>
+            ${performer ? `<div class="ticket-artist">${escapeHtml(performer)}</div>` : ''}
+            ${venue ? `<div class="ticket-venue">${escapeHtml(venue)}</div>` : ''}
+            ${seat ? `<div class="ticket-seat">${escapeHtml(seat)}</div>` : ''}
+          </div>
         </div>`;
-      grid.appendChild(stub);
+      list.appendChild(card);
     });
-    area.appendChild(grid);
+    area.appendChild(list);
   });
 }
 // 年度觀演總覽（Feature 6）：場次數＋常去場地，資料已經在票根牆載入時拿到了，不用再打一次 API
