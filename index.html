@@ -116,6 +116,24 @@
   .page{display:none;}
   .page.active{display:block;}
 
+  /* ---- Phase01: 紀錄 Hub 快速入口卡片 ---- */
+  .record-hub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:2px;}
+  .record-hub-item{
+    background:var(--card);border-radius:20px;padding:20px 10px 16px;text-align:center;
+    box-shadow:0 6px 16px rgba(180,150,120,0.10);cursor:pointer;
+    border:1.5px solid var(--line);transition:transform .15s ease,box-shadow .15s ease;
+    min-height:44px;
+  }
+  .record-hub-item:active{transform:scale(0.96);background:var(--input-bg);}
+  .record-hub-item .rh-icon{
+    width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:22px;margin:0 auto 8px;
+  }
+  .record-hub-item .rh-label{font-size:13px;font-weight:700;color:var(--ink);}
+
+  /* ---- Phase01: 回顧 子分頁（往年今日／月曆／相片／票根）---- */
+  .review-subtabs{margin-bottom:14px;}
+
   .date-nav{
     display:flex;align-items:center;justify-content:space-between;
     margin:18px 0 14px;
@@ -1251,6 +1269,47 @@
     </div>
   </div>
 
+  <div class="page" id="page-record-hub">
+    <div class="card" style="text-align:center;">
+      <div class="cute-font" style="font-size:15px;font-weight:700;">✍️ 我要記錄什麼？</div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">選一個開始，隨手記下今天的這一刻</div>
+    </div>
+    <div class="record-hub-grid">
+      <div class="record-hub-item" onclick="openRecordEntry('log')">
+        <div class="rh-icon" style="background:var(--c-life);">📝</div>
+        <div class="rh-label">一般生活紀錄</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('food')">
+        <div class="rh-icon" style="background:var(--c-show);">🍱</div>
+        <div class="rh-label">飲食</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('exercise')">
+        <div class="rh-icon" style="background:var(--c-fit);">💪</div>
+        <div class="rh-label">運動</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('mood')">
+        <div class="rh-icon" style="background:var(--c-soul);">💭</div>
+        <div class="rh-label">心情</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('condition')">
+        <div class="rh-icon" style="background:var(--c-other);">🩺</div>
+        <div class="rh-label">身體狀況</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('period')">
+        <div class="rh-icon" style="background:var(--c-show);">🌸</div>
+        <div class="rh-label">經期</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('stock')">
+        <div class="rh-icon" style="background:var(--c-culture);">📈</div>
+        <div class="rh-label">股票交易</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('photo')">
+        <div class="rh-icon" style="background:var(--c-soul);">📷</div>
+        <div class="rh-label">照片</div>
+      </div>
+    </div>
+  </div>
+
   <div class="page" id="page-fit">
     <div id="streakBadgeArea"></div>
     <div id="restBannerArea"></div>
@@ -1339,6 +1398,12 @@
   </div>
 
   <div class="page" id="page-tickets">
+    <div class="settings-tabs review-subtabs">
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn active" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
+    </div>
     <div class="card" style="text-align:center;">
       <div class="cute-font" style="font-size:15px;font-weight:700;">🎟️ 票根牆</div>
       <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">收藏你看過的每一場演出</div>
@@ -1348,6 +1413,12 @@
   </div>
 
   <div class="page" id="page-photos">
+    <div class="settings-tabs review-subtabs">
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
+      <button class="settings-tab-btn review-subtab-btn active" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
+    </div>
     <div class="card" style="text-align:center;">
       <div class="cute-font" style="font-size:15px;font-weight:700;">🖼️ 相片牆</div>
       <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">所有紀錄裡的照片，一次瀏覽</div>
@@ -1413,6 +1484,12 @@
   </div>
 
   <div class="page" id="page-calendar">
+    <div class="settings-tabs review-subtabs">
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn active" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
+    </div>
     <div class="month-nav">
       <button onclick="changeCalMonth(-1)">‹</button>
       <div class="m-label" id="calMonthLabel">—</div>
@@ -1464,6 +1541,12 @@
   </div>
 
   <div class="page" id="page-memory">
+    <div class="settings-tabs review-subtabs">
+      <button class="settings-tab-btn review-subtab-btn active" data-page="page-memory" onclick="switchTab('page-memory')">🕰️ 往年今日</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-calendar" onclick="switchTab('page-calendar')">📅 月曆</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-photos" onclick="switchTab('page-photos')">🖼️ 相片</button>
+      <button class="settings-tab-btn review-subtab-btn" data-page="page-tickets" onclick="switchTab('page-tickets')">🎟️ 票根</button>
+    </div>
     <div class="card" style="text-align:center;">
       <div class="cute-font" style="font-size:15px;font-weight:700;margin-bottom:4px;">🕰️ 那些年的今天</div>
       <div style="font-size:12.5px;color:var(--ink-soft);" id="memoryDateLabel">—</div>
@@ -1884,6 +1967,43 @@ function fabMenuAction(action) {
   }
 }
 
+// Phase01：「紀錄」Hub 卡片點擊後導去對應的既有輸入介面（跟 FAB 快速選單共用同一批跳轉目標）
+function openRecordEntry(type) {
+  if (type === 'log' || type === 'mood') {
+    switchTab('page-log');
+    setTimeout(() => {
+      if (type === 'mood') {
+        const mr = document.getElementById('moodRow');
+        if (mr) mr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      const ta = document.getElementById('textInput');
+      if (ta) { if (type === 'log') ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); ta.focus(); }
+    }, 80);
+  } else if (type === 'food') {
+    switchTab('page-food');
+    setTimeout(() => {
+      const el = document.getElementById('foodDescInput');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+    }, 80);
+  } else if (type === 'exercise') {
+    switchTab('page-fit');
+  } else if (type === 'condition' || type === 'period') {
+    switchTab('page-period');
+  } else if (type === 'stock') {
+    switchTab('page-stock');
+    setTimeout(() => {
+      const el = document.getElementById('stockCode');
+      if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+    }, 80);
+  } else if (type === 'photo') {
+    switchTab('page-log');
+    setTimeout(() => {
+      const el = document.getElementById('fileInput');
+      if (el) el.click();
+    }, 80);
+  }
+}
+
 /* ================= 下拉重新整理 ================= */
 let ptrStartY = 0, ptrPulling = false, ptrDist = 0;
 function reloadCurrentTab() {
@@ -1969,6 +2089,7 @@ function attachSwipe(el, onSwipeDelete) {
 
 const PAGE_ACCENTS = {
   'page-log': ['#FF8C7A', '#F0715E'],
+  'page-record-hub': ['#FF8C7A', '#F0715E'],
   'page-fit': ['#7BC99B', '#4FA873'],
   'page-tickets': ['#E8A33D', '#C9861F'],
   'page-photos': ['#D88FBE', '#B76B9C'],
@@ -1978,12 +2099,36 @@ const PAGE_ACCENTS = {
   'page-memory': ['#B39DDB', '#8B6FC9'],
   'page-stock': ['#5FA88F', '#3D8570']
 };
+// Phase01：底部列改成「使用者情境型」5 入口（今天／紀錄／回顧／統計／更多），
+// 每個舊 page 對應到其中一個情境群組，用來決定切換頁面時哪個底部按鈕該亮起來。
+// 舊的 page id／功能完全保留，只是換一種方式被導覽進去。
+const PAGE_TO_NAV_GROUP = {
+  'page-log': 'today',
+  'page-record-hub': 'record',
+  'page-memory': 'review',
+  'page-calendar': 'review',
+  'page-photos': 'review',
+  'page-tickets': 'review',
+  'page-stats': 'stats',
+  'page-fit': 'more',
+  'page-stock': 'more',
+  'page-period': 'more',
+  'page-food': 'more'
+};
+function navGroupForPage(pageId) {
+  return PAGE_TO_NAV_GROUP[pageId] || null;
+}
+// 回顧情境底下有 4 個舊分頁共用一組子導覽列（每個分頁各自複製一份 DOM，
+// 這裡統一更新所有複本的 active 狀態，未顯示中的複本更新了也不影響畫面）。
+function updateReviewSubtabActive(pageId) {
+  document.querySelectorAll('.review-subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+}
 function switchTab(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
-  const moreBtn = document.getElementById('moreTabBtn');
-  if (moreBtn) moreBtn.classList.toggle('active', (window._tabOverflowList || []).indexOf(pageId) !== -1);
+  const activeNavGroup = navGroupForPage(pageId);
+  document.querySelectorAll('.tab-btn[data-group]').forEach(b => b.classList.toggle('active', b.dataset.group === activeNavGroup));
+  updateReviewSubtabActive(pageId);
   const accent = PAGE_ACCENTS[pageId];
   if (accent) {
     document.documentElement.style.setProperty('--accent', accent[0]);
@@ -2309,9 +2454,9 @@ async function persistCategoryOrder() {
   } catch (err) {}
 }
 
-/* ================= 分頁順序 ================= */
+/* ================= 分頁順序（設定頁「分頁順序」仍保留，供舊資料／未來擴充使用） ================= */
 const TAB_META = {
-  'page-log': { icon: '📝', label: '紀錄' },
+  'page-log': { icon: '📝', label: '今天' },
   'page-fit': { icon: '💪', label: '健身' },
   'page-tickets': { icon: '🎟️', label: '票根' },
   'page-photos': { icon: '🖼️', label: '相片' },
@@ -2322,8 +2467,6 @@ const TAB_META = {
   'page-stock': { icon: '📈', label: '股票' },
   'page-period': { icon: '🌷', label: '經期' }
 };
-// 底部列只直接顯示前 MAX_PRIMARY_TABS 個，其餘收進「更多」選單——分頁變多之後全部擠在
-// 底下要一直左右滑很麻煩，所以只留最常用的幾個，其他點「更多」再選
 const MAX_PRIMARY_TABS = 4;
 const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-food', 'page-memory', 'page-stock', 'page-period'];
 // 已經存過自訂分頁順序的人，存檔裡不會有新加的分頁 id；這裡自動把 TAB_META 有、但存檔順序裡沒有的
@@ -2334,46 +2477,81 @@ function mergeTabOrder(order) {
   return base;
 }
 
+// Phase01：底部主導覽固定為「使用者情境型」5 個入口，不再依照 mergeTabOrder 的自訂順序顯示。
+// 舊的「設定 → 分頁順序」仍然有效，但現在只用來排序「更多」選單裡的項目（見 openMoreMenu）。
+const MAIN_NAV_ITEMS = [
+  { group: 'today', icon: '🏠', label: '今天', page: 'page-log' },
+  { group: 'record', icon: '✍️', label: '紀錄', page: 'page-record-hub' },
+  { group: 'review', icon: '🕰️', label: '回顧', page: 'page-memory' },
+  { group: 'stats', icon: '📊', label: '統計', page: 'page-stats' },
+  { group: 'more', icon: '☰', label: '更多' }
+];
+// 「更多」Bottom Sheet 固定內容：健身／股票／經期／食物資料庫／設定／使用教學
+// 前 4 個（有 page 的項目）會依照使用者在「設定 → 分頁順序」存的順序排列，設定／使用教學固定排最後。
+const MORE_MENU_ITEMS = [
+  { icon: '💪', label: '健身', page: 'page-fit' },
+  { icon: '📈', label: '股票', page: 'page-stock' },
+  { icon: '🌸', label: '經期', page: 'page-period' },
+  { icon: '🍱', label: '食物資料庫', page: 'page-food' },
+  { icon: '⚙️', label: '設定', action: 'settings' },
+  { icon: '❔', label: '使用教學', action: 'tutorial' }
+];
+// 使用者自訂的分頁順序（來自 Settings → 分頁順序），開機時／存檔後會更新這份快取，
+// 「更多」選單開啟時依這份順序排列 MORE_MENU_ITEMS 裡有對應 page 的項目。
+let CURRENT_TAB_ORDER = DEFAULT_TAB_ORDER.slice();
+
 /**
- * 底部列只顯示前 MAX_PRIMARY_TABS 個常用分頁，其餘收進「更多」選單（點了跳出選單，
- * 不會佔掉底部列空間），分頁太多也不用一直左右滑。
+ * 底部列固定顯示 5 個情境入口。「今天／紀錄／回顧／統計」四個直接切頁，
+ * 「更多」則打開 Bottom Sheet；舊的 page-fit／page-stock／page-period／page-food
+ * 分頁 id 與內部功能完全保留，只是收進「更多」，不再直接排在底部列。
  */
 function renderTabbarButtons(order) {
+  if (Array.isArray(order) && order.length) CURRENT_TAB_ORDER = mergeTabOrder(order);
   const container = document.getElementById('tabbarContainer');
-  const list = mergeTabOrder(order);
-  const primary = list.slice(0, MAX_PRIMARY_TABS);
-  const overflow = list.slice(MAX_PRIMARY_TABS);
-  window._tabOverflowList = overflow; // 給「更多」選單跟 switchTab 判斷 active 狀態用
   const activePage = document.querySelector('.page.active');
   const activeId = activePage ? activePage.id : 'page-log';
-  const isOverflowActive = overflow.indexOf(activeId) !== -1;
-  container.innerHTML = primary.map(id => `
-    <button class="tab-btn${id === activeId ? ' active' : ''}" data-page="${id}" onclick="switchTab('${id}')">
-      <span class="icon">${TAB_META[id].icon}</span>${TAB_META[id].label}
-    </button>
-  `).join('') + (overflow.length ? `
-    <button class="tab-btn${isOverflowActive ? ' active' : ''}" id="moreTabBtn" onclick="openMoreMenu()">
-      <span class="icon">⋯</span>更多
-    </button>
-  ` : '') + `
-    <button class="tab-btn" onclick="toggleSettings()">
-      <span class="icon">⚙️</span>設定
-    </button>
-  `;
+  const activeGroup = navGroupForPage(activeId);
+  container.innerHTML = MAIN_NAV_ITEMS.map(item => {
+    if (item.group === 'more') {
+      return `
+        <button class="tab-btn${activeGroup === 'more' ? ' active' : ''}" id="moreTabBtn" data-group="more" onclick="openMoreMenu()">
+          <span class="icon">${item.icon}</span>${item.label}
+        </button>
+      `;
+    }
+    return `
+      <button class="tab-btn${activeGroup === item.group ? ' active' : ''}" data-group="${item.group}" data-page="${item.page}" onclick="switchTab('${item.page}')">
+        <span class="icon">${item.icon}</span>${item.label}
+      </button>
+    `;
+  }).join('');
 }
 function openMoreMenu() {
-  const overflow = window._tabOverflowList || [];
-  document.getElementById('moreMenuGrid').innerHTML = overflow.map(id => `
-    <div class="more-menu-item" onclick="switchTab('${id}');closeMoreMenu();">
-      <span class="icon">${TAB_META[id].icon}</span>
-      <span class="label">${TAB_META[id].label}</span>
-    </div>
-  `).join('');
+  const pageItems = MORE_MENU_ITEMS.filter(item => item.page).sort((a, b) => {
+    const ai = CURRENT_TAB_ORDER.indexOf(a.page), bi = CURRENT_TAB_ORDER.indexOf(b.page);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+  const actionItems = MORE_MENU_ITEMS.filter(item => item.action);
+  document.getElementById('moreMenuGrid').innerHTML = pageItems.concat(actionItems).map(item => {
+    const action = item.action === 'settings' ? 'toggleSettings()'
+      : item.action === 'tutorial' ? 'toggleOnboarding(true)'
+      : `switchTab('${item.page}')`;
+    return `
+      <div class="more-menu-item" onclick="${action};closeMoreMenu();">
+        <span class="icon">${item.icon}</span>
+        <span class="label">${item.label}</span>
+      </div>
+    `;
+  }).join('');
   document.getElementById('moreMenuOverlay').classList.add('show');
 }
 function closeMoreMenu() {
   document.getElementById('moreMenuOverlay').classList.remove('show');
 }
+// ESC 鍵關閉「更多」Bottom Sheet
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMoreMenu();
+});
 async function loadTabOrderSettings() {
   const area = document.getElementById('tabOrderList');
   area.innerHTML = '<div class="empty-state">載入中…</div>';
@@ -2387,15 +2565,9 @@ async function loadTabOrderSettings() {
 }
 function renderTabOrderList(order) {
   const area = document.getElementById('tabOrderList');
-  area.innerHTML = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">拖曳圖示、或直接點右邊的箭頭調整順序，前 ${MAX_PRIMARY_TABS} 個會直接顯示在下方選單，其餘收進「更多」</div>`;
+  area.innerHTML = `<div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">拖曳圖示、或直接點右邊的箭頭調整順序，這個順序會影響「更多」選單裡各功能排列的先後（底部導覽列固定為今天／紀錄／回顧／統計／更多，不受此順序影響）</div>`;
   order.forEach((id, i) => {
     const meta = TAB_META[id] || { icon: '✦', label: id };
-    if (i === MAX_PRIMARY_TABS) {
-      const divider = document.createElement('div');
-      divider.className = 'tab-order-divider';
-      divider.textContent = '⋯ 以下收進「更多」';
-      area.appendChild(divider);
-    }
     const row = document.createElement('div');
     row.className = 'cat-manager-row';
     row.dataset.id = id;
@@ -2488,13 +2660,9 @@ async function persistTabOrder() {
     renderTabOrderList(order);
   } catch (err) {}
 }
+// 拖曳/箭頭調整完「分頁順序」後，同步更新 CURRENT_TAB_ORDER，讓「更多」選單裡的排序立刻跟著變
 function applyTabOrder(order) {
-  const tabbar = document.querySelector('.tabbar');
-  if (!tabbar) return;
-  order.forEach(id => {
-    const btn = tabbar.querySelector(`[data-page="${id}"]`);
-    if (btn) tabbar.appendChild(btn);
-  });
+  CURRENT_TAB_ORDER = mergeTabOrder(order);
 }
 
 function renderColorRow(selected) {
