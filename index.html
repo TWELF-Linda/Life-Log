@@ -134,6 +134,27 @@
   /* ---- Phase01: 回顧 子分頁（往年今日／月曆／相片／票根）---- */
   .review-subtabs{margin-bottom:14px;}
 
+  /* ---- Phase06: 統計頁「看見生活趨勢」摘要卡 ---- */
+  .stat-card-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:14px;}
+  .stat-card{
+    background:var(--card);border-radius:20px;padding:16px;
+    box-shadow:0 6px 16px rgba(180,150,120,0.10);border:1.5px solid var(--line);
+  }
+  .stat-card.clickable{cursor:pointer;transition:transform .15s ease;}
+  .stat-card.clickable:active{transform:scale(0.98);}
+  .stat-card-head{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;}
+  .stat-card-main{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;}
+  .stat-card-value{font-family:'Chiron GoRound TC';font-size:26px;font-weight:800;color:var(--ink);}
+  .stat-card-unit{font-size:12.5px;color:var(--ink-soft);}
+  .stat-card-delta{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+  .stat-card-delta.up{color:#3D8A5F;background:rgba(123,201,155,0.18);}
+  .stat-card-delta.down{color:#C9705E;background:rgba(255,140,122,0.16);}
+  .stat-card-delta.flat{color:var(--ink-soft);background:var(--input-bg);}
+  .stat-card-sub{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+  .stat-mini-trend{width:100%;height:34px;margin-top:8px;display:block;}
+  .heatmap-legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);margin-top:10px;flex-wrap:wrap;}
+  .heatmap-legend .hml-swatch{width:12px;height:12px;border-radius:4px;display:inline-block;flex-shrink:0;}
+
   /* ---- Phase04: 回顧生活 整合體驗 ---- */
   .review-header{
     text-align:center;font-family:'Chiron GoRound TC';
@@ -1669,9 +1690,67 @@
       <button onclick="changeMonth(1)">›</button>
     </div>
 
+    <div class="stat-card-grid" id="statSummaryGrid">
+      <div class="stat-card" id="statCardMood">
+        <div class="stat-card-head">😊 平均心情</div>
+        <div class="stat-card-main">
+          <span class="stat-card-value" id="statMoodValue">—</span>
+          <span class="stat-card-unit" id="statMoodUnit"></span>
+          <span id="statMoodDelta"></span>
+        </div>
+        <svg class="stat-mini-trend" id="statMoodTrendSvg" viewBox="0 0 300 34" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="stat-card" id="statCardLife">
+        <div class="stat-card-head">📝 本月生活紀錄</div>
+        <div class="stat-card-main">
+          <span class="stat-card-value" id="statLifeValue">—</span>
+          <span class="stat-card-unit">則</span>
+        </div>
+        <div class="stat-card-sub" id="statLifeSub"></div>
+      </div>
+
+      <div class="stat-card" id="statCardExercise">
+        <div class="stat-card-head">💪 運動</div>
+        <div class="stat-card-main">
+          <span class="stat-card-value" id="statExerciseValue">—</span>
+          <span class="stat-card-unit">次</span>
+          <span id="statExerciseDelta"></span>
+        </div>
+      </div>
+
+      <div class="stat-card" id="statCardFood">
+        <div class="stat-card-head">🍱 飲食</div>
+        <div class="stat-card-main">
+          <span class="stat-card-value" id="statFoodValue">—</span>
+          <span class="stat-card-unit" id="statFoodUnit"></span>
+          <span id="statFoodDelta"></span>
+        </div>
+        <div class="stat-card-sub" id="statFoodSub"></div>
+      </div>
+
+      <div class="stat-card clickable" id="statCardWeight" onclick="switchTab('page-fit');switchFitSubTab('weight');">
+        <div class="stat-card-head">⚖️ 體重</div>
+        <div class="stat-card-main">
+          <span class="stat-card-value" id="statWeightValue">—</span>
+          <span class="stat-card-unit" id="statWeightUnit"></span>
+          <span id="statWeightDelta"></span>
+        </div>
+        <svg class="stat-mini-trend" id="statWeightTrendSvg" viewBox="0 0 300 34" preserveAspectRatio="none"></svg>
+        <div class="stat-card-sub" id="statWeightSub"></div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="field-label" style="margin-top:0;">🗓️ 紀錄熱力圖</div>
       <div class="heatmap" id="heatmapArea"></div>
+      <div class="heatmap-legend">
+        顏色代表當天紀錄則數：
+        <span class="hml-swatch" style="background:#F6EFE2;"></span>0
+        <span class="hml-swatch" style="background:#FFE0D6;"></span>1-2
+        <span class="hml-swatch" style="background:#FFC0AC;"></span>3-4
+        <span class="hml-swatch" style="background:#FF9C82;"></span>5+
+      </div>
     </div>
 
     <div class="card" id="statsDayDetail" style="display:none;">
@@ -1692,8 +1771,8 @@
 
     <div class="card">
       <div class="field-label" style="margin-top:0;display:flex;align-items:center;justify-content:space-between;">
-        <span>✨ 本月回顧</span>
-        <button class="wrap-btn" onclick="generateMonthWrap()">生成回顧</button>
+        <span>✨ AI 幫我看看這個月</span>
+        <button class="wrap-btn" onclick="generateMonthWrap()">生成月度分析</button>
       </div>
       <div id="monthWrapArea"></div>
     </div>
@@ -5516,7 +5595,73 @@ async function loadStatsPage() {
     renderHeatmap(ym, stats.dayCounts);
     renderDonut(stats.categoryCounts);
     renderMoodChart(statsMoodTrend);
+    renderStatSummary(stats.summary || {});
   } catch (err) {}
+}
+/**
+ * Phase06：畫出「比上月」的小標籤。value 為 null／undefined 代表沒有可比較的上月資料（例如上月完全沒紀錄），
+ * 這時候不顯示標籤，不要硬生出一個「持平」或假數字。
+ */
+function deltaPill(value, { decimals = 1, unit = '', moreLessWord = false } = {}) {
+  if (value === null || value === undefined) return '';
+  const rounded = Number(value.toFixed(decimals));
+  if (rounded === 0) return `<span class="stat-card-delta flat">比上月持平</span>`;
+  const isUp = rounded > 0;
+  const abs = Math.abs(rounded);
+  const text = moreLessWord
+    ? `比上月${isUp ? '多' : '少'} ${abs}${unit}`
+    : `比上月 ${isUp ? '+' : '-'}${abs}${unit}`;
+  return `<span class="stat-card-delta ${isUp ? 'up' : 'down'}">${isUp ? '↑' : '↓'} ${text}</span>`;
+}
+// 卡片裡的迷你趨勢圖（比 💭心情趨勢那張大圖簡化很多，純粹讓人一眼看出方向）
+function drawSparkline(svg, points, valueOf) {
+  if (!points || points.length < 2) { svg.innerHTML = ''; return; }
+  const w = 300, h = 34, pad = 4;
+  const vals = points.map(valueOf);
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const range = (max - min) || 1;
+  const stepX = (w - pad * 2) / (points.length - 1);
+  const yFor = v => h - pad - ((v - min) / range) * (h - pad * 2);
+  const pathPoints = points.map((p, i) => `${pad + i * stepX},${yFor(valueOf(p))}`).join(' ');
+  svg.innerHTML = `<polyline points="${pathPoints}" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+function renderStatSummary(summary) {
+  const mood = summary.mood || {};
+  const life = summary.life || {};
+  const exercise = summary.exercise || {};
+  const food = summary.food || {};
+  const weight = summary.weight || {};
+
+  // 心情
+  document.getElementById('statMoodValue').textContent = mood.avgMood !== null && mood.avgMood !== undefined ? mood.avgMood : '—';
+  document.getElementById('statMoodUnit').textContent = mood.avgMood !== null && mood.avgMood !== undefined ? '/ 5' : '這個月還沒有心情紀錄';
+  document.getElementById('statMoodDelta').innerHTML = deltaPill(mood.delta, { decimals: 1 });
+  drawSparkline(document.getElementById('statMoodTrendSvg'), statsMoodTrend, m => m.mood);
+
+  // 生活紀錄
+  document.getElementById('statLifeValue').textContent = life.totalEntries ?? 0;
+  document.getElementById('statLifeSub').textContent = life.totalEntries ? `平均每天 ${life.avgPerDay} 則` : '這個月還沒有紀錄，去寫點什麼吧 ✍️';
+
+  // 運動
+  document.getElementById('statExerciseValue').textContent = exercise.count ?? 0;
+  document.getElementById('statExerciseDelta').innerHTML = deltaPill(exercise.delta, { decimals: 0, unit: ' 次', moreLessWord: true });
+
+  // 飲食
+  const hasFood = food.avgCalories !== null && food.avgCalories !== undefined;
+  document.getElementById('statFoodValue').textContent = hasFood ? food.avgCalories : '—';
+  document.getElementById('statFoodUnit').textContent = hasFood ? 'kcal 平均熱量' : '這個月還沒有飲食紀錄';
+  document.getElementById('statFoodSub').textContent = hasFood ? `記錄 ${food.daysLogged} 天` : '';
+  document.getElementById('statFoodDelta').innerHTML = deltaPill(food.avgCaloriesDelta, { decimals: 0, unit: ' kcal', moreLessWord: true });
+
+  // 體重
+  const hasWeight = weight.current !== null && weight.current !== undefined;
+  document.getElementById('statWeightValue').textContent = hasWeight ? weight.current : '—';
+  document.getElementById('statWeightUnit').textContent = hasWeight ? 'kg' : '尚未記錄體重';
+  document.getElementById('statWeightDelta').innerHTML = (weight.change !== null && weight.change !== undefined)
+    ? deltaPill(weight.change, { decimals: 1, unit: 'kg' }).replace('比上月', '本月變化')
+    : '';
+  document.getElementById('statWeightSub').textContent = weight.fromLatestOverall ? '這個月還沒有記錄，顯示最新一筆' : (hasWeight ? '點一下去記錄今天的體重 →' : '點一下開始記錄體重 →');
+  drawSparkline(document.getElementById('statWeightTrendSvg'), weight.trend, w => w.weight);
 }
 async function generateMonthWrap() {
   const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
