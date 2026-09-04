@@ -150,8 +150,54 @@
   }
   .today-btn{
     background:none;border:none;color:var(--accent-dark);font-size:11.5px;
-    text-decoration:underline;cursor:pointer;padding:2px 8px;
+    text-decoration:underline;cursor:pointer;padding:6px 8px;min-height:32px;
   }
+
+  /* ---- Phase02: 首頁 Today Dashboard ---- */
+  .home-hero{margin-bottom:4px;}
+  .home-hero .date-nav{margin:2px 0 2px;}
+  .home-hero .date-nav .date-label{font-size:19px;font-weight:800;}
+  .home-hero-sub{
+    text-align:center;font-size:13px;color:var(--ink-soft);margin:0 0 14px;
+  }
+  .home-hero-today{text-align:center;margin-bottom:2px;min-height:20px;}
+
+  .home-section-title{
+    font-size:14px;font-weight:700;color:var(--ink);
+    display:flex;align-items:center;gap:6px;margin:20px 2px 10px;
+  }
+
+  .cta-record-btn{
+    display:block;width:100%;box-sizing:border-box;
+    background:linear-gradient(135deg,var(--coral),var(--coral-dark));
+    color:#fff;border:none;border-radius:20px;padding:16px;
+    font-size:16px;font-weight:800;font-family:'Chiron GoRound TC','Noto Sans TC',sans-serif;
+    cursor:pointer;box-shadow:0 10px 22px rgba(240,113,94,0.28);
+    margin:6px 0 18px;min-height:44px;transition:transform .15s ease;
+  }
+  .cta-record-btn:active{transform:scale(0.97);}
+
+  .quick-add-card{position:relative;}
+  .quick-add-collapse{
+    position:absolute;top:14px;right:14px;background:none;border:none;
+    color:var(--ink-soft);font-size:12px;cursor:pointer;padding:6px;min-height:24px;
+  }
+
+  .memory-preview-card{
+    background:linear-gradient(135deg,#F3EEFC,#FCEEF6);
+    border:1px solid #E4D6F5;border-radius:20px;padding:16px 18px;margin-bottom:16px;
+  }
+  html.dark-mode .memory-preview-card{background:linear-gradient(135deg,#2A2438,#332734);border-color:#453A55;}
+  .mp-header{font-size:13.5px;font-weight:700;color:#7A5FB0;margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+  html.dark-mode .mp-header{color:#C9A6E8;}
+  .mp-line{font-size:14px;color:var(--ink);margin-bottom:4px;line-height:1.5;}
+  .mp-stats{font-size:12px;color:var(--ink-soft);margin-bottom:10px;}
+  .mp-empty{font-size:13px;color:var(--ink-soft);margin-bottom:10px;line-height:1.6;}
+  .mp-view-btn{
+    background:none;border:1.5px solid #C9A6E8;color:#7A5FB0;border-radius:16px;
+    padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:32px;
+  }
+  html.dark-mode .mp-view-btn{color:#C9A6E8;}
 
   /* ---- 工具箱 ---- */
   .tool-row{
@@ -312,7 +358,10 @@
   .ticket-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;padding-right:56px;}
   .ticket-cat{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--ink-soft);}
   .ticket-time{font-size:11px;font-family:monospace;color:var(--ink-soft);opacity:.7;}
-  .ticket-text{font-size:14px;line-height:1.55;white-space:pre-wrap;}
+  .ticket-text{
+    font-size:14px;line-height:1.55;white-space:pre-wrap;
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;
+  }
   .ticket img{width:100%;border-radius:12px;margin-top:8px;display:block;}
   .ticket-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:8px;}
   .ticket-photos img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;margin-top:0;display:block;}
@@ -1203,24 +1252,34 @@
 <div class="wrap">
 
   <div class="page active" id="page-log">
-    <div class="date-nav">
-      <button onclick="changeDate(-1)">‹</button>
-      <div class="date-label-wrap">
-        <div class="date-label" id="dateLabel">今天</div>
-        <input type="date" id="dateJump" class="date-jump-input" onchange="jumpToDateInput(this.value)">
+
+    <!-- 第一區：日期 + 問候 -->
+    <div class="home-hero">
+      <div class="date-nav">
+        <button onclick="changeDate(-1)">‹</button>
+        <div class="date-label-wrap">
+          <div class="date-label" id="dateLabel">今天</div>
+          <input type="date" id="dateJump" class="date-jump-input" onchange="jumpToDateInput(this.value)">
+        </div>
+        <button onclick="changeDate(1)">›</button>
       </div>
-      <button onclick="changeDate(1)">›</button>
-    </div>
-    <div style="text-align:center;margin-top:-6px;margin-bottom:8px;">
-      <button class="today-btn" onclick="jumpToDateInput(fmtDate(new Date()))">回到今天</button>
+      <div class="home-hero-sub" id="homeHeroSub">今天過得怎麼樣？🌷</div>
+      <div class="home-hero-today">
+        <button class="today-btn" id="backTodayBtn" style="display:none;" onclick="jumpToDateInput(fmtDate(new Date()))">回到今天</button>
+      </div>
     </div>
 
+    <!-- 第二區：今日總覽 -->
     <div class="card today-overview-card" id="todayOverviewCard" style="display:none;">
       <div class="field-label" style="margin-top:0;">📋 今日總覽</div>
       <div class="tov-row" id="tovRow"></div>
     </div>
 
-    <div class="card">
+    <!-- 第三區：主要 CTA -->
+    <button class="cta-record-btn" id="ctaRecordBtn" onclick="expandQuickAddCard()">＋ 記一筆</button>
+
+    <div class="card quick-add-card" id="quickAddCard" style="display:none;">
+      <button class="quick-add-collapse" id="quickAddCollapseBtn" onclick="collapseQuickAddCard()">收起 ✕</button>
       <div class="cat-header-row">
         <div class="field-label" style="margin:0;">選擇類別</div>
       </div>
@@ -1241,6 +1300,8 @@
       </div>
     </div>
 
+    <!-- 第四區：今天的生活（最近紀錄） -->
+    <div class="home-section-title">🌿 今天的生活</div>
     <div class="cat-row" id="entriesFilterRow" style="margin-bottom:8px;"></div>
     <div class="list-toolbar">
       <button class="batch-toggle-btn" id="viewModeBtn" onclick="toggleEntriesViewMode()">🗂 依類別分組</button>
@@ -1266,6 +1327,13 @@
     <div class="summary-section">
       <h2>🗓️ 本週彙整 <button class="gen-btn" onclick="generateWeekSummary()">生成本週彙整</button></h2>
       <div id="weekSummaryArea"></div>
+    </div>
+
+    <!-- 第五區：往年今日 預覽 -->
+    <div class="card memory-preview-card" id="memoryPreviewCard" style="display:none;">
+      <div class="mp-header">🕰️ <span id="memoryPreviewTitle">去年的今天</span></div>
+      <div id="memoryPreviewBody"></div>
+      <button class="mp-view-btn" id="memoryPreviewBtn" onclick="switchTab('page-memory')">查看這一天 →</button>
     </div>
   </div>
 
@@ -1907,6 +1975,7 @@ function toggleOnboarding(show) {
 }
 function quickRecord() {
   switchTab('page-log');
+  expandQuickAddCard();
   setTimeout(() => {
     const ta = document.getElementById('textInput');
     if (ta) { ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); ta.focus(); }
@@ -1971,6 +2040,7 @@ function fabMenuAction(action) {
 function openRecordEntry(type) {
   if (type === 'log' || type === 'mood') {
     switchTab('page-log');
+    expandQuickAddCard();
     setTimeout(() => {
       if (type === 'mood') {
         const mr = document.getElementById('moodRow');
@@ -2765,21 +2835,81 @@ async function loadTodayOverview() {
     let periodHtml = '';
     if (d.periodStatus) {
       periodHtml = d.periodStatus.inPeriod
-        ? `<div class="tov-chip" onclick="switchTab('page-period')"><div class="tov-icon">🌸</div><div class="tov-value">第 ${d.periodStatus.day} 天</div><div class="tov-label">經期中</div></div>`
+        ? `<div class="tov-chip" onclick="switchTab('page-period')"><div class="tov-icon">🌸</div><div class="tov-value">第 ${d.periodStatus.day} 天</div><div class="tov-label">身體狀況</div></div>`
         : `<div class="tov-chip" onclick="switchTab('page-period')"><div class="tov-icon">🌷</div><div class="tov-value">${d.periodStatus.daysUntilNext >= 0 ? d.periodStatus.daysUntilNext + ' 天後' : '已延遲'}</div><div class="tov-label">預估經期</div></div>`;
     }
+    // 5 張資訊卡：心情／飲食／運動／紀錄／身體狀況，皆為「有資料才顯示」
     row.innerHTML = `
-      <div class="tov-chip" onclick="switchTab('page-food')"><div class="tov-icon">🍱</div><div class="tov-value">${d.calories || 0} kcal</div><div class="tov-label">今日飲食</div></div>
-      <div class="tov-chip" onclick="switchTab('page-fit')"><div class="tov-icon">💪</div><div class="tov-value">${d.hasExercise ? '已運動' : '尚未運動'}</div><div class="tov-label">運動</div></div>
+      ${moodObj ? `<div class="tov-chip" onclick="quickRecord()"><div class="tov-icon">${moodObj.e}</div><div class="tov-value">${moodObj.v}/5</div><div class="tov-label">心情</div></div>` : ''}
+      <div class="tov-chip" onclick="switchTab('page-food')"><div class="tov-icon">🍱</div><div class="tov-value">${d.calories || 0} kcal</div><div class="tov-label">飲食</div></div>
+      <div class="tov-chip" onclick="switchTab('page-fit')"><div class="tov-icon">💪</div><div class="tov-value">${d.hasExercise ? '已完成' : '尚未運動'}</div><div class="tov-label">運動</div></div>
+      ${d.entriesCount ? `<div class="tov-chip" onclick="scrollToEntriesList()"><div class="tov-icon">📝</div><div class="tov-value">${d.entriesCount} 則</div><div class="tov-label">紀錄</div></div>` : ''}
       ${periodHtml}
-      ${moodObj ? `<div class="tov-chip" onclick="quickRecord()"><div class="tov-icon">${moodObj.e}</div><div class="tov-value">已記錄</div><div class="tov-label">今日心情</div></div>` : ''}
     `;
     card.style.display = 'block';
   } catch (err) {}
 }
+function scrollToEntriesList() {
+  const el = document.getElementById('entriesList');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+// 首頁第一區用的日期格式，跟 dateLabel() 分開算，避免影響飲食頁等其他共用同一顆函式的地方
+function heroDateLabel(d) {
+  const weekday = ['日','一','二','三','四','五','六'][d.getDay()];
+  return `${d.getMonth() + 1} 月 ${d.getDate()} 日・星期${weekday}`;
+}
+function heroGreetingText(d, isToday) {
+  return isToday ? '今天過得怎麼樣？🌷' : '回顧這一天的紀錄 🕰️';
+}
+// 首頁「往年今日」小預覽：只在瀏覽今天時顯示，避免跟瀏覽中的日期打架
+async function loadHomeMemoryPreview() {
+  const card = document.getElementById('memoryPreviewCard');
+  const isToday = fmtDate(currentDate) === fmtDate(new Date());
+  if (!isToday || !checkConfig()) { card.style.display = 'none'; return; }
+  try {
+    const ds = fmtDate(new Date());
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getOnThisDay&date=${ds}`, { cache: 'no-store' });
+    const years = await res.json();
+    const body = document.getElementById('memoryPreviewBody');
+    const btn = document.getElementById('memoryPreviewBtn');
+    const title = document.getElementById('memoryPreviewTitle');
+    if (!years || !years.length) {
+      title.textContent = '往年今日';
+      body.innerHTML = `<div class="mp-empty">還沒有過去這天的紀錄唷，明年的今天就會有回憶可以看了 🌱</div>`;
+      btn.textContent = '去逛逛「回顧」→';
+    } else {
+      const y = years[0];
+      const yearsAgo = new Date().getFullYear() - parseInt(y.year);
+      title.textContent = `${yearsAgo} 年前的今天`;
+      const photoCount = y.entries.reduce((n, e) => n + ((e.photoUrls && e.photoUrls.length) || (e.photoUrl ? 1 : 0)), 0);
+      const firstText = (y.entries.find(e => e.text) || {}).text || '';
+      body.innerHTML = `
+        ${firstText ? `<div class="mp-line">${escapeHtml(firstText).slice(0, 40)}${firstText.length > 40 ? '…' : ''}</div>` : ''}
+        <div class="mp-stats">${photoCount ? `拍了 ${photoCount} 張照片・` : ''}留下 ${y.entries.length} 則紀錄</div>
+      `;
+      btn.textContent = '查看這一天 →';
+    }
+    card.style.display = 'block';
+  } catch (err) {
+    card.style.display = 'none';
+  }
+}
+function expandQuickAddCard() {
+  document.getElementById('quickAddCard').style.display = 'block';
+  document.getElementById('ctaRecordBtn').style.display = 'none';
+}
+function collapseQuickAddCard() {
+  if (editingEntryId) cancelEditEntry();
+  document.getElementById('quickAddCard').style.display = 'none';
+  document.getElementById('ctaRecordBtn').style.display = 'block';
+}
 async function refresh() {
-  document.getElementById('dateLabel').textContent = dateLabel(currentDate);
+  const isToday = fmtDate(currentDate) === fmtDate(new Date());
+  document.getElementById('dateLabel').textContent = heroDateLabel(currentDate);
   document.getElementById('dateJump').value = fmtDate(currentDate);
+  document.getElementById('homeHeroSub').textContent = heroGreetingText(currentDate, isToday);
+  document.getElementById('backTodayBtn').style.display = isToday ? 'none' : 'inline-block';
+  loadHomeMemoryPreview();
   if (!checkConfig()) return;
   await loadEntries();
   await loadSummary();
@@ -3295,6 +3425,7 @@ let loadedEntries = [];
 function editEntry(id) {
   const entry = loadedEntries.find(e => e.id === id);
   if (!entry) return;
+  expandQuickAddCard();
   editingEntryId = id;
   selectedCategory = entry.category;
   currentFieldValues = Object.assign({}, entry.fields || {});
