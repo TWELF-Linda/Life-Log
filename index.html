@@ -341,6 +341,42 @@
   }
   .period-daily-history-item:last-child{border-bottom:none;}
 
+  /* ---- 身體症狀（分類 Chip / 強度 / 歷史） ---- */
+  .symptom-cat-tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 4px;margin-top:2px;}
+  .symptom-cat-tab{
+    flex:0 0 auto;padding:6px 12px;border-radius:14px;font-size:11.5px;font-weight:700;
+    border:1.5px solid var(--line);background:var(--input-bg);color:var(--ink-soft);cursor:pointer;
+    white-space:nowrap;transition:.15s;
+  }
+  .symptom-cat-tab.active{background:var(--ink);color:var(--bg);border-color:transparent;}
+  .symptom-custom-row{display:flex;gap:6px;margin-top:8px;}
+  .symptom-custom-row input{
+    flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:10px;
+    padding:7px 10px;font-size:12.5px;color:var(--ink);font-family:inherit;
+  }
+  .symptom-custom-row button{
+    border:none;border-radius:10px;padding:0 14px;font-size:12.5px;font-weight:700;
+    background:var(--accent);color:#fff;cursor:pointer;flex:0 0 auto;
+  }
+  .symptom-selected-wrap{display:flex;flex-direction:column;gap:6px;margin-top:6px;}
+  .symptom-selected-chip{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:7px 8px 7px 12px;border-radius:14px;background:var(--coral);color:#fff;font-size:12.5px;font-weight:600;
+  }
+  .symptom-selected-chip .sym-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .symptom-selected-chip .sev-mini{display:flex;gap:3px;flex:0 0 auto;}
+  .symptom-selected-chip .sev-mini button{
+    border:none;border-radius:8px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer;
+    background:rgba(255,255,255,.25);color:#fff;
+  }
+  .symptom-selected-chip .sev-mini button.active{background:#fff;color:var(--coral-dark);}
+  .symptom-selected-chip .sym-remove{border:none;background:none;color:#fff;font-size:15px;line-height:1;cursor:pointer;padding:0 2px;flex:0 0 auto;opacity:.85;}
+  .body-history-day{padding:9px 0;border-bottom:1px solid var(--line);}
+  .body-history-day:last-child{border-bottom:none;}
+  .body-history-date{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:3px;}
+  .body-history-symrow{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink-soft);padding:1.5px 0;}
+  .body-history-note{font-size:11.5px;color:var(--ink-soft);margin-top:3px;font-style:italic;}
+
   textarea{
     width:100%;min-height:60px;background:var(--card);
     border:1.5px solid var(--line);border-radius:16px;color:var(--ink);
@@ -1704,6 +1740,7 @@
           <button onclick="changeFoodDate(1)">›</button>
         </div>
         <div id="foodTotalArea" style="margin-top:8px;font-size:24px;font-weight:800;color:var(--accent-dark);font-family:'Chiron GoRound TC';"></div>
+        <div id="foodMacroArea" style="margin-top:4px;font-size:12px;color:var(--ink-soft);"></div>
       </div>
 
       <div class="card">
@@ -1711,11 +1748,23 @@
       </div>
 
       <button class="gen-btn" style="width:100%;" onclick="showFoodAdvanced()">+ 記錄這一餐</button>
-      <div class="advanced-link" onclick="showFoodAdvanced()">⚙️ 食物資料庫（打字估算／掃描條碼）→</div>
+      <div class="advanced-link" onclick="showFoodAdvanced()">⚙️ 食物資料庫（搜尋／打字估算／掃描條碼）→</div>
     </div>
 
     <div id="foodAdvancedWrap" style="display:none;">
       <div class="advanced-back" onclick="showFoodHome()">← 最近飲食</div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">🔍 搜尋食物</div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 8px;">內建資料庫的熱量／營養素皆為約略預估值，僅供參考</div>
+        <input type="text" id="foodDbSearchInput" placeholder="輸入食物名稱，例如：雞、牛奶" oninput="handleFoodDbSearchInput()" style="width:100%;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
+        <div id="foodDbResultArea" style="margin-top:8px;"></div>
+        <div id="foodDbServingArea" style="margin-top:8px;"></div>
+        <div style="text-align:center;margin-top:8px;">
+          <a href="javascript:void(0)" onclick="openCustomFoodForm()" style="font-size:12px;color:var(--ink-soft);text-decoration:underline;">＋ 資料庫沒有？新增自訂食物</a>
+        </div>
+        <div id="customFoodFormArea" style="display:none;margin-top:8px;"></div>
+      </div>
 
       <div class="card">
         <div class="field-label" style="margin-top:0;">📝 打字記錄</div>
@@ -2022,9 +2071,16 @@
         <div class="opt-row" id="flowOptRow"></div>
         <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">經痛程度</div>
         <div class="opt-row" id="painOptRow"></div>
-        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">其他症狀（可複選）</div>
-        <div class="opt-row" id="symptomOptRow"></div>
-        <textarea id="periodDailyNote" placeholder="備註（選填）" style="min-height:40px;"></textarea>
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">今天的身體症狀（可複選、依分類瀏覽）</div>
+        <div class="symptom-cat-tabs" id="symptomCatTabs"></div>
+        <div class="opt-row" id="symptomOptRow" style="margin-bottom:6px;"></div>
+        <div class="symptom-custom-row">
+          <input type="text" id="customSymptomInput" placeholder="其他症狀？輸入後按新增" maxlength="20">
+          <button onclick="addCustomSymptom()">新增</button>
+        </div>
+        <div style="font-size:11px;color:var(--ink-soft);margin:12px 0 2px;">已選擇的症狀（可調整強度）</div>
+        <div class="symptom-selected-wrap" id="symptomSelectedWrap"><div class="empty-state" style="padding:4px 0;">還沒有選擇症狀</div></div>
+        <textarea id="periodDailyNote" placeholder="備註（選填，例如「昨晚睡不到 5 小時」）" style="min-height:40px;margin-top:10px;"></textarea>
         <button class="submit-btn" id="periodDailySubmitBtn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存今天的狀況</button>
       </div>
 
@@ -2230,6 +2286,13 @@ function entryPhotosHtml(entry) {
   if (!urls.length) return '';
   const cls = urls.length > 1 ? 'ticket-photos' : 'ticket-photos single';
   return `<div class="${cls}">${urls.map(u => `<img src="${u}" loading="lazy">`).join('')}</div>`;
+}
+// 效能優化：讓非必要的工作（不影響「馬上看到什麼」的那些）延後到瀏覽器閒置時再做，
+// 避免跟首頁最重要的內容（今天的紀錄）搶時間。支援的瀏覽器用 requestIdleCallback，
+// 沒有的話 fallback 成 setTimeout(...,0)，效果一樣是「讓出主執行緒，晚一點點再做」。
+function ric(fn) {
+  if (window.requestIdleCallback) requestIdleCallback(fn, { timeout: 1200 });
+  else setTimeout(fn, 60);
 }
 function checkConfig() {
   if (!CONFIG.GAS_URL || CONFIG.GAS_URL.includes('PASTE_YOUR')) {
@@ -3013,9 +3076,16 @@ const MAX_PRIMARY_TABS = 4;
 const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-food', 'page-memory', 'page-stock', 'page-period'];
 // 已經存過自訂分頁順序的人，存檔裡不會有新加的分頁 id；這裡自動把 TAB_META 有、但存檔順序裡沒有的
 // 分頁補到最後面，新分頁才不會因為「使用者以前存過順序」而永遠不出現。
+// 同時用 stable id（例如 'page-stock'，不是顯示名稱「股票」）去重複：就算後端傳回的資料本身
+// 有重複（例如舊資料沒清乾淨），畫面渲染前一定會先經過這裡過濾成只剩一個。
 function mergeTabOrder(order) {
-  const base = (Array.isArray(order) && order.length) ? order.filter(id => TAB_META[id]) : DEFAULT_TAB_ORDER.slice();
-  Object.keys(TAB_META).forEach(id => { if (base.indexOf(id) === -1) base.push(id); });
+  const source = (Array.isArray(order) && order.length) ? order : DEFAULT_TAB_ORDER;
+  const seen = {};
+  const base = [];
+  source.forEach(id => {
+    if (TAB_META[id] && !seen[id]) { seen[id] = true; base.push(id); }
+  });
+  Object.keys(TAB_META).forEach(id => { if (!seen[id]) { seen[id] = true; base.push(id); } });
   return base;
 }
 
@@ -3383,9 +3453,10 @@ async function refresh() {
   document.getElementById('backTodayBtn').style.display = isToday ? 'none' : 'inline-block';
   loadHomeMemoryPreview();
   if (!checkConfig()) return;
+  // 效能優化：「今天的紀錄」是首頁最重要的內容，先單獨載入讓它最快出現；
+  // 今日總結／週摘要不影響這件事，改成閒置時再一起平行載入（原本是三個 await 排隊、等於等三次網路來回）。
   await loadEntries();
-  await loadSummary();
-  await loadWeekSummary();
+  ric(() => { loadSummary(); loadWeekSummary(); });
 }
 let entriesFilter = 'all';
 let entriesGroupMode = localStorage.getItem('lifelog_entries_group_mode') === '1';
@@ -4112,13 +4183,15 @@ async function loadPeriodPage() {
     loadPeriodLogList(data.logs);
     loadPeriodDailyToday(data.daily);
     loadPeriodDailyHistory(data.dailyRecent);
+    applyCustomSymptoms(data.customSymptoms);
   } catch (err) {
-    // 合併請求失敗就退回原本分開打 5 次的做法，至少畫面還看得到東西
+    // 合併請求失敗就退回原本分開打 6 次的做法，至少畫面還看得到東西
     loadPeriodStatus();
     loadPeriodOpenState();
     loadPeriodLogList();
     loadPeriodDailyToday();
     loadPeriodDailyHistory();
+    loadCustomSymptoms();
   }
 }
 // Phase07：經期頁預設只顯示「目前狀態」＋「最近紀錄」，今日身體狀況／補登／完整歷史收進進階
@@ -4290,12 +4363,69 @@ async function deletePeriodLogItem(id) {
   }
 }
 
-// ---------- 經期：每日身體狀況 ----------
+// ---------- 身體狀況：症狀紀錄（Phase：身體症狀優化） ----------
+// 只是「生活紀錄」的症狀選單，不做任何醫療診斷／疾病判斷，單純方便使用者快速勾選、記下今天的感受。
 const PERIOD_FLOW_OPTIONS = ['無', '少量', '中等', '大量'];
 const PERIOD_PAIN_OPTIONS = ['無', '輕微', '中等', '劇烈'];
-const PERIOD_SYMPTOM_OPTIONS = ['頭痛', '腰痠', '噁心', '疲倦', '脹氣', '情緒低落', '長痘', '失眠'];
+const BODY_SEVERITY_OPTIONS = [
+  { key: 'mild', label: '輕' },
+  { key: 'moderate', label: '中' },
+  { key: 'severe', label: '重' }
+];
+const BODY_SEVERITY_LABELS = { mild: '輕微', moderate: '中等', severe: '嚴重' };
+// 自訂症狀現在存在雲端（跟分頁順序一樣放在後端 PropertiesService），跨裝置共用；
+// localStorage 只當作「本機快取」讓畫面能先秒開，實際清單以雲端資料為準。
+const CUSTOM_SYMPTOM_CACHE_KEY = 'lifelog_custom_symptoms_cache';
+function loadCustomSymptomCache_() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_SYMPTOM_CACHE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch (err) { return []; }
+}
+function saveCustomSymptomCache_(list) {
+  try { localStorage.setItem(CUSTOM_SYMPTOM_CACHE_KEY, JSON.stringify(list)); } catch (err) {}
+}
+const SYMPTOM_GROUPS = [
+  { key: 'head', label: '頭部／神經', items: ['頭痛', '偏頭痛', '頭暈', '眼睛疲勞', '注意力不集中', '嗜睡', '失眠'] },
+  { key: 'resp', label: '呼吸／耳鼻喉', items: ['鼻塞', '流鼻水', '喉嚨痛', '咳嗽', '打噴嚏', '呼吸不順', '耳鳴'] },
+  { key: 'gi', label: '腸胃', items: ['胃痛', '腹痛', '腹脹', '噁心', '食慾不振', '食慾增加', '便秘', '腹瀉', '消化不良'] },
+  { key: 'muscle', label: '肌肉／身體', items: ['肩頸痠痛', '腰痠', '肌肉痠痛', '關節不適', '全身疲倦', '無力', '水腫'] },
+  { key: 'skin', label: '皮膚', items: ['皮膚乾燥', '搔癢', '長痘痘', '紅腫', '過敏'] },
+  { key: 'female', label: '女性生理', items: ['經痛', '腰痠', '胸部脹痛', '情緒波動', '疲倦', '頭痛'] },
+  { key: 'custom', label: '自訂', items: loadCustomSymptomCache_() } // 先用本機快取秒開，等雲端資料回來會被覆蓋
+];
+let activeSymptomCat = 'head';
 let periodDailyState = { flow: '', pain: '', symptoms: [] };
 
+// 雲端回傳的自訂症狀清單套用到「自訂」分類，並更新本機快取（純粹加速下次開啟，不是資料來源）
+function applyCustomSymptoms(list) {
+  const clean = Array.isArray(list) ? list.filter(s => typeof s === 'string' && s) : [];
+  const customGroup = SYMPTOM_GROUPS.find(g => g.key === 'custom');
+  customGroup.items = clean;
+  saveCustomSymptomCache_(clean);
+  if (document.getElementById('symptomCatTabs')) { renderSymptomOptions(); }
+}
+// 合併請求失敗時的備援：單獨打一次自訂症狀清單
+async function loadCustomSymptoms() {
+  try {
+    const list = await (await fetch(`${CONFIG.GAS_URL}?action=getCustomSymptoms`, { cache: 'no-store' })).json();
+    applyCustomSymptoms(list);
+  } catch (err) {}
+}
+// 新增自訂症狀後，把完整清單存回雲端（跟分頁順序一樣：每次存整份清單，後端會自動去重複）
+async function persistCustomSymptoms(list) {
+  try {
+    const result = await postJSON({ action: 'saveCustomSymptoms', symptoms: list });
+    if (result && result.symptoms) applyCustomSymptoms(result.symptoms);
+  } catch (err) {
+    showToast('自訂症狀同步到雲端失敗，稍後會再試 ⚠️');
+  }
+}
+
+function isSymptomSelected(name) {
+  return periodDailyState.symptoms.some(s => s.name === name);
+}
 function renderPeriodOptionChips() {
   document.getElementById('flowOptRow').innerHTML = PERIOD_FLOW_OPTIONS.map(opt =>
     `<div class="opt-chip${periodDailyState.flow === opt ? ' active' : ''}" onclick="setPeriodFlow('${opt}')">${opt}</div>`
@@ -4303,9 +4433,89 @@ function renderPeriodOptionChips() {
   document.getElementById('painOptRow').innerHTML = PERIOD_PAIN_OPTIONS.map(opt =>
     `<div class="opt-chip${periodDailyState.pain === opt ? ' active' : ''}" onclick="setPeriodPain('${opt}')">${opt}</div>`
   ).join('');
-  document.getElementById('symptomOptRow').innerHTML = PERIOD_SYMPTOM_OPTIONS.map(opt =>
-    `<div class="opt-chip${periodDailyState.symptoms.includes(opt) ? ' active' : ''}" onclick="togglePeriodSymptom('${opt}')">${opt}</div>`
+  renderSymptomCatTabs();
+  renderSymptomOptions();
+  renderSelectedSymptoms();
+}
+function renderSymptomCatTabs() {
+  document.getElementById('symptomCatTabs').innerHTML = SYMPTOM_GROUPS.map(g =>
+    `<div class="symptom-cat-tab${activeSymptomCat === g.key ? ' active' : ''}" onclick="setSymptomCat('${g.key}')">${escapeHtml(g.label)}</div>`
   ).join('');
+}
+function setSymptomCat(key) {
+  activeSymptomCat = key;
+  renderSymptomCatTabs();
+  renderSymptomOptions();
+}
+function renderSymptomOptions() {
+  const group = SYMPTOM_GROUPS.find(g => g.key === activeSymptomCat) || SYMPTOM_GROUPS[0];
+  const row = document.getElementById('symptomOptRow');
+  if (!group.items.length) {
+    row.innerHTML = '<div class="empty-state" style="padding:4px 0;">還沒有自訂症狀，在下面輸入新增一個吧</div>';
+    return;
+  }
+  row.innerHTML = group.items.map(name =>
+    `<div class="opt-chip${isSymptomSelected(name) ? ' active' : ''}" onclick="toggleSymptomChip('${escapeJs_(name)}')">${escapeHtml(name)}</div>`
+  ).join('');
+}
+// Chip 的 onclick 是內嵌字串，症狀名稱理論上不會有特殊字元，但保險起見還是跳脫單引號／反斜線
+function escapeJs_(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+function toggleSymptomChip(name) {
+  if (isSymptomSelected(name)) {
+    periodDailyState.symptoms = periodDailyState.symptoms.filter(s => s.name !== name);
+  } else {
+    periodDailyState.symptoms.push({ name: name, category: activeSymptomCat, severity: 'mild' });
+  }
+  renderSymptomOptions();
+  renderSelectedSymptoms();
+}
+function removeSymptomChip(name) {
+  periodDailyState.symptoms = periodDailyState.symptoms.filter(s => s.name !== name);
+  renderSymptomOptions();
+  renderSelectedSymptoms();
+}
+function setSymptomSeverity(name, severity) {
+  const s = periodDailyState.symptoms.find(s => s.name === name);
+  if (s) s.severity = severity;
+  renderSelectedSymptoms();
+}
+function renderSelectedSymptoms() {
+  const wrap = document.getElementById('symptomSelectedWrap');
+  if (!periodDailyState.symptoms.length) {
+    wrap.innerHTML = '<div class="empty-state" style="padding:4px 0;">還沒有選擇症狀</div>';
+    return;
+  }
+  wrap.innerHTML = periodDailyState.symptoms.map(s => `
+    <div class="symptom-selected-chip">
+      <span class="sym-name">${escapeHtml(s.name)}</span>
+      <span class="sev-mini">
+        ${BODY_SEVERITY_OPTIONS.map(opt => `<button class="${s.severity === opt.key ? 'active' : ''}" onclick="setSymptomSeverity('${escapeJs_(s.name)}','${opt.key}')">${opt.label}</button>`).join('')}
+      </span>
+      <button class="sym-remove" onclick="removeSymptomChip('${escapeJs_(s.name)}')">×</button>
+    </div>
+  `).join('');
+}
+function addCustomSymptom() {
+  const input = document.getElementById('customSymptomInput');
+  const name = input.value.trim();
+  if (!name) return;
+  const customGroup = SYMPTOM_GROUPS.find(g => g.key === 'custom');
+  const isNewToList = !customGroup.items.includes(name);
+  if (isNewToList) {
+    customGroup.items.push(name);
+    saveCustomSymptomCache_(customGroup.items); // 先更新本機快取讓畫面立刻反應
+    persistCustomSymptoms(customGroup.items); // 再同步到雲端，其他裝置下次打開就看得到
+  }
+  if (!isSymptomSelected(name)) {
+    periodDailyState.symptoms.push({ name: name, category: 'custom', severity: 'mild' });
+  }
+  input.value = '';
+  activeSymptomCat = 'custom';
+  renderSymptomCatTabs();
+  renderSymptomOptions();
+  renderSelectedSymptoms();
 }
 function setPeriodFlow(opt) {
   periodDailyState.flow = periodDailyState.flow === opt ? '' : opt;
@@ -4315,15 +4525,11 @@ function setPeriodPain(opt) {
   periodDailyState.pain = periodDailyState.pain === opt ? '' : opt;
   renderPeriodOptionChips();
 }
-function togglePeriodSymptom(opt) {
-  const i = periodDailyState.symptoms.indexOf(opt);
-  if (i === -1) periodDailyState.symptoms.push(opt); else periodDailyState.symptoms.splice(i, 1);
-  renderPeriodOptionChips();
-}
+// 後端回傳的 symptoms 已經統一整理成 {name, category, severity} 物件（相容舊資料），前端直接使用即可
 async function loadPeriodDailyToday(preData) {
   try {
     const d = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodDaily&date=${fmtDate(new Date())}`, { cache: 'no-store' })).json();
-    periodDailyState = { flow: d.flow || '', pain: d.pain || '', symptoms: d.symptoms || [] };
+    periodDailyState = { flow: d.flow || '', pain: d.pain || '', symptoms: Array.isArray(d.symptoms) ? d.symptoms : [] };
     document.getElementById('periodDailyNote').value = d.note || '';
     renderPeriodOptionChips();
   } catch (err) {}
@@ -4357,13 +4563,16 @@ async function loadPeriodDailyHistory(preData) {
     const rows = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodDailyRecent&limit=14`, { cache: 'no-store' })).json();
     if (!rows.length || rows.error) { area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>'; return; }
     area.innerHTML = rows.map(r => {
-      const parts = [];
-      if (r.flow) parts.push('出血' + r.flow);
-      if (r.pain) parts.push('經痛' + r.pain);
-      if (r.symptoms && r.symptoms.length) parts.push(r.symptoms.join('、'));
-      return `<div class="period-daily-history-item">
-        <span style="color:var(--ink);font-weight:600;">${r.date}</span>
-        <span>${parts.length ? escapeHtml(parts.join('・')) : '（無症狀）'}</span>
+      const lines = [];
+      if (r.flow) lines.push(`<div class="body-history-symrow"><span>出血量</span><span>${escapeHtml(r.flow)}</span></div>`);
+      if (r.pain) lines.push(`<div class="body-history-symrow"><span>經痛程度</span><span>${escapeHtml(r.pain)}</span></div>`);
+      (r.symptoms || []).forEach(s => {
+        lines.push(`<div class="body-history-symrow"><span>${escapeHtml(s.name)}</span><span>${BODY_SEVERITY_LABELS[s.severity] || '輕微'}</span></div>`);
+      });
+      return `<div class="body-history-day">
+        <div class="body-history-date">${escapeHtml(r.date)}</div>
+        ${lines.length ? lines.join('') : '<div class="body-history-symrow"><span>（無症狀）</span></div>'}
+        ${r.note ? `<div class="body-history-note">📝 ${escapeHtml(r.note)}</div>` : ''}
       </div>`;
     }).join('');
   } catch (err) {
@@ -4388,6 +4597,217 @@ function mealPeriodOf(timeStr) {
 function showFoodAdvanced() {
   document.getElementById('foodSubHome').style.display = 'none';
   document.getElementById('foodAdvancedWrap').style.display = 'block';
+  loadFoodDatabase();
+  loadFoodQuickPicks();
+  renderFoodDbResults(); // 一進階頁就先顯示「最近使用／常用」，不用等打字
+}
+
+/* ================= PART4：食物資料庫（搜尋／快速選擇／份量調整／自訂食物） =================
+   搜尋是在本機記憶體裡對 FOOD_DB 做 includes 篩選，不是每個字都打一次後端 API，
+   所以這裡的 debounce 純粹是「輸入停下來再重畫結果」，避免每個按鍵都重畫 DOM（PART3 效能要求）。 */
+const FOOD_DB_CACHE_KEY = 'lifelog_food_db_cache';
+const FOOD_CATEGORY_ICONS = { '肉類': '🍗', '海鮮': '🐟', '主食': '🍚', '蛋類': '🥚', '乳製品': '🥛', '水果': '🍎', '蔬菜': '🥦', '豆製品': '🧈', '飲品': '🥤', '複合料理': '🍱', '自訂': '⭐' };
+function foodCategoryIcon(cat) { return FOOD_CATEGORY_ICONS[cat] || '🍽️'; }
+let FOOD_DB = [];
+let foodQuickPicks = { recent: [], frequent: [] };
+let foodDbSearchDebounce = null;
+let foodDbCurrentMatches = [];
+let selectedFoodDbItem = null;
+
+async function loadFoodDatabase() {
+  // 快取先秒開（跟分類清單一樣的模式：先用上次快取的資料，背景再換成最新的）
+  if (!FOOD_DB.length) {
+    try {
+      const cached = JSON.parse(localStorage.getItem(FOOD_DB_CACHE_KEY) || 'null');
+      if (Array.isArray(cached) && cached.length) FOOD_DB = cached;
+    } catch (err) {}
+  }
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getFoodDatabase`, { cache: 'no-store' });
+    const list = await res.json();
+    if (Array.isArray(list)) {
+      FOOD_DB = list;
+      try { localStorage.setItem(FOOD_DB_CACHE_KEY, JSON.stringify(FOOD_DB)); } catch (err) {}
+      if (document.getElementById('foodDbSearchInput').value.trim()) renderFoodDbResults();
+    }
+  } catch (err) {}
+}
+async function loadFoodQuickPicks() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getFoodQuickPicks`, { cache: 'no-store' });
+    const data = await res.json();
+    if (data && !data.error) {
+      foodQuickPicks = data;
+      if (!document.getElementById('foodDbSearchInput').value.trim()) renderFoodDbResults();
+    }
+  } catch (err) {}
+}
+function handleFoodDbSearchInput() {
+  clearTimeout(foodDbSearchDebounce);
+  foodDbSearchDebounce = setTimeout(renderFoodDbResults, 250);
+}
+function quickPickFoodByName(name) {
+  document.getElementById('foodDbSearchInput').value = name;
+  renderFoodDbResults();
+}
+function renderFoodDbResults() {
+  const q = document.getElementById('foodDbSearchInput').value.trim();
+  const area = document.getElementById('foodDbResultArea');
+  if (!q) {
+    const chipsHtml = (label, names) => (!names || !names.length) ? '' : `
+      <div style="font-size:11px;color:var(--ink-soft);margin:6px 0 4px;">${label}</div>
+      <div class="cat-row">${names.map(n => `<div class="cat-chip" onclick="quickPickFoodByName('${escapeJs_(n)}')">${escapeHtml(n)}</div>`).join('')}</div>
+    `;
+    const html = chipsHtml('🕐 最近使用', foodQuickPicks.recent) + chipsHtml('⭐ 常用', foodQuickPicks.frequent);
+    area.innerHTML = html || '<div class="empty-state" style="padding:6px 0;">輸入食物名稱開始搜尋，或直接記一筆之後這裡就會有「最近使用」</div>';
+    return;
+  }
+  foodDbCurrentMatches = FOOD_DB.filter(f => f.name.includes(q)).slice(0, 20);
+  if (!foodDbCurrentMatches.length) {
+    area.innerHTML = `<div class="empty-state" style="padding:6px 0;">資料庫沒有「${escapeHtml(q)}」，可以點下面「新增自訂食物」自己建一筆</div>`;
+    return;
+  }
+  area.innerHTML = foodDbCurrentMatches.map((f, i) => `
+    <div class="food-log-item" style="cursor:pointer;" onclick="selectFoodDbItem(${i})">
+      <div>
+        <div class="fl-name">${foodCategoryIcon(f.category)} ${escapeHtml(f.name)}</div>
+        <div class="fl-sub">${f.servingQty}${escapeHtml(f.servingUnit)}・約 ${f.calories} kcal${f.source === 'user' ? '・我的食物' : ''}</div>
+      </div>
+      <div style="font-size:12px;color:var(--accent-dark);font-weight:700;">選擇 ›</div>
+    </div>
+  `).join('');
+}
+function selectFoodDbItem(i) {
+  selectedFoodDbItem = foodDbCurrentMatches[i];
+  renderFoodServingAdjuster();
+}
+function computeFoodServingValues() {
+  const f = selectedFoodDbItem;
+  const qtyInput = document.getElementById('foodServingQtyInput');
+  const qty = qtyInput ? (Number(qtyInput.value) || 0) : f.servingQty;
+  const ratio = f.servingQty ? qty / f.servingQty : 0;
+  return {
+    qty,
+    calories: Math.round(f.calories * ratio),
+    protein: Math.round(f.protein * ratio * 10) / 10,
+    fat: Math.round(f.fat * ratio * 10) / 10,
+    carbs: Math.round(f.carbs * ratio * 10) / 10
+  };
+}
+function renderFoodServingPreview() {
+  const v = computeFoodServingValues();
+  const el = document.getElementById('foodServingPreview');
+  if (el) el.innerHTML = `🔥 ${v.calories} kcal　蛋白質 ${v.protein}g　脂肪 ${v.fat}g　碳水 ${v.carbs}g`;
+}
+function renderFoodServingAdjuster() {
+  const area = document.getElementById('foodDbServingArea');
+  const f = selectedFoodDbItem;
+  if (!f) { area.innerHTML = ''; return; }
+  // 份量可以是「100 / 150 / 200」也可以是「半碗 / 1 碗」等任何使用者自己輸入的數字，
+  // 換算時一律以資料庫這筆的 servingQty/servingUnit 當基準（PART4 第七點：換算要有明確基準）
+  area.innerHTML = `
+    <div class="tool-result-box">
+      <div style="font-weight:700;font-size:13.5px;">${foodCategoryIcon(f.category)} ${escapeHtml(f.name)}</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin:2px 0 8px;">基準：${f.servingQty}${escapeHtml(f.servingUnit)}・約 ${f.calories} kcal（${escapeHtml(f.note || (f.source === 'user' ? '使用者自訂' : '約略預估值'))}）</div>
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">份量</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="number" id="foodServingQtyInput" value="${f.servingQty}" min="0" step="any" oninput="renderFoodServingPreview()" style="width:90px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;">
+        <span style="font-size:13px;color:var(--ink-soft);">${escapeHtml(f.servingUnit)}</span>
+      </div>
+      <div id="foodServingPreview" style="margin-top:8px;font-size:12.5px;color:var(--ink);"></div>
+      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="confirmAddDbFood(this)">✅ 加入紀錄</button>
+    </div>
+  `;
+  renderFoodServingPreview();
+}
+async function confirmAddDbFood(btn) {
+  if (btn && btn.disabled) return;
+  const f = selectedFoodDbItem;
+  if (!f) return;
+  const v = computeFoodServingValues();
+  if (btn) { btn.disabled = true; btn.textContent = '記錄中…'; }
+  try {
+    const result = await postJSON({
+      action: 'addFoodLog', date: fmtDate(foodDate), name: f.name,
+      calories: v.calories, protein: v.protein, fat: v.fat, carbs: v.carbs,
+      servingQty: v.qty, servingUnit: f.servingUnit, source: f.source === 'user' ? 'custom' : 'builtin'
+    });
+    if (result && result.error) throw new Error(result.error);
+    showToast('記錄好了 🍱');
+    document.getElementById('foodDbSearchInput').value = '';
+    selectedFoodDbItem = null;
+    document.getElementById('foodDbServingArea').innerHTML = '';
+    renderFoodDbResults();
+    loadFoodQuickPicks(); // 剛記過的食物之後會出現在「最近使用」，重新拉一次
+    refreshFoodList();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ 加入紀錄'; }
+  }
+}
+function openCustomFoodForm() {
+  const area = document.getElementById('customFoodFormArea');
+  const opening = area.style.display === 'none' || !area.innerHTML;
+  if (!opening) { area.style.display = 'none'; area.innerHTML = ''; return; }
+  const inputStyle = 'width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;';
+  area.style.display = 'block';
+  area.innerHTML = `
+    <div class="tool-result-box">
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">名稱</div>
+      <input type="text" id="cfName" placeholder="例如：媽媽滷牛肉" style="${inputStyle}margin-bottom:8px;">
+      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">分類（選填）</div>
+      <input type="text" id="cfCategory" placeholder="例如：家常菜" style="${inputStyle}margin-bottom:8px;">
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">份量數字</div>
+          <input type="number" id="cfServingQty" value="1" style="${inputStyle}">
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">單位</div>
+          <input type="text" id="cfServingUnit" placeholder="份／碗／g" value="份" style="${inputStyle}">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">熱量(kcal)</div><input type="number" id="cfCal" value="0" style="${inputStyle}"></div>
+        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">蛋白質(g)</div><input type="number" id="cfProtein" value="0" style="${inputStyle}"></div>
+        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">脂肪(g)</div><input type="number" id="cfFat" value="0" style="${inputStyle}"></div>
+        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">碳水(g)</div><input type="number" id="cfCarbs" value="0" style="${inputStyle}"></div>
+      </div>
+      <button class="submit-btn" style="width:100%;" onclick="saveCustomFoodHandler(this)">💾 存進「我的食物」</button>
+    </div>
+  `;
+}
+async function saveCustomFoodHandler(btn) {
+  const name = document.getElementById('cfName').value.trim();
+  if (!name) { alert('請輸入食物名稱'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '儲存中…'; }
+  try {
+    const result = await postJSON({
+      action: 'saveCustomFood', name,
+      category: document.getElementById('cfCategory').value.trim() || '自訂',
+      servingQty: Number(document.getElementById('cfServingQty').value) || 1,
+      servingUnit: document.getElementById('cfServingUnit').value.trim() || '份',
+      calories: Number(document.getElementById('cfCal').value) || 0,
+      protein: Number(document.getElementById('cfProtein').value) || 0,
+      fat: Number(document.getElementById('cfFat').value) || 0,
+      carbs: Number(document.getElementById('cfCarbs').value) || 0
+    });
+    if (result && result.error) throw new Error(result.error);
+    // 直接把新自訂食物放進本機資料庫最前面，不用整份重打一次 API 才看得到
+    FOOD_DB = FOOD_DB.filter(f => f.id !== result.food.id);
+    FOOD_DB.unshift(result.food);
+    try { localStorage.setItem(FOOD_DB_CACHE_KEY, JSON.stringify(FOOD_DB)); } catch (err) {}
+    document.getElementById('customFoodFormArea').style.display = 'none';
+    document.getElementById('customFoodFormArea').innerHTML = '';
+    document.getElementById('foodDbSearchInput').value = name;
+    renderFoodDbResults();
+    showToast('已加入「我的食物」🌟');
+  } catch (err) {
+    alert('儲存失敗：' + err.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 存進「我的食物」'; }
+  }
 }
 function showFoodHome() {
   document.getElementById('foodAdvancedWrap').style.display = 'none';
@@ -4412,6 +4832,10 @@ async function refreshFoodList() {
     const result = await res.json();
     if (result.error) { listEl.innerHTML = `<div class="empty-state">${escapeHtml(result.error)}</div>`; return; }
     document.getElementById('foodTotalArea').textContent = `${result.total || 0} 大卡`;
+    // PART4 第九點：不要只顯示 Calories，蛋白質／脂肪／碳水加總（只在有其中一項紀錄時才顯示，避免舊資料全 0 造成誤解）
+    const macroArea = document.getElementById('foodMacroArea');
+    const hasMacro = (result.totalProtein || 0) + (result.totalFat || 0) + (result.totalCarbs || 0) > 0;
+    macroArea.textContent = hasMacro ? `蛋白質 ${result.totalProtein}g　脂肪 ${result.totalFat}g　碳水 ${result.totalCarbs}g` : '';
     if (!result.items || !result.items.length) {
       listEl.innerHTML = '<div class="empty-state">這天還沒有任何飲食紀錄，記一筆這一餐吧</div>';
       return;
@@ -4422,21 +4846,24 @@ async function refreshFoodList() {
       if (!groups[key]) groups[key] = [];
       groups[key].push(it);
     });
+    const sourceLabel = { ai: '・AI估算', barcode: '・條碼查詢', builtin: '・資料庫', custom: '・自訂食物' };
     const order = ['🌅 早餐', '🌞 午餐', '🌙 晚餐', '🌃 宵夜', '其他'];
     listEl.innerHTML = order.filter(k => groups[k]).map(key => `
       <div class="food-meal-group-label">${key}</div>
-      ${groups[key].map(it => `
+      ${groups[key].map(it => {
+        const itHasMacro = (it.protein || 0) + (it.fat || 0) + (it.carbs || 0) > 0;
+        return `
         <div class="food-log-item">
           <div>
-            <div class="fl-name">${escapeHtml(it.name)}</div>
-            <div class="fl-sub">${it.time}${it.source === 'ai' ? '・AI估算' : it.source === 'barcode' ? '・條碼查詢' : ''}</div>
+            <div class="fl-name">${escapeHtml(it.name)}${it.servingQty ? `　<span style="font-weight:400;color:var(--ink-soft);">${it.servingQty}${escapeHtml(it.servingUnit || '')}</span>` : ''}</div>
+            <div class="fl-sub">${it.time}${sourceLabel[it.source] || ''}${itHasMacro ? `　P${it.protein} F${it.fat} C${it.carbs}` : ''}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <div class="fl-cal">${it.calories} 大卡</div>
             <button class="sl-del" onclick="deleteFoodLogItem('${it.id}')">✕</button>
           </div>
         </div>
-      `).join('')}
+      `; }).join('')}
     `).join('');
   } catch (err) {
     listEl.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
@@ -5837,6 +6264,7 @@ function jumpFoodDate(ds) {
 // ---------- 月曆總覽 ----------
 let calMonth = new Date();
 let calOverviewData = {}; // Phase04：快取這個月的密度資料，點日期時不用再打一次 API
+let calLoadedYm = null; // 效能優化：記錄快取資料是哪個月份，切回同一個月時可以先秒開再背景更新
 let calSelectedDate = null;
 function changeCalMonth(delta) {
   calMonth.setMonth(calMonth.getMonth() + delta);
@@ -5849,14 +6277,22 @@ async function loadCalendarPage() {
   calSelectedDate = null;
   document.getElementById('calDayDetail').style.display = 'none';
   const grid = document.getElementById('calGrid');
-  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">載入中…</div>';
+  // 效能優化：這個月之前已經載入過的話，先用快取資料立刻畫出來（切換頁面感覺是秒開的），
+  // 下面還是照樣打一次 API 拿最新資料再重畫一次，不會讓資料變舊，只是不用讓使用者盯著「載入中」等。
+  const hasCache = calLoadedYm === ym;
+  if (hasCache) {
+    renderCalendarGrid(ym, calOverviewData);
+  } else {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">載入中…</div>';
+  }
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getCalendarOverview&month=${ym}`, { cache: 'no-store' });
     const overview = await res.json();
     calOverviewData = overview;
+    calLoadedYm = ym;
     renderCalendarGrid(ym, overview);
   } catch (err) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">讀取失敗：${escapeHtml(err.message)}</div>`;
+    if (!hasCache) grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
   renderReviewYearFooter('reviewYearFooter-calendar');
 }
@@ -5928,13 +6364,24 @@ let statsMoodTrend = [];
 let statsSelectedDay = null;
 let statsYm = '';
 let statsDayCounts = {};
+let statsSummaryCache = {}; // 效能優化：跟 statsYm 配對，快取這個月的統計摘要，切回同月份時可以先秒開
 async function loadStatsPage() {
   if (!checkConfig()) return;
   const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
   document.getElementById('monthLabel').textContent = statsMonth.getFullYear() + ' 年 ' + (statsMonth.getMonth() + 1) + ' 月';
-  document.getElementById('monthWrapArea').innerHTML = ''; // 換月份了，舊的回顧內容先清掉，避免看起來像是這個月的
   statsSelectedDay = null;
   document.getElementById('statsDayDetail').style.display = 'none';
+  // 效能優化：這個月之前載入過的話，先用快取秒開整頁（熱力圖／甜甜圈／心情趨勢／摘要都先畫出來），
+  // 讓「月份切換不應明顯卡頓」——下面照樣打 API 換成最新資料再重畫一次，資料不會因此變舊。
+  const hasCache = statsYm === ym && statsSummaryCache[ym];
+  if (hasCache) {
+    renderHeatmap(ym, statsDayCounts);
+    renderDonut(statsSummaryCache[ym].categoryCounts);
+    renderMoodChart(statsMoodTrend);
+    renderStatSummary(statsSummaryCache[ym].summary || {});
+  } else {
+    document.getElementById('monthWrapArea').innerHTML = ''; // 換月份了，舊的回顧內容先清掉，避免看起來像是這個月的
+  }
   try {
     const [statsRes, calRes] = await Promise.all([
       fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`, { cache: 'no-store' }),
@@ -5945,6 +6392,7 @@ async function loadStatsPage() {
     statsMoodTrend = stats.moodTrend || [];
     statsYm = ym;
     statsDayCounts = stats.dayCounts || {};
+    statsSummaryCache[ym] = { categoryCounts: stats.categoryCounts, summary: stats.summary || {} };
     renderHeatmap(ym, stats.dayCounts);
     renderDonut(stats.categoryCounts);
     renderMoodChart(statsMoodTrend);
