@@ -155,6 +155,38 @@
   .heatmap-legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);margin-top:10px;flex-wrap:wrap;}
   .heatmap-legend .hml-swatch{width:12px;height:12px;border-radius:4px;display:inline-block;flex-shrink:0;}
 
+  /* ---- Phase07: 進階功能重整（健身首頁）---- */
+  .fit-home-goal-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .fit-home-goal-label{font-size:12.5px;color:var(--ink-soft);}
+  .fit-home-goal-value{font-family:'Chiron GoRound TC';font-size:16px;font-weight:800;color:var(--accent-dark);}
+  .simple-progress-bar{width:100%;height:10px;border-radius:6px;background:var(--input-bg);overflow:hidden;}
+  .simple-progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-dark));transition:width .3s ease;}
+  .fit-home-last-set-name{font-weight:700;color:var(--ink);font-size:14px;}
+  .fit-home-last-set-detail{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .fit-home-weight-value{font-family:'Chiron GoRound TC';font-size:22px;font-weight:800;color:var(--ink);}
+  .fit-home-weight-delta{font-size:12px;font-weight:700;margin-left:6px;}
+  .advanced-link{
+    text-align:center;font-size:12.5px;color:var(--accent-dark);font-weight:700;
+    padding:12px 8px;cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center;
+  }
+  .advanced-back{
+    font-size:12.5px;font-weight:700;color:var(--accent-dark);cursor:pointer;
+    padding:8px 4px;margin-bottom:8px;min-height:32px;display:flex;align-items:center;
+  }
+
+  /* ---- Phase07: 股票首頁「我的投資」---- */
+  .stock-home-row{display:flex;gap:12px;}
+  .stock-home-metric{flex:1;}
+  .stock-home-metric-label{font-size:12px;color:var(--ink-soft);margin-bottom:2px;}
+  .stock-home-metric-value{font-family:'Chiron GoRound TC';font-size:20px;font-weight:800;color:var(--ink);}
+  .stock-home-metric-value.pl-up{color:#3D8A5F;}
+  .stock-home-metric-value.pl-down{color:#C9705E;}
+  .stock-home-mini-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .stock-home-mini-row:last-child{border-bottom:none;}
+  .stock-home-mini-name{font-weight:700;color:var(--ink);}
+  .stock-home-mini-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
+  .stock-home-mini-right{text-align:right;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;}
+
   /* ---- Phase04: 回顧生活 整合體驗 ---- */
   .review-header{
     text-align:center;font-family:'Chiron GoRound TC';
@@ -401,6 +433,10 @@
   .food-log-item .fl-name{font-size:13.5px;color:var(--ink);}
   .food-log-item .fl-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .food-log-item .fl-cal{font-size:14px;font-weight:700;color:var(--accent-dark);white-space:nowrap;margin-left:10px;}
+  .food-meal-group-label{
+    font-size:12px;font-weight:700;color:var(--accent-dark);margin:14px 0 2px;
+  }
+  .food-meal-group-label:first-child{margin-top:0;}
 
   .ticket{
     position:relative;
@@ -1033,6 +1069,8 @@
   }
   .batch-trigger-link{background:none;border:none;color:var(--accent-dark);font-size:12.5px;font-weight:700;cursor:pointer;padding:0;}
   .settings-tabs{display:flex;gap:8px;padding:0 16px 12px;}
+  .settings-tabs.settings-tabs-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .settings-tabs.settings-tabs-scroll .settings-tab-btn{flex:0 0 auto;min-width:76px;min-height:44px;}
   .settings-tab-btn{
     flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:14px;
     padding:10px;font-size:13px;font-weight:700;color:var(--ink-soft);cursor:pointer;
@@ -1162,18 +1200,75 @@
     <h2>⚙️ 設定</h2>
     <button class="settings-close" onclick="toggleSettings()">✕</button>
   </div>
-  <div class="settings-tabs">
-    <button class="settings-tab-btn active" id="stabTabs" onclick="switchSettingsTab('tabs')">分頁順序</button>
-    <button class="settings-tab-btn" id="stabCats" onclick="switchSettingsTab('cats')">類別管理</button>
-    <button class="settings-tab-btn" id="stabTools" onclick="switchSettingsTab('tools')">工具箱</button>
-    <button class="settings-tab-btn" id="stabAppearance" onclick="switchSettingsTab('appearance')">外觀</button>
+  <div class="settings-tabs settings-tabs-scroll">
+    <button class="settings-tab-btn active" id="stabAppearance" onclick="switchSettingsTab('appearance')">🎨 外觀</button>
+    <button class="settings-tab-btn" id="stabNav" onclick="switchSettingsTab('nav')">🧭 導航</button>
+    <button class="settings-tab-btn" id="stabData" onclick="switchSettingsTab('data')">💾 資料</button>
+    <button class="settings-tab-btn" id="stabCats" onclick="switchSettingsTab('cats')">🏷️ 分類</button>
+    <button class="settings-tab-btn" id="stabAccount" onclick="switchSettingsTab('account')">👤 帳號</button>
+    <button class="settings-tab-btn" id="stabOther" onclick="switchSettingsTab('other')">⋯ 其他</button>
   </div>
   <div class="settings-body">
 
-    <div id="settingsPageTabs">
+    <div id="settingsPageAppearance">
+      <div class="card">
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">🌙 深色模式</div>
+            <div class="tool-desc">預設一律使用淺色，不會再跟著手機系統設定自動變黑</div>
+          </div>
+          <label class="dm-switch">
+            <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)">
+            <span class="dm-slider"></span>
+          </label>
+        </div>
+        <div class="tool-desc" style="margin-top:10px;">⚠️ 這個開關只在這次瀏覽期間有效，重新整理頁面會回到淺色，之後想要記住設定可以再跟我說。</div>
+      </div>
+    </div>
+
+    <div id="settingsPageNav" style="display:none;">
       <div class="card">
         <div class="tool-desc" style="margin-bottom:10px;">按住 ⠿ 拖曳調整底部分頁的順序</div>
         <div id="tabOrderList"></div>
+      </div>
+    </div>
+
+    <div id="settingsPageData" style="display:none;">
+      <div class="card" id="toolsPanelCard">
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">💾 備份到試算表</div>
+            <div class="tool-desc">在同一份試算表裡建立隱藏的備份分頁，最快速</div>
+          </div>
+          <button class="tool-btn" onclick="runBackup('createBackup')">備份</button>
+        </div>
+
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">📦 備份成獨立檔案（匯出）</div>
+            <div class="tool-desc">在 Google Drive 建立完整副本檔案，就是一份完整可打開的 Google Sheets，也可以當作匯出使用</div>
+          </div>
+          <button class="tool-btn" onclick="runBackup('backupNow')">備份</button>
+        </div>
+        <div id="backupResult"></div>
+
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">🔧 修復舊資料格式</div>
+            <div class="tool-desc">把被 Sheets 自動轉型的日期/時間欄位轉回純文字</div>
+          </div>
+          <button class="tool-btn" onclick="runRepair('repairLegacyDates', 'repairResult')">修復</button>
+        </div>
+        <div id="repairResult"></div>
+
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">🖼️ 修復舊照片連結</div>
+            <div class="tool-desc">把舊格式的圖片連結換成不會被擋掉的新格式</div>
+          </div>
+          <button class="tool-btn" onclick="runRepair('fixOldPhotoLinks', 'photoFixResult')">修復</button>
+        </div>
+        <div id="photoFixResult"></div>
       </div>
     </div>
 
@@ -1204,8 +1299,28 @@
       </div>
     </div>
 
-    <div id="settingsPageTools" style="display:none;">
-      <div class="card" id="toolsPanelCard">
+    <div id="settingsPageAccount" style="display:none;">
+      <div class="card">
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">🔒 登出</div>
+            <div class="tool-desc">清除這台裝置記住的登入狀態，下次開啟需要重新登入</div>
+          </div>
+          <button class="tool-btn" onclick="logoutApp()">登出</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="settingsPageOther" style="display:none;">
+      <div class="card">
+        <div class="tool-row">
+          <div>
+            <div class="tool-name">❔ 使用教學</div>
+            <div class="tool-desc">重新看一次剛開始使用時的說明</div>
+          </div>
+          <button class="tool-btn" onclick="toggleOnboarding(true)">開啟</button>
+        </div>
+
         <div class="tool-row">
           <div>
             <div class="tool-name">🩺 健康檢查</div>
@@ -1226,65 +1341,11 @@
           <button class="tool-btn" onclick="saveSiteUrl()">儲存</button>
         </div>
         <div id="siteUrlResult"></div>
-
-        <div class="tool-row">
-          <div>
-            <div class="tool-name">💾 備份到試算表</div>
-            <div class="tool-desc">在同一份試算表裡建立隱藏的備份分頁，最快速</div>
-          </div>
-          <button class="tool-btn" onclick="runBackup('createBackup')">備份</button>
-        </div>
-
-        <div class="tool-row">
-          <div>
-            <div class="tool-name">📦 備份成獨立檔案</div>
-            <div class="tool-desc">在 Google Drive 建立完整副本檔案，更保險</div>
-          </div>
-          <button class="tool-btn" onclick="runBackup('backupNow')">備份</button>
-        </div>
-        <div id="backupResult"></div>
-
-        <div class="tool-row">
-          <div>
-            <div class="tool-name">🔧 修復舊資料格式</div>
-            <div class="tool-desc">把被 Sheets 自動轉型的日期/時間欄位轉回純文字</div>
-          </div>
-          <button class="tool-btn" onclick="runRepair('repairLegacyDates', 'repairResult')">修復</button>
-        </div>
-        <div id="repairResult"></div>
-
-        <div class="tool-row">
-          <div>
-            <div class="tool-name">🖼️ 修復舊照片連結</div>
-            <div class="tool-desc">把舊格式的圖片連結換成不會被擋掉的新格式</div>
-          </div>
-          <button class="tool-btn" onclick="runRepair('fixOldPhotoLinks', 'photoFixResult')">修復</button>
-        </div>
-        <div id="photoFixResult"></div>
-
-        <div class="tool-row">
-          <div>
-            <div class="tool-name">🔒 登出</div>
-            <div class="tool-desc">清除這台裝置記住的登入狀態，下次開啟需要重新登入</div>
-          </div>
-          <button class="tool-btn" onclick="logoutApp()">登出</button>
-        </div>
       </div>
-    </div>
 
-    <div id="settingsPageAppearance" style="display:none;">
       <div class="card">
-        <div class="tool-row">
-          <div>
-            <div class="tool-name">🌙 深色模式</div>
-            <div class="tool-desc">預設一律使用淺色，不會再跟著手機系統設定自動變黑</div>
-          </div>
-          <label class="dm-switch">
-            <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)">
-            <span class="dm-slider"></span>
-          </label>
-        </div>
-        <div class="tool-desc" style="margin-top:10px;">⚠️ 這個開關只在這次瀏覽期間有效，重新整理頁面會回到淺色，之後想要記住設定可以再跟我說。</div>
+        <div class="field-label" style="margin-top:0;">💛 關於</div>
+        <div class="tool-desc">生活手帳 Life Log — 記錄日常、飲食、運動、經期、股票與生活點滴的個人小工具。</div>
       </div>
     </div>
 
@@ -1482,85 +1543,110 @@
     <div id="streakBadgeArea"></div>
     <div id="restBannerArea"></div>
 
-    <div class="settings-tabs">
-      <button class="settings-tab-btn active" id="fitTabGoal" onclick="switchFitSubTab('goal')">🎯 目標</button>
-      <button class="settings-tab-btn" id="fitTabGym" onclick="switchFitSubTab('gym')">🏋️ 重訓</button>
-      <button class="settings-tab-btn" id="fitTabWeight" onclick="switchFitSubTab('weight')">⚖️ 體重</button>
+    <div id="fitSubHome">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">💪 今天運動</div>
+        <div class="fit-home-goal-row">
+          <span class="fit-home-goal-label" id="fitHomeGoalLabel">本週目標</span>
+          <span class="fit-home-goal-value" id="fitHomeGoalValue">—</span>
+        </div>
+        <div class="simple-progress-bar"><div class="simple-progress-fill" id="fitHomeProgressFill" style="width:0%;"></div></div>
+        <button class="submit-btn" style="width:100%;margin-top:12px;" onclick="showFitAdvanced('gym')">開始今天訓練</button>
+      </div>
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">🏋️ 最近一次</div>
+        <div id="fitHomeLastSet" class="empty-state" style="padding:6px 0;">還沒有重訓紀錄</div>
+      </div>
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">⚖️ 體重</div>
+        <div id="fitHomeWeight" class="empty-state" style="padding:6px 0;">還沒有體重紀錄</div>
+      </div>
+      <div class="advanced-link" onclick="showFitAdvanced('goal')">⚙️ 訓練設定（部位／器械／目標／趨勢…）→</div>
     </div>
 
-    <div id="fitSubGoal">
-      <div class="card">
-        <div class="progress-ring-wrap">
-          <div class="progress-ring">
-            <svg width="74" height="74">
-              <circle cx="37" cy="37" r="30" stroke="#F1E6D8" stroke-width="8" fill="none"/>
-              <circle id="progressCircle" cx="37" cy="37" r="30" stroke="#A8DDB5" stroke-width="8" fill="none"
-                stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
-            </svg>
-            <div class="pct" id="progressPct">-</div>
+    <div id="fitAdvancedWrap" style="display:none;">
+      <div class="advanced-back" onclick="showFitHome()">← 今天運動</div>
+
+      <div class="settings-tabs">
+        <button class="settings-tab-btn active" id="fitTabGoal" onclick="switchFitSubTab('goal')">🎯 目標</button>
+        <button class="settings-tab-btn" id="fitTabGym" onclick="switchFitSubTab('gym')">🏋️ 重訓</button>
+        <button class="settings-tab-btn" id="fitTabWeight" onclick="switchFitSubTab('weight')">⚖️ 體重</button>
+      </div>
+
+      <div id="fitSubGoal">
+        <div class="card">
+          <div class="progress-ring-wrap">
+            <div class="progress-ring">
+              <svg width="74" height="74">
+                <circle cx="37" cy="37" r="30" stroke="#F1E6D8" stroke-width="8" fill="none"/>
+                <circle id="progressCircle" cx="37" cy="37" r="30" stroke="#A8DDB5" stroke-width="8" fill="none"
+                  stroke-linecap="round" stroke-dasharray="188.5" stroke-dashoffset="188.5"/>
+              </svg>
+              <div class="pct" id="progressPct">-</div>
+            </div>
+            <div class="progress-text" id="progressText">還沒有設定每週目標唷</div>
           </div>
-          <div class="progress-text" id="progressText">還沒有設定每週目標唷</div>
+        </div>
+
+        <div class="card">
+          <div class="field-label">🎯 主要目標</div>
+          <div class="choice-row" id="goalRow"></div>
+          <div class="field-label">📍 運動地點</div>
+          <div class="choice-row" id="locationRow"></div>
+          <div class="field-label">📅 每週想運動幾天</div>
+          <div class="choice-row" id="daysRow"></div>
+          <button class="submit-btn" style="width:100%;margin-top:6px;" id="fitSubmitBtn" onclick="submitFitnessProfile()">為我生成專屬建議</button>
+        </div>
+
+        <div id="fitnessPlanArea"></div>
+
+        <div class="card" id="checklistCard" style="display:none;">
+          <div class="field-label" style="margin-top:0;">✅ 今天的訓練菜單</div>
+          <div id="checklistArea"></div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="field-label">🎯 主要目標</div>
-        <div class="choice-row" id="goalRow"></div>
-        <div class="field-label">📍 運動地點</div>
-        <div class="choice-row" id="locationRow"></div>
-        <div class="field-label">📅 每週想運動幾天</div>
-        <div class="choice-row" id="daysRow"></div>
-        <button class="submit-btn" style="width:100%;margin-top:6px;" id="fitSubmitBtn" onclick="submitFitnessProfile()">為我生成專屬建議</button>
-      </div>
+      <div id="fitSubGym" style="display:none;">
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">🏋️ 重量訓練紀錄</div>
+          <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">先選練哪個部位，挑一個常用器械，或直接手動輸入</div>
 
-      <div id="fitnessPlanArea"></div>
+          <div class="field-label" style="margin-top:0;">練哪個部位？</div>
+          <div class="choice-row" id="gymPartRow"></div>
+          <div class="gym-equip-grid" id="gymEquipGrid"></div>
+          <div id="gymEquipTip" class="plan-tip" style="display:none;"></div>
 
-      <div class="card" id="checklistCard" style="display:none;">
-        <div class="field-label" style="margin-top:0;">✅ 今天的訓練菜單</div>
-        <div id="checklistArea"></div>
-      </div>
-    </div>
-
-    <div id="fitSubGym" style="display:none;">
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">🏋️ 重量訓練紀錄</div>
-        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">先選練哪個部位，挑一個常用器械，或直接手動輸入</div>
-
-        <div class="field-label" style="margin-top:0;">練哪個部位？</div>
-        <div class="choice-row" id="gymPartRow"></div>
-        <div class="gym-equip-grid" id="gymEquipGrid"></div>
-        <div id="gymEquipTip" class="plan-tip" style="display:none;"></div>
-
-        <div class="gym-form">
-          <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
-          <datalist id="gymExerciseList"></datalist>
-          <div class="gym-form-row">
-            <input type="number" step="0.5" id="gymWeightInput" placeholder="重量(kg)">
-            <input type="number" id="gymSetsInput" placeholder="組數">
-            <input type="number" id="gymRepsInput" placeholder="次數/組">
+          <div class="gym-form">
+            <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
+            <datalist id="gymExerciseList"></datalist>
+            <div class="gym-form-row">
+              <input type="number" step="0.5" id="gymWeightInput" placeholder="重量(kg)">
+              <input type="number" id="gymSetsInput" placeholder="組數">
+              <input type="number" id="gymRepsInput" placeholder="次數/組">
+            </div>
+            <button class="submit-btn" id="gymLogSubmitBtn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
+            <button class="gen-btn" id="repeatSetBtn" style="width:100%;margin-top:8px;display:none;" onclick="repeatLastSet()">🔁 重複上一組</button>
           </div>
-          <button class="submit-btn" id="gymLogSubmitBtn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
-          <button class="gen-btn" id="repeatSetBtn" style="width:100%;margin-top:8px;display:none;" onclick="repeatLastSet()">🔁 重複上一組</button>
+          <div id="gymLogList"></div>
         </div>
-        <div id="gymLogList"></div>
+
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">📈 動作重量趨勢</div>
+          <select id="gymTrendSelect" class="choice-chip" style="width:100%;margin-bottom:10px;" onchange="loadGymTrend(this.value)"></select>
+          <svg class="mood-chart" id="gymTrendSvg"></svg>
+          <div id="gymTrendEmpty" class="empty-state" style="display:none;">選一個動作看看重量變化</div>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">📈 動作重量趨勢</div>
-        <select id="gymTrendSelect" class="choice-chip" style="width:100%;margin-bottom:10px;" onchange="loadGymTrend(this.value)"></select>
-        <svg class="mood-chart" id="gymTrendSvg"></svg>
-        <div id="gymTrendEmpty" class="empty-state" style="display:none;">選一個動作看看重量變化</div>
-      </div>
-    </div>
-
-    <div id="fitSubWeight" style="display:none;">
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">⚖️ 體重紀錄</div>
-        <div class="weight-row">
-          <input type="number" step="0.1" id="weightInput" placeholder="今天的體重 (kg)">
-          <button class="submit-btn" id="weightSubmitBtn" onclick="submitWeight()">記錄</button>
+      <div id="fitSubWeight" style="display:none;">
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">⚖️ 體重紀錄</div>
+          <div class="weight-row">
+            <input type="number" step="0.1" id="weightInput" placeholder="今天的體重 (kg)">
+            <button class="submit-btn" id="weightSubmitBtn" onclick="submitWeight()">記錄</button>
+          </div>
+          <div class="weight-list" id="weightList"></div>
         </div>
-        <div class="weight-list" id="weightList"></div>
       </div>
     </div>
   </div>
@@ -1609,44 +1695,52 @@
   </div>
 
   <div class="page" id="page-food">
-    <div class="card" style="text-align:center;">
-      <div class="cute-font" style="font-size:15px;font-weight:700;">🍱 飲食紀錄</div>
-      <div class="date-nav" style="margin-top:6px;">
-        <button onclick="changeFoodDate(-1)">‹</button>
-        <div class="date-label" id="foodDateLabel">今天</div>
-        <button onclick="changeFoodDate(1)">›</button>
-      </div>
-      <div id="foodTotalArea" style="margin-top:8px;font-size:24px;font-weight:800;color:var(--accent-dark);font-family:'Chiron GoRound TC';"></div>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📝 打字記錄</div>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="foodDescInput" placeholder="例如：雞腿便當" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
-        <button class="tool-btn" onclick="estimateFoodCalories()" id="foodEstimateBtn">AI 估算</button>
-      </div>
-      <div id="foodEstimateResult"></div>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📷 掃描條碼</div>
-      <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 8px;">部分手機瀏覽器不支援鏡頭掃描，可以改用手動輸入</div>
-      <button class="submit-btn" style="width:100%;" onclick="startBarcodeScan()">開始掃描</button>
-      <div style="text-align:center;margin-top:8px;">
-        <a href="javascript:void(0)" onclick="toggleManualBarcodeInput()" style="font-size:12px;color:var(--ink-soft);text-decoration:underline;">或手動輸入條碼數字</a>
-      </div>
-      <div id="manualBarcodeArea" style="display:none;margin-top:8px;">
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="manualBarcodeInput" placeholder="輸入條碼數字" inputmode="numeric" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
-          <button class="tool-btn" onclick="lookupBarcodeManual()">查詢</button>
+    <div id="foodSubHome">
+      <div class="card" style="text-align:center;">
+        <div class="cute-font" style="font-size:15px;font-weight:700;">🍱 最近飲食</div>
+        <div class="date-nav" style="margin-top:6px;">
+          <button onclick="changeFoodDate(-1)">‹</button>
+          <div class="date-label" id="foodDateLabel">今天</div>
+          <button onclick="changeFoodDate(1)">›</button>
         </div>
+        <div id="foodTotalArea" style="margin-top:8px;font-size:24px;font-weight:800;color:var(--accent-dark);font-family:'Chiron GoRound TC';"></div>
       </div>
-      <div id="barcodeResult"></div>
+
+      <div class="card">
+        <div id="foodListArea"></div>
+      </div>
+
+      <button class="gen-btn" style="width:100%;" onclick="showFoodAdvanced()">+ 記錄這一餐</button>
+      <div class="advanced-link" onclick="showFoodAdvanced()">⚙️ 食物資料庫（打字估算／掃描條碼）→</div>
     </div>
 
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📋 這天的紀錄</div>
-      <div id="foodListArea"></div>
+    <div id="foodAdvancedWrap" style="display:none;">
+      <div class="advanced-back" onclick="showFoodHome()">← 最近飲食</div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📝 打字記錄</div>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="foodDescInput" placeholder="例如：雞腿便當" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
+          <button class="tool-btn" onclick="estimateFoodCalories()" id="foodEstimateBtn">AI 估算</button>
+        </div>
+        <div id="foodEstimateResult"></div>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📷 掃描條碼</div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 8px;">部分手機瀏覽器不支援鏡頭掃描，可以改用手動輸入</div>
+        <button class="submit-btn" style="width:100%;" onclick="startBarcodeScan()">開始掃描</button>
+        <div style="text-align:center;margin-top:8px;">
+          <a href="javascript:void(0)" onclick="toggleManualBarcodeInput()" style="font-size:12px;color:var(--ink-soft);text-decoration:underline;">或手動輸入條碼數字</a>
+        </div>
+        <div id="manualBarcodeArea" style="display:none;margin-top:8px;">
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="manualBarcodeInput" placeholder="輸入條碼數字" inputmode="numeric" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
+            <button class="tool-btn" onclick="lookupBarcodeManual()">查詢</button>
+          </div>
+        </div>
+        <div id="barcodeResult"></div>
+      </div>
     </div>
   </div>
   <div class="barcode-scanner-overlay" id="barcodeScannerOverlay">
@@ -1796,123 +1890,170 @@
   </div>
 
   <div class="page" id="page-stock">
-    <div class="settings-tabs">
-      <button class="settings-tab-btn active" id="stockTabRecord" onclick="switchStockSubTab('record')">✍️ 紀錄</button>
-      <button class="settings-tab-btn" id="stockTabOverview" onclick="switchStockSubTab('overview')">📋 總覽</button>
-      <button class="settings-tab-btn" id="stockTabPl" onclick="switchStockSubTab('pl')">💰 損益</button>
-      <button class="settings-tab-btn" id="stockTabLog" onclick="switchStockSubTab('log')">📜 明細</button>
+    <div id="stockSubHome">
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📈 我的投資</div>
+        <div class="stock-home-row">
+          <div class="stock-home-metric">
+            <div class="stock-home-metric-label">總資產</div>
+            <div class="stock-home-metric-value" id="stockHomeTotalAssets">—</div>
+          </div>
+          <div class="stock-home-metric">
+            <div class="stock-home-metric-label">今日損益</div>
+            <div class="stock-home-metric-value" id="stockHomeTodayPL">—</div>
+          </div>
+        </div>
+        <button class="submit-btn" style="width:100%;margin-top:12px;" onclick="showStockAdvanced('record')">+ 記錄一筆交易</button>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">💼 持有</div>
+        <div id="stockHomeHoldings" class="empty-state" style="padding:6px 0;">目前沒有持股</div>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📜 最近交易</div>
+        <div id="stockHomeRecent" class="empty-state" style="padding:6px 0;">還沒有交易紀錄</div>
+      </div>
+
+      <div class="advanced-link" onclick="showStockAdvanced('overview')">⚙️ 進階功能（總覽／損益／明細／批次新增）→</div>
     </div>
 
-    <div id="stockSubRecord">
-      <div class="card">
-        <div class="field-label" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;">
-          <span>📈 新增買賣紀錄</span>
-          <button class="batch-trigger-link" onclick="openBatchModal()">📥 批次新增</button>
-        </div>
-        <div class="stock-form-row">
-          <input type="text" id="stockCode" placeholder="代號，例如 2330" onblur="fillStockPair('code')">
-          <input type="text" id="stockName" placeholder="名稱，例如 台積電" onblur="fillStockPair('name')">
-        </div>
-        <div class="choice-row" id="stockActionRow"></div>
-        <div class="stock-form-row">
-          <input type="number" id="stockShares" placeholder="股數">
-          <input type="number" step="0.01" id="stockPrice" placeholder="成交價">
-        </div>
-        <div class="stock-form-row">
-          <input type="number" step="0.01" id="stockFee" placeholder="手續費（選填）">
-          <input type="number" step="0.01" id="stockTax" placeholder="交易稅（選填）">
-        </div>
-        <div class="stock-form-row">
-          <input type="date" id="stockDate" class="stock-date-input" style="flex:1;">
-        </div>
-        <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
-        <button class="submit-btn" id="stockSubmitBtn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
-        <button class="gen-btn" id="stockCancelEditBtn" style="display:none;margin-top:8px;width:100%;" onclick="cancelEditStockLog()">取消編輯</button>
-      </div>
-    </div>
+    <div id="stockAdvancedWrap" style="display:none;">
+      <div class="advanced-back" onclick="showStockHome()">← 我的投資</div>
 
-    <div id="stockSubOverview" style="display:none;">
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">📈 總成本走勢</div>
-        <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">每筆交易後的持股總成本變化</div>
-        <svg class="mood-chart" id="stockCostChart"></svg>
-        <div id="stockCostChartEmpty" class="empty-state" style="display:none;">還沒有足夠的交易紀錄可以畫圖</div>
+      <div class="settings-tabs">
+        <button class="settings-tab-btn active" id="stockTabRecord" onclick="switchStockSubTab('record')">✍️ 紀錄</button>
+        <button class="settings-tab-btn" id="stockTabOverview" onclick="switchStockSubTab('overview')">📋 總覽</button>
+        <button class="settings-tab-btn" id="stockTabPl" onclick="switchStockSubTab('pl')">💰 損益</button>
+        <button class="settings-tab-btn" id="stockTabLog" onclick="switchStockSubTab('log')">📜 明細</button>
       </div>
 
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">📋 股票總覽</div>
-        <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 8px;">目前市價來自證交所公開資料，抓不到時會顯示「—」，僅供參考</div>
-        <div class="stock-filter-row" id="stockOverviewSortRow"></div>
-        <div id="stockOverviewArea"></div>
+      <div id="stockSubRecord">
+        <div class="card">
+          <div class="field-label" style="margin-top:0;display:flex;justify-content:space-between;align-items:center;">
+            <span>📈 新增買賣紀錄</span>
+            <button class="batch-trigger-link" onclick="openBatchModal()">📥 批次新增</button>
+          </div>
+          <div class="stock-form-row">
+            <input type="text" id="stockCode" placeholder="代號，例如 2330" onblur="fillStockPair('code')">
+            <input type="text" id="stockName" placeholder="名稱，例如 台積電" onblur="fillStockPair('name')">
+          </div>
+          <div class="choice-row" id="stockActionRow"></div>
+          <div class="stock-form-row">
+            <input type="number" id="stockShares" placeholder="股數">
+            <input type="number" step="0.01" id="stockPrice" placeholder="成交價">
+          </div>
+          <div class="stock-form-row">
+            <input type="number" step="0.01" id="stockFee" placeholder="手續費（選填）">
+            <input type="number" step="0.01" id="stockTax" placeholder="交易稅（選填）">
+          </div>
+          <div class="stock-form-row">
+            <input type="date" id="stockDate" class="stock-date-input" style="flex:1;">
+          </div>
+          <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
+          <button class="submit-btn" id="stockSubmitBtn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
+          <button class="gen-btn" id="stockCancelEditBtn" style="display:none;margin-top:8px;width:100%;" onclick="cancelEditStockLog()">取消編輯</button>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">💼 目前持股</div>
-        <div id="stockHoldingsArea"></div>
-      </div>
-    </div>
+      <div id="stockSubOverview" style="display:none;">
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">📈 總成本走勢</div>
+          <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:8px;">每筆交易後的持股總成本變化</div>
+          <svg class="mood-chart" id="stockCostChart"></svg>
+          <div id="stockCostChartEmpty" class="empty-state" style="display:none;">還沒有足夠的交易紀錄可以畫圖</div>
+        </div>
 
-    <div id="stockSubPl" style="display:none;">
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">💰 已實現損益</div>
-        <div class="stock-filter-row" id="realizedFilterRow"></div>
-        <div id="stockRealizedArea"></div>
-      </div>
-    </div>
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">📋 股票總覽</div>
+          <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 8px;">目前市價來自證交所公開資料，抓不到時會顯示「—」，僅供參考</div>
+          <div class="stock-filter-row" id="stockOverviewSortRow"></div>
+          <div id="stockOverviewArea"></div>
+        </div>
 
-    <div id="stockSubLog" style="display:none;">
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">📜 交易紀錄</div>
-        <div class="stock-filter-row" id="logFilterRow"></div>
-        <div id="stockLogArea"></div>
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">💼 目前持股</div>
+          <div id="stockHoldingsArea"></div>
+        </div>
+      </div>
+
+      <div id="stockSubPl" style="display:none;">
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">💰 已實現損益</div>
+          <div class="stock-filter-row" id="realizedFilterRow"></div>
+          <div id="stockRealizedArea"></div>
+        </div>
+      </div>
+
+      <div id="stockSubLog" style="display:none;">
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">📜 交易紀錄</div>
+          <div class="stock-filter-row" id="logFilterRow"></div>
+          <div id="stockLogArea"></div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="page" id="page-period">
-    <div class="card" id="periodStatusCard">
-      <div class="field-label" style="margin-top:0;">🌷 目前狀態</div>
-      <div id="periodStatusArea" class="empty-state">還沒有任何紀錄，記一筆開始追蹤吧</div>
-      <button class="submit-btn" id="periodToggleBtn" style="width:100%;margin-top:10px;" onclick="togglePeriodOpen()">🌸 今天開始經期</button>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📋 今日身體狀況</div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">出血量</div>
-      <div class="opt-row" id="flowOptRow"></div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">經痛程度</div>
-      <div class="opt-row" id="painOptRow"></div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">其他症狀（可複選）</div>
-      <div class="opt-row" id="symptomOptRow"></div>
-      <textarea id="periodDailyNote" placeholder="備註（選填）" style="min-height:40px;"></textarea>
-      <button class="submit-btn" id="periodDailySubmitBtn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存今天的狀況</button>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📈 最近身體狀況</div>
-      <div id="periodDailyHistoryArea"></div>
-    </div>
-
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">🗓️ 手動補登過去的紀錄</div>
-      <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 6px;">忘了在開始/結束當天按按鈕嗎？可以在這裡直接補一筆完整的區間</div>
-      <div class="stock-form-row">
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">開始日期</div>
-          <input type="date" id="periodStart" class="stock-date-input" style="width:100%;">
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">結束日期（選填）</div>
-          <input type="date" id="periodEnd" class="stock-date-input" style="width:100%;">
-        </div>
+    <div id="periodSubHome">
+      <div class="card" id="periodStatusCard">
+        <div class="field-label" style="margin-top:0;">🌷 目前狀態</div>
+        <div id="periodStatusArea" class="empty-state">還沒有任何紀錄，記一筆開始追蹤吧</div>
+        <button class="submit-btn" id="periodToggleBtn" style="width:100%;margin-top:10px;" onclick="togglePeriodOpen()">🌸 今天開始經期</button>
       </div>
-      <textarea id="periodNote" placeholder="備註（選填）" style="min-height:40px;margin-top:8px;"></textarea>
-      <button class="submit-btn" id="periodLogSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">補登這筆紀錄</button>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📈 最近紀錄</div>
+        <div id="periodHomeRecentArea" class="empty-state" style="padding:6px 0;">還沒有任何紀錄</div>
+      </div>
+
+      <button class="gen-btn" style="width:100%;" onclick="showPeriodAdvanced('daily')">📋 記錄今天的身體狀況</button>
+      <div class="advanced-link" onclick="showPeriodAdvanced('history')">⚙️ 進階（歷史週期／編輯／備註／統計）→</div>
     </div>
 
-    <div class="card">
-      <div class="field-label" style="margin-top:0;">📜 歷史紀錄</div>
-      <div id="periodLogArea"></div>
+    <div id="periodAdvancedWrap" style="display:none;">
+      <div class="advanced-back" onclick="showPeriodHome()">← 今日狀態</div>
+
+      <div class="card" id="periodDailyCard">
+        <div class="field-label" style="margin-top:0;">📋 今日身體狀況</div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">出血量</div>
+        <div class="opt-row" id="flowOptRow"></div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">經痛程度</div>
+        <div class="opt-row" id="painOptRow"></div>
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">其他症狀（可複選）</div>
+        <div class="opt-row" id="symptomOptRow"></div>
+        <textarea id="periodDailyNote" placeholder="備註（選填）" style="min-height:40px;"></textarea>
+        <button class="submit-btn" id="periodDailySubmitBtn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存今天的狀況</button>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📈 最近身體狀況</div>
+        <div id="periodDailyHistoryArea"></div>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">🗓️ 手動補登過去的紀錄</div>
+        <div style="font-size:11px;color:var(--ink-soft);margin:-2px 0 6px;">忘了在開始/結束當天按按鈕嗎？可以在這裡直接補一筆完整的區間</div>
+        <div class="stock-form-row">
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">開始日期</div>
+            <input type="date" id="periodStart" class="stock-date-input" style="width:100%;">
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">結束日期（選填）</div>
+            <input type="date" id="periodEnd" class="stock-date-input" style="width:100%;">
+          </div>
+        </div>
+        <textarea id="periodNote" placeholder="備註（選填）" style="min-height:40px;margin-top:8px;"></textarea>
+        <button class="submit-btn" id="periodLogSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">補登這筆紀錄</button>
+      </div>
+
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">📜 歷史紀錄</div>
+        <div id="periodLogArea"></div>
+      </div>
     </div>
   </div>
 
@@ -2207,16 +2348,21 @@ function openRecordEntry(type) {
   } else if (type === 'food') {
     switchTab('page-food');
     setTimeout(() => {
+      showFoodAdvanced();
       const el = document.getElementById('foodDescInput');
       if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
     }, 80);
   } else if (type === 'exercise') {
     switchTab('page-fit');
-  } else if (type === 'condition' || type === 'period') {
+  } else if (type === 'period') {
     switchTab('page-period');
+  } else if (type === 'condition') {
+    switchTab('page-period');
+    setTimeout(() => showPeriodAdvanced('daily'), 80);
   } else if (type === 'stock') {
     switchTab('page-stock');
     setTimeout(() => {
+      showStockAdvanced('record');
       const el = document.getElementById('stockCode');
       if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
     }, 80);
@@ -2529,7 +2675,7 @@ function toggleSettings() {
   const overlay = document.getElementById('settingsOverlay');
   const isOpen = overlay.classList.contains('show');
   overlay.classList.toggle('show', !isOpen);
-  if (!isOpen) switchSettingsTab('tabs');
+  if (!isOpen) switchSettingsTab('appearance');
 }
 // 健身頁也拆成三個子分頁，一樣是為了避免卡片全部疊在一起要滑很久
 function switchFitSubTab(tab) {
@@ -2539,6 +2685,70 @@ function switchFitSubTab(tab) {
   document.getElementById('fitTabGoal').classList.toggle('active', tab === 'goal');
   document.getElementById('fitTabGym').classList.toggle('active', tab === 'gym');
   document.getElementById('fitTabWeight').classList.toggle('active', tab === 'weight');
+}
+// Phase07：健身頁預設只顯示「今天運動」摘要卡，完整的目標／重訓／體重設定收進「訓練設定」
+function showFitAdvanced(tab) {
+  document.getElementById('fitSubHome').style.display = 'none';
+  document.getElementById('fitAdvancedWrap').style.display = 'block';
+  switchFitSubTab(tab || 'goal');
+}
+function showFitHome() {
+  document.getElementById('fitAdvancedWrap').style.display = 'none';
+  document.getElementById('fitSubHome').style.display = 'block';
+  loadFitHome();
+}
+// 健身首頁摘要：本週目標進度、最近一次重訓、目前體重——都是既有資料，只是換一種簡化的方式先呈現
+async function loadFitHome() {
+  try {
+    const [weekRes, setRes, weightRes] = await Promise.all([
+      fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`, { cache: 'no-store' }),
+      fetch(`${CONFIG.GAS_URL}?action=getLatestGymSet`, { cache: 'no-store' }),
+      fetch(`${CONFIG.GAS_URL}?action=getBodyStats`, { cache: 'no-store' })
+    ]);
+    const week = await weekRes.json();
+    const lastSet = await setRes.json();
+    const weightList = await weightRes.json();
+
+    if (week.target) {
+      const ratio = Math.min(week.daysThisWeek / week.target, 1);
+      document.getElementById('fitHomeGoalValue').textContent = `${week.daysThisWeek} / ${week.target}`;
+      document.getElementById('fitHomeProgressFill').style.width = (ratio * 100) + '%';
+    } else {
+      document.getElementById('fitHomeGoalLabel').textContent = '本週運動天數';
+      document.getElementById('fitHomeGoalValue').textContent = String(week.daysThisWeek || 0);
+      document.getElementById('fitHomeProgressFill').style.width = '0%';
+    }
+
+    const lastSetArea = document.getElementById('fitHomeLastSet');
+    if (lastSet && lastSet.exercise) {
+      lastSetArea.className = '';
+      lastSetArea.innerHTML = `
+        <div class="fit-home-last-set-name">${escapeHtml(lastSet.exercise)}</div>
+        <div class="fit-home-last-set-detail">${lastSet.weight ? lastSet.weight + 'kg' : ''}${lastSet.reps ? ' × ' + lastSet.reps : ''}${lastSet.sets ? ' × ' + lastSet.sets : ''}${lastSet.date ? '　' + lastSet.date : ''}</div>
+      `;
+    } else {
+      lastSetArea.className = 'empty-state';
+      lastSetArea.style.padding = '6px 0';
+      lastSetArea.textContent = '還沒有重訓紀錄';
+    }
+
+    const weightArea = document.getElementById('fitHomeWeight');
+    if (weightList && weightList.length) {
+      const latest = weightList[weightList.length - 1];
+      const prev = weightList.length > 1 ? weightList[weightList.length - 2] : null;
+      let deltaHtml = '';
+      if (prev) {
+        const diff = Math.round((parseFloat(latest.weight) - parseFloat(prev.weight)) * 10) / 10;
+        if (diff !== 0) deltaHtml = `<span class="fit-home-weight-delta" style="color:${diff > 0 ? '#C9705E' : '#3D8A5F'};">${diff > 0 ? '+' : ''}${diff}kg</span>`;
+      }
+      weightArea.className = '';
+      weightArea.innerHTML = `<span class="fit-home-weight-value">${latest.weight} kg</span>${deltaHtml}`;
+    } else {
+      weightArea.className = 'empty-state';
+      weightArea.style.padding = '6px 0';
+      weightArea.textContent = '還沒有體重紀錄';
+    }
+  } catch (err) {}
 }
 // 股票頁分成四個子分頁，避免全部卡片疊在一起要滑很久
 function switchStockSubTab(tab) {
@@ -2551,16 +2761,81 @@ function switchStockSubTab(tab) {
   document.getElementById('stockTabPl').classList.toggle('active', tab === 'pl');
   document.getElementById('stockTabLog').classList.toggle('active', tab === 'log');
 }
+// Phase07：股票頁預設只顯示「我的投資」總覽卡，紀錄／總覽／損益／明細／批次新增收進「進階功能」
+function showStockAdvanced(tab) {
+  document.getElementById('stockSubHome').style.display = 'none';
+  document.getElementById('stockAdvancedWrap').style.display = 'block';
+  switchStockSubTab(tab || 'record');
+}
+function showStockHome() {
+  document.getElementById('stockAdvancedWrap').style.display = 'none';
+  document.getElementById('stockSubHome').style.display = 'block';
+  loadStockHome();
+}
+// 股票首頁摘要：總資產／今日損益／持有／最近交易，資料來自既有的 getStockDashboard 端點
+async function loadStockHome() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockDashboard`, { cache: 'no-store' });
+    const dash = await res.json();
+
+    document.getElementById('stockHomeTotalAssets').textContent = '$' + Math.round(dash.totalAssets || 0).toLocaleString();
+    const plEl = document.getElementById('stockHomeTodayPL');
+    if (dash.todayPL === null || dash.todayPL === undefined) {
+      plEl.textContent = '—';
+      plEl.className = 'stock-home-metric-value';
+    } else {
+      const pl = Math.round(dash.todayPL);
+      plEl.textContent = (pl > 0 ? '+' : '') + '$' + pl.toLocaleString();
+      plEl.className = 'stock-home-metric-value ' + (pl > 0 ? 'pl-up' : pl < 0 ? 'pl-down' : '');
+    }
+
+    const holdingsEl = document.getElementById('stockHomeHoldings');
+    const holdings = dash.holdings || [];
+    if (holdings.length) {
+      holdingsEl.className = '';
+      holdingsEl.innerHTML = holdings.map(h => `
+        <div class="stock-home-mini-row">
+          <div><div class="stock-home-mini-name">${escapeHtml(h.name || h.code)}</div><div class="stock-home-mini-sub">${escapeHtml(h.code)}・${h.qty} 股</div></div>
+          <div class="stock-home-mini-right">${h.price !== null && h.price !== undefined ? '$' + Math.round(h.marketValue).toLocaleString() : '成本 $' + Math.round(h.marketValue).toLocaleString()}</div>
+        </div>
+      `).join('');
+    } else {
+      holdingsEl.className = 'empty-state';
+      holdingsEl.style.padding = '6px 0';
+      holdingsEl.textContent = '目前沒有持股';
+    }
+
+    const recentEl = document.getElementById('stockHomeRecent');
+    const recent = dash.recentTrades || [];
+    if (recent.length) {
+      recentEl.className = '';
+      recentEl.innerHTML = recent.map(t => `
+        <div class="stock-home-mini-row">
+          <div><div class="stock-home-mini-name">${escapeHtml(t.name || t.code)}</div><div class="stock-home-mini-sub">${t.action === 'sell' ? '賣出' : '買進'} ${t.shares} 股 @ ${t.price}</div></div>
+          <div class="stock-home-mini-right">${t.date}</div>
+        </div>
+      `).join('');
+    } else {
+      recentEl.className = 'empty-state';
+      recentEl.style.padding = '6px 0';
+      recentEl.textContent = '還沒有交易紀錄';
+    }
+  } catch (err) {}
+}
 function switchSettingsTab(tab) {
-  document.getElementById('settingsPageTabs').style.display = tab === 'tabs' ? 'block' : 'none';
-  document.getElementById('settingsPageCats').style.display = tab === 'cats' ? 'block' : 'none';
-  document.getElementById('settingsPageTools').style.display = tab === 'tools' ? 'block' : 'none';
   document.getElementById('settingsPageAppearance').style.display = tab === 'appearance' ? 'block' : 'none';
-  document.getElementById('stabTabs').classList.toggle('active', tab === 'tabs');
-  document.getElementById('stabCats').classList.toggle('active', tab === 'cats');
-  document.getElementById('stabTools').classList.toggle('active', tab === 'tools');
+  document.getElementById('settingsPageNav').style.display = tab === 'nav' ? 'block' : 'none';
+  document.getElementById('settingsPageData').style.display = tab === 'data' ? 'block' : 'none';
+  document.getElementById('settingsPageCats').style.display = tab === 'cats' ? 'block' : 'none';
+  document.getElementById('settingsPageAccount').style.display = tab === 'account' ? 'block' : 'none';
+  document.getElementById('settingsPageOther').style.display = tab === 'other' ? 'block' : 'none';
   document.getElementById('stabAppearance').classList.toggle('active', tab === 'appearance');
-  if (tab === 'tabs') loadTabOrderSettings();
+  document.getElementById('stabNav').classList.toggle('active', tab === 'nav');
+  document.getElementById('stabData').classList.toggle('active', tab === 'data');
+  document.getElementById('stabCats').classList.toggle('active', tab === 'cats');
+  document.getElementById('stabAccount').classList.toggle('active', tab === 'account');
+  document.getElementById('stabOther').classList.toggle('active', tab === 'other');
+  if (tab === 'nav') loadTabOrderSettings();
   if (tab === 'cats') renderCatManagerList();
 }
 function toggleDarkMode(on) {
@@ -3729,6 +4004,8 @@ function renderFitForm() {
 }
 async function loadFitnessPage() {
   if (!checkConfig()) return;
+  document.getElementById('fitAdvancedWrap').style.display = 'none';
+  document.getElementById('fitSubHome').style.display = 'block';
   renderFitForm();
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getFitnessProfile`, { cache: 'no-store' });
@@ -3745,6 +4022,7 @@ async function loadFitnessPage() {
   loadGymLog();
   loadGymExerciseNames();
   renderGymPartRow();
+  loadFitHome();
 }
 
 async function loadStreak() {
@@ -3822,6 +4100,8 @@ function selectStockAction(v) {
 }
 async function loadPeriodPage() {
   if (!checkConfig()) return;
+  document.getElementById('periodAdvancedWrap').style.display = 'none';
+  document.getElementById('periodSubHome').style.display = 'block';
   renderPeriodOptionChips();
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodPageData`, { cache: 'no-store' });
@@ -3840,6 +4120,21 @@ async function loadPeriodPage() {
     loadPeriodDailyToday();
     loadPeriodDailyHistory();
   }
+}
+// Phase07：經期頁預設只顯示「目前狀態」＋「最近紀錄」，今日身體狀況／補登／完整歷史收進進階
+function showPeriodAdvanced(section) {
+  document.getElementById('periodSubHome').style.display = 'none';
+  document.getElementById('periodAdvancedWrap').style.display = 'block';
+  if (section === 'daily') {
+    setTimeout(() => document.getElementById('periodDailyCard').scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
+}
+function showPeriodHome() {
+  document.getElementById('periodAdvancedWrap').style.display = 'none';
+  document.getElementById('periodSubHome').style.display = 'block';
+  loadPeriodStatus();
+  loadPeriodOpenState();
+  loadPeriodLogList();
 }
 async function loadPeriodStatus(preData) {
   const area = document.getElementById('periodStatusArea');
@@ -3916,7 +4211,11 @@ async function loadPeriodLogList(preData) {
   area.innerHTML = '<div class="empty-state">載入中…</div>';
   try {
     const logs = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodLogs`, { cache: 'no-store' })).json();
-    if (!logs.length || logs.error) { area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>'; return; }
+    if (!logs.length || logs.error) {
+      area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>';
+      renderPeriodHomeRecent([]);
+      return;
+    }
     area.innerHTML = logs.map(l => `
       <div class="stock-log-item">
         <div>
@@ -3926,9 +4225,27 @@ async function loadPeriodLogList(preData) {
         <button class="sl-del" onclick="deletePeriodLogItem('${l.id}')">✕</button>
       </div>
     `).join('');
+    renderPeriodHomeRecent(logs);
   } catch (err) {
     area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
+}
+// Phase07：首頁「最近紀錄」只挑前 3 筆、精簡呈現，完整清單留在進階的「歷史紀錄」卡片
+function renderPeriodHomeRecent(logs) {
+  const area = document.getElementById('periodHomeRecentArea');
+  if (!logs || !logs.length) {
+    area.className = 'empty-state';
+    area.style.padding = '6px 0';
+    area.textContent = '還沒有任何紀錄';
+    return;
+  }
+  area.className = '';
+  area.innerHTML = logs.slice(0, 3).map(l => `
+    <div class="stock-home-mini-row">
+      <div class="stock-home-mini-name">${l.startDate}${l.endDate ? ' ～ ' + l.endDate : '（進行中）'}</div>
+      ${l.note ? `<div class="stock-home-mini-sub">${escapeHtml(l.note)}</div>` : ''}
+    </div>
+  `).join('');
 }
 async function submitPeriodLog() {
   const btn = document.getElementById('periodLogSubmitBtn');
@@ -4059,11 +4376,34 @@ function changeFoodDate(delta) {
   foodDate.setDate(foodDate.getDate() + delta);
   loadFoodPage();
 }
+// 早餐／午餐／晚餐／宵夜是依既有的紀錄時間分組顯示，不是另外存的欄位，純粹是換一種呈現方式
+function mealPeriodOf(timeStr) {
+  const hour = parseInt(String(timeStr || '').split(':')[0], 10);
+  if (isNaN(hour)) return '其他';
+  if (hour < 10) return '🌅 早餐';
+  if (hour < 15) return '🌞 午餐';
+  if (hour < 21) return '🌙 晚餐';
+  return '🌃 宵夜';
+}
+function showFoodAdvanced() {
+  document.getElementById('foodSubHome').style.display = 'none';
+  document.getElementById('foodAdvancedWrap').style.display = 'block';
+}
+function showFoodHome() {
+  document.getElementById('foodAdvancedWrap').style.display = 'none';
+  document.getElementById('foodSubHome').style.display = 'block';
+  loadFoodPage();
+}
 async function loadFoodPage() {
   if (!checkConfig()) return;
-  document.getElementById('foodDateLabel').textContent = dateLabel(foodDate);
+  document.getElementById('foodAdvancedWrap').style.display = 'none';
+  document.getElementById('foodSubHome').style.display = 'block';
   document.getElementById('foodEstimateResult').innerHTML = '';
   document.getElementById('barcodeResult').innerHTML = '';
+  await refreshFoodList();
+}
+async function refreshFoodList() {
+  document.getElementById('foodDateLabel').textContent = dateLabel(foodDate);
   const ds = fmtDate(foodDate);
   const listEl = document.getElementById('foodListArea');
   listEl.innerHTML = '<div class="empty-state">載入中…</div>';
@@ -4073,20 +4413,30 @@ async function loadFoodPage() {
     if (result.error) { listEl.innerHTML = `<div class="empty-state">${escapeHtml(result.error)}</div>`; return; }
     document.getElementById('foodTotalArea').textContent = `${result.total || 0} 大卡`;
     if (!result.items || !result.items.length) {
-      listEl.innerHTML = '<div class="empty-state">這天還沒有任何飲食紀錄</div>';
+      listEl.innerHTML = '<div class="empty-state">這天還沒有任何飲食紀錄，記一筆這一餐吧</div>';
       return;
     }
-    listEl.innerHTML = result.items.map(it => `
-      <div class="food-log-item">
-        <div>
-          <div class="fl-name">${escapeHtml(it.name)}</div>
-          <div class="fl-sub">${it.time}${it.source === 'ai' ? '・AI估算' : it.source === 'barcode' ? '・條碼查詢' : ''}</div>
+    const groups = {};
+    result.items.forEach(it => {
+      const key = mealPeriodOf(it.time);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(it);
+    });
+    const order = ['🌅 早餐', '🌞 午餐', '🌙 晚餐', '🌃 宵夜', '其他'];
+    listEl.innerHTML = order.filter(k => groups[k]).map(key => `
+      <div class="food-meal-group-label">${key}</div>
+      ${groups[key].map(it => `
+        <div class="food-log-item">
+          <div>
+            <div class="fl-name">${escapeHtml(it.name)}</div>
+            <div class="fl-sub">${it.time}${it.source === 'ai' ? '・AI估算' : it.source === 'barcode' ? '・條碼查詢' : ''}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="fl-cal">${it.calories} 大卡</div>
+            <button class="sl-del" onclick="deleteFoodLogItem('${it.id}')">✕</button>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div class="fl-cal">${it.calories} 大卡</div>
-          <button class="sl-del" onclick="deleteFoodLogItem('${it.id}')">✕</button>
-        </div>
-      </div>
+      `).join('')}
     `).join('');
   } catch (err) {
     listEl.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
@@ -4131,7 +4481,7 @@ async function confirmAddFood(containerId, source, btn) {
     if (containerId === 'foodEstimateResult') document.getElementById('foodDescInput').value = '';
     if (containerId === 'barcodeResult') document.getElementById('manualBarcodeInput').value = '';
     showToast('記錄好了 🍱');
-    loadFoodPage();
+    refreshFoodList();
     if (fmtDate(foodDate) === fmtDate(new Date())) loadTodayOverview();
   } catch (err) {
     alert('儲存失敗：' + err.message);
@@ -4249,8 +4599,11 @@ function stopBarcodeScan() {
 
 async function loadStockPage() {
   if (!checkConfig()) return;
+  document.getElementById('stockAdvancedWrap').style.display = 'none';
+  document.getElementById('stockSubHome').style.display = 'block';
   renderStockActionRow();
   document.getElementById('stockDate').value = fmtDate(new Date());
+  loadStockHome();
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getStockPageData`, { cache: 'no-store' });
     const data = await res.json();
