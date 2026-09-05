@@ -1590,6 +1590,15 @@
         <button class="submit-btn" style="width:100%;margin-top:12px;" onclick="showFitAdvanced('gym')">開始今天訓練</button>
       </div>
       <div class="card">
+        <div class="field-label" style="margin-top:0;">🎬 居家跟練影片</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">貼上 YouTube 網址，自動抓影片名稱加入今天的運動紀錄</div>
+        <div class="gym-form">
+          <input type="text" id="exerciseVideoUrlInput" placeholder="貼上 YouTube 影片網址" inputmode="url">
+          <button class="submit-btn" id="exerciseVideoSubmitBtn" style="width:100%;margin-top:8px;" onclick="submitExerciseVideo()">＋ 抓取名稱並加入紀錄</button>
+        </div>
+        <div id="exerciseVideoList" style="margin-top:10px;"></div>
+      </div>
+      <div class="card">
         <div class="field-label" style="margin-top:0;">🏋️ 最近一次</div>
         <div id="fitHomeLastSet" class="empty-state" style="padding:6px 0;">還沒有重訓紀錄</div>
       </div>
@@ -3614,6 +3623,12 @@ function renderTicket(entry) {
     <div style="margin-top:6px;font-size:12px;color:var(--accent-dark);font-weight:700;">
       🎫 ${escapeHtml(tm.showName || '')} ${tm.venue ? '・' + escapeHtml(tm.venue) : ''} ${tm.showDate ? '・' + escapeHtml(tm.showDate) : ''}
     </div>` : '';
+  const videoHtml = (entry.fields && entry.fields.videoUrl) ? `
+    <div style="margin-top:6px;font-size:12px;">
+      <a href="${escapeHtml(entry.fields.videoUrl)}" target="_blank" rel="noopener" style="color:var(--accent-dark);font-weight:700;text-decoration:none;">
+        ▶️ ${escapeHtml(entry.fields.videoTitle || '跟練影片')}
+      </a>
+    </div>` : '';
   div.innerHTML = `
     <button class="del-btn" onclick="deleteEntry('${entry.id}')" style="right:10px;">✕</button>
     <button class="del-btn" onclick="editEntry('${entry.id}')" style="right:34px;">✎</button>
@@ -3625,6 +3640,7 @@ function renderTicket(entry) {
     ${entryPhotosHtml(entry)}
     ${fieldsSummaryHtml(entry.category, entry.fields)}
     ${tmHtml}
+    ${videoHtml}
   `;
   wrap.appendChild(bg);
   wrap.appendChild(div);
@@ -4094,6 +4110,7 @@ async function loadFitnessPage() {
   loadGymExerciseNames();
   renderGymPartRow();
   loadFitHome();
+  loadExerciseVideos();
 }
 
 async function loadStreak() {
@@ -4927,7 +4944,11 @@ async function estimateFoodCalories() {
     if (result && result.error) throw new Error(result.error);
     renderFoodConfirmCard('foodEstimateResult', { name: result.name, calories: result.calories, servingNote: result.servingNote, source: 'ai' });
   } catch (err) {
-    resultEl.innerHTML = `<div class="empty-state">估算失敗：${escapeHtml(err.message)}</div>`;
+    const isBusy = /overloaded|high demand|unavailable/i.test(err.message || '');
+    const msg = isBusy
+      ? 'AI 目前太忙了，系統已自動重試幾次仍失敗，請等一下再按一次「AI 估算」'
+      : ('估算失敗：' + err.message);
+    resultEl.innerHTML = `<div class="empty-state">${escapeHtml(msg)}</div>`;
   } finally {
     btn.disabled = false; btn.textContent = 'AI 估算';
   }
@@ -5583,6 +5604,76 @@ async function deleteGymLogItem(id) {
     if (result && result.error) throw new Error(result.error);
     showToast('已刪除 🗑️');
     loadGymLog();
+    loadWeekProgress();
+    loadStreak();
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
+}
+
+/* ---- 居家跟練影片（YouTube 網址 → 自動抓標題） ---- */
+async function loadExerciseVideos() {
+  const ds = fmtDate(new Date());
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
+    const entries = await res.json();
+    const videos = (entries || []).filter(e => e.category === '運動健身' && e.fields && e.fields.videoUrl);
+    renderExerciseVideoList(videos);
+  } catch (err) {}
+}
+function renderExerciseVideoList(list) {
+  const area = document.getElementById('exerciseVideoList');
+  if (!area) return;
+  if (!list.length) { area.innerHTML = '<div class="empty-state" style="padding:10px 0;">今天還沒有跟練影片紀錄</div>'; return; }
+  area.innerHTML = list.map(e => `
+    <div class="gym-log-item">
+      <a href="${escapeHtml(e.fields.videoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--ink);text-decoration:none;">
+        <span class="gl-ex">▶️ ${escapeHtml(e.fields.videoTitle || '跟練影片')}</span>
+      </a>
+      <button class="gl-del" onclick="deleteExerciseVideo('${e.id}')">✕</button>
+    </div>
+  `).join('');
+}
+async function submitExerciseVideo() {
+  const btn = document.getElementById('exerciseVideoSubmitBtn');
+  if (btn.disabled) return;
+  const input = document.getElementById('exerciseVideoUrlInput');
+  const url = input.value.trim();
+  if (!url) { alert('請先貼上 YouTube 影片網址'); return; }
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '抓取影片名稱中…';
+  try {
+    const info = await postJSON({ action: 'getYoutubeInfo', url });
+    if (!info || info.ok === false) throw new Error((info && info.message) || '抓不到影片資訊');
+    const result = await postJSON({
+      action: 'addEntry',
+      date: fmtDate(new Date()),
+      category: '運動健身',
+      text: '居家跟練：' + info.title,
+      fields: { videoUrl: info.url, videoTitle: info.title, videoAuthor: info.author || '' }
+    });
+    if (result && result.error) throw new Error(result.error);
+    input.value = '';
+    showToast(pick(['跟練紀錄好了 🎬', '又完成一支影片啦 💪', '記下這支影片了 🌱']));
+    loadExerciseVideos();
+    loadWeekProgress();
+    loadStreak();
+    if (fmtDate(new Date()) === fmtDate(new Date())) loadTodayOverview();
+  } catch (err) {
+    alert('加入紀錄失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+async function deleteExerciseVideo(id) {
+  if (!(await showConfirm('刪除這筆跟練影片紀錄？'))) return;
+  try {
+    const result = await postJSON({ action: 'deleteEntry', id });
+    if (result && result.error) throw new Error(result.error);
+    showToast('已刪除 🗑️');
+    loadExerciseVideos();
     loadWeekProgress();
     loadStreak();
   } catch (err) {
