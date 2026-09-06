@@ -419,10 +419,13 @@
   .photo-wall-item{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;cursor:pointer;}
   .photo-wall-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .15s;}
   .photo-wall-item:active img{transform:scale(0.95);}
+  .photo-wall-item.will-replace img{opacity:.35;}
   .photo-wall-date{
     position:absolute;bottom:0;left:0;right:0;padding:3px 5px;font-size:9.5px;color:#fff;
     background:linear-gradient(transparent,rgba(0,0,0,.55));
   }
+  #existingPhotoArea{max-width:260px;}
+  .existing-photo-hint{margin-top:6px;font-size:12px;color:var(--ink-soft);}
   .app-modal-overlay{
     position:fixed;inset:0;background:rgba(20,15,12,.45);z-index:500;display:none;
     align-items:center;justify-content:center;padding:24px;
@@ -473,7 +476,7 @@
   }
   .ticket img{width:100%;border-radius:12px;margin-top:8px;display:block;}
   .ticket-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:8px;}
-  .ticket-photos img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;margin-top:0;display:block;}
+  .ticket-photos img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;margin-top:0;display:block;cursor:pointer;}
   .ticket-photos.single{grid-template-columns:1fr;}
   .ticket-photos.single img{aspect-ratio:auto;}
   .del-btn{
@@ -1477,6 +1480,11 @@
         </div>
         <button class="gen-btn" id="cancelEditBtn" style="display:none;margin-top:8px;" onclick="cancelEditEntry()">取消編輯</button>
         <input type="file" id="fileInput" accept="image/*" multiple onchange="handlePhoto(event)">
+        <div id="existingPhotoArea" style="display:none;margin-top:8px;">
+          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">📷 原本的照片（點縮圖可放大查看）</div>
+          <div id="existingPhotoGrid" class="photo-wall-grid"></div>
+          <div id="existingPhotoHint" class="existing-photo-hint"></div>
+        </div>
         <div id="photoPreviewGrid"></div>
         <div id="photoGridHint"></div>
       </div>
@@ -2277,6 +2285,7 @@ let searchDebounce = null;
 let editingCategoryId = null;
 let editingEntryId = null;
 let editingFields = [];
+let editingExistingPhotoUrls = []; // 正在編輯的紀錄「原本已經存在」的照片，不代表要重新上傳
 
 function fmtDate(d) {
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
@@ -2382,7 +2391,9 @@ function entryPhotosHtml(entry) {
   const urls = (entry.photoUrls && entry.photoUrls.length) ? entry.photoUrls : (entry.photoUrl ? [entry.photoUrl] : []);
   if (!urls.length) return '';
   const cls = urls.length > 1 ? 'ticket-photos' : 'ticket-photos single';
-  return `<div class="${cls}">${urls.map(u => `<img src="${u}" loading="lazy">`).join('')}</div>`;
+  // 點縮圖開啟原圖預覽（Lightbox），meta/text 透過 data-* 帶過去，避免 onclick 內嵌字串跳脫問題
+  const meta = `${catIcon(entry.category)} ${entry.category}${entry.date ? '　' + entry.date : ''}`;
+  return `<div class="${cls}">${urls.map(u => `<img src="${escapeHtml(u)}" loading="lazy" data-meta="${escapeHtml(meta)}" data-text="${escapeHtml(entry.text || '')}" onclick="event.stopPropagation();openPhotoPreview(this.src, this.dataset.meta, this.dataset.text)">`).join('')}</div>`;
 }
 // 效能優化：讓非必要的工作（不影響「馬上看到什麼」的那些）延後到瀏覽器閒置時再做，
 // 避免跟首頁最重要的內容（今天的紀錄）搶時間。支援的瀏覽器用 requestIdleCallback，
@@ -3257,9 +3268,9 @@ function openMoreMenu() {
 function closeMoreMenu() {
   document.getElementById('moreMenuOverlay').classList.remove('show');
 }
-// ESC 鍵關閉「更多」Bottom Sheet
+// ESC 鍵關閉「更多」Bottom Sheet／照片預覽 Lightbox
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeMoreMenu();
+  if (e.key === 'Escape') { closeMoreMenu(); closePhotoLightbox(); }
 });
 async function loadTabOrderSettings() {
   const area = document.getElementById('tabOrderList');
@@ -3804,6 +3815,7 @@ function renderPhotoGrid() {
   if (!pendingPhotos.length) {
     grid.style.display = 'none'; grid.innerHTML = '';
     hint.style.display = 'none';
+    renderExistingPhotoArea();
     return;
   }
   grid.style.display = 'grid';
@@ -3818,6 +3830,31 @@ function renderPhotoGrid() {
   const n = pendingPhotos.filter(p => p.selected).length;
   hint.textContent = n ? `已選 ${n} 張照片會一起存進這則紀錄，點照片可切換要不要上傳` : '目前沒有勾選任何照片，點照片可以勾選';
   hint.style.display = 'block';
+  renderExistingPhotoArea();
+}
+// 編輯既有紀錄時，顯示「原本已經有的照片」：不選新照片就保留它們、選了新照片就會取代它們。
+// 每次 renderPhotoGrid() 都會呼叫這裡，讓提示文字即時反映目前是否已經選了新照片要取代。
+function renderExistingPhotoArea() {
+  const area = document.getElementById('existingPhotoArea');
+  const grid = document.getElementById('existingPhotoGrid');
+  const hint = document.getElementById('existingPhotoHint');
+  if (!area || !grid || !hint) return;
+  if (!editingExistingPhotoUrls.length) {
+    area.style.display = 'none';
+    grid.innerHTML = '';
+    hint.textContent = '';
+    return;
+  }
+  const willReplace = pendingPhotos.some(p => p.selected);
+  area.style.display = 'block';
+  grid.innerHTML = editingExistingPhotoUrls.map(u => `
+    <div class="photo-wall-item${willReplace ? ' will-replace' : ''}" data-url="${escapeHtml(u)}" onclick="openPhotoPreview(this.dataset.url,'原本的照片','')">
+      <img src="${escapeHtml(u)}" loading="lazy">
+    </div>
+  `).join('');
+  hint.textContent = willReplace
+    ? '已選擇新照片，儲存後將取代這張原本的照片'
+    : '不選新照片的話，儲存時會保留這張原本的照片';
 }
 function togglePendingPhoto(i) {
   if (!pendingPhotos[i]) return;
@@ -4098,6 +4135,11 @@ function editEntry(id) {
   document.getElementById('submitBtn').textContent = '更新這筆紀錄';
   document.getElementById('cancelEditBtn').style.display = 'inline-block';
   document.getElementById('editDateHint').style.display = 'block';
+  // 修正：編輯既有紀錄不代表要重新上傳照片。載入這筆紀錄原本已有的照片（若有），
+  // 並清空「待上傳」清單 —— 使用者不主動選新照片的話，儲存時會保留這些原本的照片。
+  editingExistingPhotoUrls = (entry.photoUrls && entry.photoUrls.length) ? entry.photoUrls.slice() : (entry.photoUrl ? [entry.photoUrl] : []);
+  pendingPhotos = [];
+  renderPhotoGrid();
   document.getElementById('textInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function cancelEditEntry() {
@@ -4106,6 +4148,7 @@ function cancelEditEntry() {
   document.getElementById('cancelEditBtn').style.display = 'none';
   document.getElementById('editDateHint').style.display = 'none';
   document.getElementById('textInput').value = '';
+  editingExistingPhotoUrls = [];
   pendingPhotos = []; renderPhotoGrid();
   currentFieldValues = {};
   renderExtraFields();
@@ -5882,13 +5925,25 @@ function renderPhotoWall() {
 function openPhotoLightbox(index) {
   const p = photoWallAll[index];
   if (!p) return;
-  document.getElementById('photoLightboxImg').src = p.url;
-  document.getElementById('photoLightboxMeta').textContent = `${catIcon(p.category)} ${p.category}　${p.date}`;
-  // Phase04：若後端有帶對應紀錄的文字（p.text），在圖片下方顯示一小段預覽
-  const textEl = document.getElementById('photoLightboxText');
-  textEl.textContent = p.text ? p.text : '';
-  document.getElementById('photoLightbox').dataset.date = p.date;
-  document.getElementById('photoLightbox').classList.add('show');
+  openPhotoPreview(p.url, `${catIcon(p.category)} ${p.category}　${p.date}`, p.text, p.date);
+}
+// 共用的照片原圖預覽（Lightbox）：不管照片是從照片牆、既有紀錄列表、還是編輯頁裡的
+// 「原本的照片」點進來的，都走這裡，確保任何地方點縮圖都能看到同一份完整體驗。
+// jumpDate 有值時才顯示「查看這篇紀錄 →」，例如已經在當天紀錄列表裡點開就不需要再跳轉。
+function openPhotoPreview(url, meta, text, jumpDate) {
+  document.getElementById('photoLightboxImg').src = url;
+  document.getElementById('photoLightboxMeta').textContent = meta || '';
+  document.getElementById('photoLightboxText').textContent = text || '';
+  const lb = document.getElementById('photoLightbox');
+  const jumpBtn = document.getElementById('photoLightboxJump');
+  if (jumpDate) {
+    jumpBtn.style.display = '';
+    lb.dataset.date = jumpDate;
+  } else {
+    jumpBtn.style.display = 'none';
+    delete lb.dataset.date;
+  }
+  lb.classList.add('show');
 }
 function closePhotoLightbox() {
   document.getElementById('photoLightbox').classList.remove('show');
