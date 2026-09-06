@@ -450,30 +450,6 @@
   .pl-info{margin-top:14px;text-align:center;}
   .pl-info > div{color:#fff;font-size:13px;margin-bottom:10px;opacity:.9;}
 
-  .barcode-scanner-overlay{
-    display:none;position:fixed;inset:0;background:#000;z-index:210;
-    align-items:center;justify-content:center;flex-direction:column;
-  }
-  .barcode-scanner-overlay.show{display:flex;}
-  .barcode-scanner-overlay video{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
-  .barcode-scan-frame{
-    position:relative;width:78vw;max-width:340px;height:120px;border:3px solid var(--coral);
-    border-radius:14px;box-shadow:0 0 0 2000px rgba(0,0,0,.45);
-  }
-  .barcode-scan-hint{position:relative;color:#fff;font-size:13px;margin-top:16px;background:rgba(0,0,0,.4);padding:6px 14px;border-radius:12px;}
-  .food-log-item{
-    display:flex;justify-content:space-between;align-items:center;padding:9px 0;
-    border-bottom:1px solid var(--line);
-  }
-  .food-log-item:last-child{border-bottom:none;}
-  .food-log-item .fl-name{font-size:13.5px;color:var(--ink);}
-  .food-log-item .fl-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;}
-  .food-log-item .fl-cal{font-size:14px;font-weight:700;color:var(--accent-dark);white-space:nowrap;margin-left:10px;}
-  .food-meal-group-label{
-    font-size:12px;font-weight:700;color:var(--accent-dark);margin:14px 0 2px;
-  }
-  .food-meal-group-label:first-child{margin-top:0;}
-
   .ticket{
     position:relative;
     background:var(--card);
@@ -1389,7 +1365,7 @@
 
       <div class="card">
         <div class="field-label" style="margin-top:0;">💛 關於</div>
-        <div class="tool-desc">生活手帳 Life Log — 記錄日常、飲食、運動、經期、股票與生活點滴的個人小工具。</div>
+        <div class="tool-desc">生活手帳 Life Log — 記錄日常、運動、經期、股票、電力與生活點滴的個人小工具。</div>
       </div>
     </div>
 
@@ -1553,9 +1529,9 @@
         <div class="rh-icon" style="background:var(--c-life);">📝</div>
         <div class="rh-label">一般生活紀錄</div>
       </div>
-      <div class="record-hub-item" onclick="openRecordEntry('food')">
-        <div class="rh-icon" style="background:var(--c-show);">🍱</div>
-        <div class="rh-label">飲食</div>
+      <div class="record-hub-item" onclick="openRecordEntry('electric')">
+        <div class="rh-icon" style="background:#E8B930;">⚡</div>
+        <div class="rh-label">電力</div>
       </div>
       <div class="record-hub-item" onclick="openRecordEntry('exercise')">
         <div class="rh-icon" style="background:var(--c-fit);">💪</div>
@@ -1767,75 +1743,6 @@
     </div>
   </div>
 
-  <div class="page" id="page-food">
-    <div id="foodSubHome">
-      <div class="card" style="text-align:center;">
-        <div class="cute-font" style="font-size:15px;font-weight:700;">🍱 最近飲食</div>
-        <div class="date-nav" style="margin-top:6px;">
-          <button onclick="changeFoodDate(-1)">‹</button>
-          <div class="date-label" id="foodDateLabel">今天</div>
-          <button onclick="changeFoodDate(1)">›</button>
-        </div>
-        <div id="foodTotalArea" style="margin-top:8px;font-size:24px;font-weight:800;color:var(--accent-dark);font-family:'Chiron GoRound TC';"></div>
-        <div id="foodMacroArea" style="margin-top:4px;font-size:12px;color:var(--ink-soft);"></div>
-      </div>
-
-      <div class="card">
-        <div id="foodListArea"></div>
-      </div>
-
-      <button class="gen-btn" style="width:100%;" onclick="showFoodAdvanced()">+ 記錄這一餐</button>
-      <div class="advanced-link" onclick="showFoodAdvanced()">⚙️ 食物資料庫（搜尋／打字估算／掃描條碼）→</div>
-    </div>
-
-    <div id="foodAdvancedWrap" style="display:none;">
-      <div class="advanced-back" onclick="showFoodHome()">← 最近飲食</div>
-
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">🔍 搜尋食物</div>
-        <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 8px;">內建資料庫的熱量／營養素皆為約略預估值，僅供參考</div>
-        <input type="text" id="foodDbSearchInput" placeholder="輸入食物名稱，例如：雞、牛奶" oninput="handleFoodDbSearchInput()" style="width:100%;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
-        <div id="foodDbResultArea" style="margin-top:8px;"></div>
-        <div id="foodDbServingArea" style="margin-top:8px;"></div>
-        <div style="text-align:center;margin-top:8px;">
-          <a href="javascript:void(0)" onclick="openCustomFoodForm()" style="font-size:12px;color:var(--ink-soft);text-decoration:underline;">＋ 資料庫沒有？新增自訂食物</a>
-        </div>
-        <div id="customFoodFormArea" style="display:none;margin-top:8px;"></div>
-      </div>
-
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">📝 打字記錄</div>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="foodDescInput" placeholder="例如：雞腿便當" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
-          <button class="tool-btn" onclick="estimateFoodCalories()" id="foodEstimateBtn">AI 估算</button>
-        </div>
-        <div id="foodEstimateResult"></div>
-      </div>
-
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">📷 掃描條碼</div>
-        <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 8px;">部分手機瀏覽器不支援鏡頭掃描，可以改用手動輸入</div>
-        <button class="submit-btn" style="width:100%;" onclick="startBarcodeScan()">開始掃描</button>
-        <div style="text-align:center;margin-top:8px;">
-          <a href="javascript:void(0)" onclick="toggleManualBarcodeInput()" style="font-size:12px;color:var(--ink-soft);text-decoration:underline;">或手動輸入條碼數字</a>
-        </div>
-        <div id="manualBarcodeArea" style="display:none;margin-top:8px;">
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="manualBarcodeInput" placeholder="輸入條碼數字" inputmode="numeric" style="flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--ink);font-family:inherit;">
-            <button class="tool-btn" onclick="lookupBarcodeManual()">查詢</button>
-          </div>
-        </div>
-        <div id="barcodeResult"></div>
-      </div>
-    </div>
-  </div>
-  <div class="barcode-scanner-overlay" id="barcodeScannerOverlay">
-    <video id="barcodeVideo" autoplay playsinline muted></video>
-    <div class="barcode-scan-frame"></div>
-    <div class="barcode-scan-hint" id="barcodeScanHint">將條碼對準框內</div>
-    <button class="pl-close" onclick="stopBarcodeScan()">✕</button>
-  </div>
-
   <div class="page" id="page-calendar">
     <div class="review-header">🕰️ 回顧你的生活</div>
     <div class="settings-tabs review-subtabs">
@@ -1897,16 +1804,6 @@
           <span class="stat-card-unit">次</span>
           <span id="statExerciseDelta"></span>
         </div>
-      </div>
-
-      <div class="stat-card" id="statCardFood">
-        <div class="stat-card-head">🍱 飲食</div>
-        <div class="stat-card-main">
-          <span class="stat-card-value" id="statFoodValue">—</span>
-          <span class="stat-card-unit" id="statFoodUnit"></span>
-          <span id="statFoodDelta"></span>
-        </div>
-        <div class="stat-card-sub" id="statFoodSub"></div>
       </div>
 
       <div class="stat-card clickable" id="statCardWeight" onclick="switchTab('page-fit');switchFitSubTab('weight');">
@@ -2563,7 +2460,7 @@ function quickRecord() {
 const FAB_MENU_ITEMS = [
   { icon: '📝', label: '一般紀錄', type: 'log' },
   { icon: '📷', label: '拍照記錄', type: 'photo' },
-  { icon: '🍱', label: '飲食', type: 'food' },
+  { icon: '⚡', label: '電力', type: 'electric' },
   { icon: '💪', label: '運動', type: 'exercise' },
   { icon: '🌸', label: '身體狀況', type: 'condition' },
   { icon: '📈', label: '股票交易', type: 'stock' }
@@ -2608,11 +2505,11 @@ function openRecordEntry(type) {
       const ta = document.getElementById('textInput');
       if (ta) { if (type === 'log') ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); ta.focus(); }
     }, 80);
-  } else if (type === 'food') {
-    switchTab('page-food');
+  } else if (type === 'electric') {
+    switchTab('page-electric');
     setTimeout(() => {
-      showFoodAdvanced();
-      const el = document.getElementById('foodDescInput');
+      showElecHome();
+      const el = document.getElementById('elecReadingInput');
       if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
     }, 80);
   } else if (type === 'exercise') {
@@ -2649,11 +2546,11 @@ function reloadCurrentTab() {
   else if (id === 'page-fit') loadFitnessPage();
   else if (id === 'page-tickets') loadTicketWall();
   else if (id === 'page-photos') loadPhotoWall();
-  else if (id === 'page-food') loadFoodPage();
   else if (id === 'page-stats') loadStatsPage();
   else if (id === 'page-memory') loadMemoryPage();
   else if (id === 'page-stock') loadStockPage();
   else if (id === 'page-period') loadPeriodPage();
+  else if (id === 'page-electric') loadElectricPage();
 }
 document.addEventListener('touchstart', e => {
   if (window.scrollY <= 0) { ptrStartY = e.touches[0].clientY; ptrPulling = true; ptrDist = 0; }
@@ -2728,7 +2625,6 @@ const PAGE_ACCENTS = {
   'page-fit': ['#7BC99B', '#4FA873'],
   'page-tickets': ['#E8A33D', '#C9861F'],
   'page-photos': ['#D88FBE', '#B76B9C'],
-  'page-food': ['#E8916A', '#C96F49'],
   'page-calendar': ['#8FB8D8', '#5F92BB'],
   'page-stats': ['#6FA8DC', '#4A85BF'],
   'page-memory': ['#B39DDB', '#8B6FC9'],
@@ -2749,7 +2645,6 @@ const PAGE_TO_NAV_GROUP = {
   'page-fit': 'more',
   'page-stock': 'more',
   'page-period': 'more',
-  'page-food': 'more',
   'page-electric': 'more'
 };
 function navGroupForPage(pageId) {
@@ -2815,7 +2710,6 @@ function switchTab(pageId) {
   if (pageId === 'page-fit') loadFitnessPage();
   if (pageId === 'page-tickets') loadTicketWall();
   if (pageId === 'page-photos') loadPhotoWall();
-  if (pageId === 'page-food') loadFoodPage();
   if (pageId === 'page-calendar') loadCalendarPage();
   if (pageId === 'page-stats') loadStatsPage();
   if (pageId === 'page-memory') loadMemoryPage();
@@ -3268,7 +3162,6 @@ const TAB_META = {
   'page-fit': { icon: '💪', label: '健身' },
   'page-tickets': { icon: '🎟️', label: '票根' },
   'page-photos': { icon: '🖼️', label: '相片' },
-  'page-food': { icon: '🍱', label: '飲食' },
   'page-calendar': { icon: '📅', label: '月曆' },
   'page-stats': { icon: '📊', label: '統計' },
   'page-memory': { icon: '🕰️', label: '回顧' },
@@ -3277,7 +3170,7 @@ const TAB_META = {
   'page-electric': { icon: '⚡', label: '電表' }
 };
 const MAX_PRIMARY_TABS = 4;
-const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-food', 'page-memory', 'page-stock', 'page-period', 'page-electric'];
+const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-memory', 'page-stock', 'page-period', 'page-electric'];
 // 已經存過自訂分頁順序的人，存檔裡不會有新加的分頁 id；這裡自動把 TAB_META 有、但存檔順序裡沒有的
 // 分頁補到最後面，新分頁才不會因為「使用者以前存過順序」而永遠不出現。
 // 同時用 stable id（例如 'page-stock'，不是顯示名稱「股票」）去重複：就算後端傳回的資料本身
@@ -3302,13 +3195,12 @@ const MAIN_NAV_ITEMS = [
   { group: 'stats', icon: '📊', label: '統計', page: 'page-stats' },
   { group: 'more', icon: '☰', label: '更多' }
 ];
-// 「更多」Bottom Sheet 固定內容：健身／股票／經期／食物資料庫／設定／使用教學
+// 「更多」Bottom Sheet 固定內容：健身／股票／經期／電表／設定／使用教學
 // 前 4 個（有 page 的項目）會依照使用者在「設定 → 分頁順序」存的順序排列，設定／使用教學固定排最後。
 const MORE_MENU_ITEMS = [
   { icon: '💪', label: '健身', page: 'page-fit' },
   { icon: '📈', label: '股票', page: 'page-stock' },
   { icon: '🌸', label: '經期', page: 'page-period' },
-  { icon: '🍱', label: '食物資料庫', page: 'page-food' },
   { icon: '⚡', label: '電表', page: 'page-electric' },
   { icon: '⚙️', label: '設定', action: 'settings' },
   { icon: '❔', label: '使用教學', action: 'tutorial' }
@@ -3319,7 +3211,7 @@ let CURRENT_TAB_ORDER = DEFAULT_TAB_ORDER.slice();
 
 /**
  * 底部列固定顯示 5 個情境入口。「今天／紀錄／回顧／統計」四個直接切頁，
- * 「更多」則打開 Bottom Sheet；舊的 page-fit／page-stock／page-period／page-food
+ * 「更多」則打開 Bottom Sheet；舊的 page-fit／page-stock／page-period／page-electric
  * 分頁 id 與內部功能完全保留，只是收進「更多」，不再直接排在底部列。
  */
 function renderTabbarButtons(order) {
@@ -3585,10 +3477,9 @@ async function loadTodayOverview() {
         ? `<div class="tov-chip" onclick="switchTab('page-period')"><div class="tov-icon">🌸</div><div class="tov-value">第 ${d.periodStatus.day} 天</div><div class="tov-label">身體狀況</div></div>`
         : `<div class="tov-chip" onclick="switchTab('page-period')"><div class="tov-icon">🌷</div><div class="tov-value">${d.periodStatus.daysUntilNext >= 0 ? d.periodStatus.daysUntilNext + ' 天後' : '已延遲'}</div><div class="tov-label">預估經期</div></div>`;
     }
-    // 5 張資訊卡：心情／飲食／運動／紀錄／身體狀況，皆為「有資料才顯示」
+    // 4 張資訊卡：心情／運動／紀錄／身體狀況，皆為「有資料才顯示」
     row.innerHTML = `
       ${moodObj ? `<div class="tov-chip" onclick="quickRecord()"><div class="tov-icon">${moodObj.e}</div><div class="tov-value">${moodObj.v}/5</div><div class="tov-label">心情</div></div>` : ''}
-      <div class="tov-chip" onclick="switchTab('page-food')"><div class="tov-icon">🍱</div><div class="tov-value">${d.calories || 0} kcal</div><div class="tov-label">飲食</div></div>
       <div class="tov-chip" onclick="switchTab('page-fit')"><div class="tov-icon">💪</div><div class="tov-value">${d.hasExercise ? '已完成' : '尚未運動'}</div><div class="tov-label">運動</div></div>
       ${d.entriesCount ? `<div class="tov-chip" onclick="scrollToEntriesList()"><div class="tov-icon">📝</div><div class="tov-value">${d.entriesCount} 則</div><div class="tov-label">紀錄</div></div>` : ''}
       ${periodHtml}
@@ -3600,7 +3491,7 @@ function scrollToEntriesList() {
   const el = document.getElementById('entriesList');
   if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
-// 首頁第一區用的日期格式，跟 dateLabel() 分開算，避免影響飲食頁等其他共用同一顆函式的地方
+// 首頁第一區用的日期格式，跟 dateLabel() 分開算，避免影響其他共用同一顆函式的地方
 function heroDateLabel(d) {
   const weekday = ['日','一','二','三','四','五','六'][d.getDay()];
   return `${d.getMonth() + 1} 月 ${d.getDate()} 日・星期${weekday}`;
@@ -5009,454 +4900,6 @@ async function loadPeriodDailyHistory(preData) {
     area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
 }
-// ---------- 飲食／卡路里紀錄 ----------
-let foodDate = new Date();
-function changeFoodDate(delta) {
-  foodDate.setDate(foodDate.getDate() + delta);
-  loadFoodPage();
-}
-// 早餐／午餐／晚餐／宵夜是依既有的紀錄時間分組顯示，不是另外存的欄位，純粹是換一種呈現方式
-function mealPeriodOf(timeStr) {
-  const hour = parseInt(String(timeStr || '').split(':')[0], 10);
-  if (isNaN(hour)) return '其他';
-  if (hour < 10) return '🌅 早餐';
-  if (hour < 15) return '🌞 午餐';
-  if (hour < 21) return '🌙 晚餐';
-  return '🌃 宵夜';
-}
-function showFoodAdvanced() {
-  document.getElementById('foodSubHome').style.display = 'none';
-  document.getElementById('foodAdvancedWrap').style.display = 'block';
-  loadFoodDatabase();
-  loadFoodQuickPicks();
-  renderFoodDbResults(); // 一進階頁就先顯示「最近使用／常用」，不用等打字
-}
-
-/* ================= PART4：食物資料庫（搜尋／快速選擇／份量調整／自訂食物） =================
-   搜尋是在本機記憶體裡對 FOOD_DB 做 includes 篩選，不是每個字都打一次後端 API，
-   所以這裡的 debounce 純粹是「輸入停下來再重畫結果」，避免每個按鍵都重畫 DOM（PART3 效能要求）。 */
-const FOOD_DB_CACHE_KEY = 'lifelog_food_db_cache';
-const FOOD_CATEGORY_ICONS = { '肉類': '🍗', '海鮮': '🐟', '主食': '🍚', '蛋類': '🥚', '乳製品': '🥛', '水果': '🍎', '蔬菜': '🥦', '豆製品': '🧈', '飲品': '🥤', '複合料理': '🍱', '自訂': '⭐' };
-function foodCategoryIcon(cat) { return FOOD_CATEGORY_ICONS[cat] || '🍽️'; }
-let FOOD_DB = [];
-let foodQuickPicks = { recent: [], frequent: [] };
-let foodDbSearchDebounce = null;
-let foodDbCurrentMatches = [];
-let selectedFoodDbItem = null;
-
-async function loadFoodDatabase() {
-  // 快取先秒開（跟分類清單一樣的模式：先用上次快取的資料，背景再換成最新的）
-  if (!FOOD_DB.length) {
-    try {
-      const cached = JSON.parse(localStorage.getItem(FOOD_DB_CACHE_KEY) || 'null');
-      if (Array.isArray(cached) && cached.length) FOOD_DB = cached;
-    } catch (err) {}
-  }
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getFoodDatabase`, { cache: 'no-store' });
-    const list = await res.json();
-    if (Array.isArray(list)) {
-      FOOD_DB = list;
-      try { localStorage.setItem(FOOD_DB_CACHE_KEY, JSON.stringify(FOOD_DB)); } catch (err) {}
-      if (document.getElementById('foodDbSearchInput').value.trim()) renderFoodDbResults();
-    }
-  } catch (err) {}
-}
-async function loadFoodQuickPicks() {
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getFoodQuickPicks`, { cache: 'no-store' });
-    const data = await res.json();
-    if (data && !data.error) {
-      foodQuickPicks = data;
-      if (!document.getElementById('foodDbSearchInput').value.trim()) renderFoodDbResults();
-    }
-  } catch (err) {}
-}
-function handleFoodDbSearchInput() {
-  clearTimeout(foodDbSearchDebounce);
-  foodDbSearchDebounce = setTimeout(renderFoodDbResults, 250);
-}
-function quickPickFoodByName(name) {
-  document.getElementById('foodDbSearchInput').value = name;
-  renderFoodDbResults();
-}
-function renderFoodDbResults() {
-  const q = document.getElementById('foodDbSearchInput').value.trim();
-  const area = document.getElementById('foodDbResultArea');
-  if (!q) {
-    const chipsHtml = (label, names) => (!names || !names.length) ? '' : `
-      <div style="font-size:11px;color:var(--ink-soft);margin:6px 0 4px;">${label}</div>
-      <div class="cat-row">${names.map(n => `<div class="cat-chip" onclick="quickPickFoodByName('${escapeJs_(n)}')">${escapeHtml(n)}</div>`).join('')}</div>
-    `;
-    const html = chipsHtml('🕐 最近使用', foodQuickPicks.recent) + chipsHtml('⭐ 常用', foodQuickPicks.frequent);
-    area.innerHTML = html || '<div class="empty-state" style="padding:6px 0;">輸入食物名稱開始搜尋，或直接記一筆之後這裡就會有「最近使用」</div>';
-    return;
-  }
-  foodDbCurrentMatches = FOOD_DB.filter(f => f.name.includes(q)).slice(0, 20);
-  if (!foodDbCurrentMatches.length) {
-    area.innerHTML = `<div class="empty-state" style="padding:6px 0;">資料庫沒有「${escapeHtml(q)}」，可以點下面「新增自訂食物」自己建一筆</div>`;
-    return;
-  }
-  area.innerHTML = foodDbCurrentMatches.map((f, i) => `
-    <div class="food-log-item" style="cursor:pointer;" onclick="selectFoodDbItem(${i})">
-      <div>
-        <div class="fl-name">${foodCategoryIcon(f.category)} ${escapeHtml(f.name)}</div>
-        <div class="fl-sub">${f.servingQty}${escapeHtml(f.servingUnit)}・約 ${f.calories} kcal${f.source === 'user' ? '・我的食物' : ''}</div>
-      </div>
-      <div style="font-size:12px;color:var(--accent-dark);font-weight:700;">選擇 ›</div>
-    </div>
-  `).join('');
-}
-function selectFoodDbItem(i) {
-  selectedFoodDbItem = foodDbCurrentMatches[i];
-  renderFoodServingAdjuster();
-}
-function computeFoodServingValues() {
-  const f = selectedFoodDbItem;
-  const qtyInput = document.getElementById('foodServingQtyInput');
-  const qty = qtyInput ? (Number(qtyInput.value) || 0) : f.servingQty;
-  const ratio = f.servingQty ? qty / f.servingQty : 0;
-  return {
-    qty,
-    calories: Math.round(f.calories * ratio),
-    protein: Math.round(f.protein * ratio * 10) / 10,
-    fat: Math.round(f.fat * ratio * 10) / 10,
-    carbs: Math.round(f.carbs * ratio * 10) / 10
-  };
-}
-function renderFoodServingPreview() {
-  const v = computeFoodServingValues();
-  const el = document.getElementById('foodServingPreview');
-  if (el) el.innerHTML = `🔥 ${v.calories} kcal　蛋白質 ${v.protein}g　脂肪 ${v.fat}g　碳水 ${v.carbs}g`;
-}
-function renderFoodServingAdjuster() {
-  const area = document.getElementById('foodDbServingArea');
-  const f = selectedFoodDbItem;
-  if (!f) { area.innerHTML = ''; return; }
-  // 份量可以是「100 / 150 / 200」也可以是「半碗 / 1 碗」等任何使用者自己輸入的數字，
-  // 換算時一律以資料庫這筆的 servingQty/servingUnit 當基準（PART4 第七點：換算要有明確基準）
-  area.innerHTML = `
-    <div class="tool-result-box">
-      <div style="font-weight:700;font-size:13.5px;">${foodCategoryIcon(f.category)} ${escapeHtml(f.name)}</div>
-      <div style="font-size:11px;color:var(--ink-soft);margin:2px 0 8px;">基準：${f.servingQty}${escapeHtml(f.servingUnit)}・約 ${f.calories} kcal（${escapeHtml(f.note || (f.source === 'user' ? '使用者自訂' : '約略預估值'))}）</div>
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">份量</div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="number" id="foodServingQtyInput" value="${f.servingQty}" min="0" step="any" oninput="renderFoodServingPreview()" style="width:90px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;">
-        <span style="font-size:13px;color:var(--ink-soft);">${escapeHtml(f.servingUnit)}</span>
-      </div>
-      <div id="foodServingPreview" style="margin-top:8px;font-size:12.5px;color:var(--ink);"></div>
-      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="confirmAddDbFood(this)">✅ 加入紀錄</button>
-    </div>
-  `;
-  renderFoodServingPreview();
-}
-async function confirmAddDbFood(btn) {
-  if (btn && btn.disabled) return;
-  const f = selectedFoodDbItem;
-  if (!f) return;
-  const v = computeFoodServingValues();
-  if (btn) { btn.disabled = true; btn.textContent = '記錄中…'; }
-  try {
-    const result = await postJSON({
-      action: 'addFoodLog', date: fmtDate(foodDate), name: f.name,
-      calories: v.calories, protein: v.protein, fat: v.fat, carbs: v.carbs,
-      servingQty: v.qty, servingUnit: f.servingUnit, source: f.source === 'user' ? 'custom' : 'builtin'
-    });
-    if (result && result.error) throw new Error(result.error);
-    showToast('記錄好了 🍱');
-    document.getElementById('foodDbSearchInput').value = '';
-    selectedFoodDbItem = null;
-    document.getElementById('foodDbServingArea').innerHTML = '';
-    renderFoodDbResults();
-    loadFoodQuickPicks(); // 剛記過的食物之後會出現在「最近使用」，重新拉一次
-    refreshFoodList();
-  } catch (err) {
-    alert('記錄失敗：' + err.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '✅ 加入紀錄'; }
-  }
-}
-function openCustomFoodForm() {
-  const area = document.getElementById('customFoodFormArea');
-  const opening = area.style.display === 'none' || !area.innerHTML;
-  if (!opening) { area.style.display = 'none'; area.innerHTML = ''; return; }
-  const inputStyle = 'width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;';
-  area.style.display = 'block';
-  area.innerHTML = `
-    <div class="tool-result-box">
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">名稱</div>
-      <input type="text" id="cfName" placeholder="例如：媽媽滷牛肉" style="${inputStyle}margin-bottom:8px;">
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">分類（選填）</div>
-      <input type="text" id="cfCategory" placeholder="例如：家常菜" style="${inputStyle}margin-bottom:8px;">
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">份量數字</div>
-          <input type="number" id="cfServingQty" value="1" style="${inputStyle}">
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">單位</div>
-          <input type="text" id="cfServingUnit" placeholder="份／碗／g" value="份" style="${inputStyle}">
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">熱量(kcal)</div><input type="number" id="cfCal" value="0" style="${inputStyle}"></div>
-        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">蛋白質(g)</div><input type="number" id="cfProtein" value="0" style="${inputStyle}"></div>
-        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">脂肪(g)</div><input type="number" id="cfFat" value="0" style="${inputStyle}"></div>
-        <div style="flex:1;min-width:70px;"><div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">碳水(g)</div><input type="number" id="cfCarbs" value="0" style="${inputStyle}"></div>
-      </div>
-      <button class="submit-btn" style="width:100%;" onclick="saveCustomFoodHandler(this)">💾 存進「我的食物」</button>
-    </div>
-  `;
-}
-async function saveCustomFoodHandler(btn) {
-  const name = document.getElementById('cfName').value.trim();
-  if (!name) { alert('請輸入食物名稱'); return; }
-  if (btn) { btn.disabled = true; btn.textContent = '儲存中…'; }
-  try {
-    const result = await postJSON({
-      action: 'saveCustomFood', name,
-      category: document.getElementById('cfCategory').value.trim() || '自訂',
-      servingQty: Number(document.getElementById('cfServingQty').value) || 1,
-      servingUnit: document.getElementById('cfServingUnit').value.trim() || '份',
-      calories: Number(document.getElementById('cfCal').value) || 0,
-      protein: Number(document.getElementById('cfProtein').value) || 0,
-      fat: Number(document.getElementById('cfFat').value) || 0,
-      carbs: Number(document.getElementById('cfCarbs').value) || 0
-    });
-    if (result && result.error) throw new Error(result.error);
-    // 直接把新自訂食物放進本機資料庫最前面，不用整份重打一次 API 才看得到
-    FOOD_DB = FOOD_DB.filter(f => f.id !== result.food.id);
-    FOOD_DB.unshift(result.food);
-    try { localStorage.setItem(FOOD_DB_CACHE_KEY, JSON.stringify(FOOD_DB)); } catch (err) {}
-    document.getElementById('customFoodFormArea').style.display = 'none';
-    document.getElementById('customFoodFormArea').innerHTML = '';
-    document.getElementById('foodDbSearchInput').value = name;
-    renderFoodDbResults();
-    showToast('已加入「我的食物」🌟');
-  } catch (err) {
-    alert('儲存失敗：' + err.message);
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '💾 存進「我的食物」'; }
-  }
-}
-function showFoodHome() {
-  document.getElementById('foodAdvancedWrap').style.display = 'none';
-  document.getElementById('foodSubHome').style.display = 'block';
-  loadFoodPage();
-}
-async function loadFoodPage() {
-  if (!checkConfig()) return;
-  document.getElementById('foodAdvancedWrap').style.display = 'none';
-  document.getElementById('foodSubHome').style.display = 'block';
-  document.getElementById('foodEstimateResult').innerHTML = '';
-  document.getElementById('barcodeResult').innerHTML = '';
-  await refreshFoodList();
-}
-async function refreshFoodList() {
-  document.getElementById('foodDateLabel').textContent = dateLabel(foodDate);
-  const ds = fmtDate(foodDate);
-  const listEl = document.getElementById('foodListArea');
-  listEl.innerHTML = '<div class="empty-state">載入中…</div>';
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getFoodLogByDate&date=${ds}`, { cache: 'no-store' });
-    const result = await res.json();
-    if (result.error) { listEl.innerHTML = `<div class="empty-state">${escapeHtml(result.error)}</div>`; return; }
-    document.getElementById('foodTotalArea').textContent = `${result.total || 0} 大卡`;
-    // PART4 第九點：不要只顯示 Calories，蛋白質／脂肪／碳水加總（只在有其中一項紀錄時才顯示，避免舊資料全 0 造成誤解）
-    const macroArea = document.getElementById('foodMacroArea');
-    const hasMacro = (result.totalProtein || 0) + (result.totalFat || 0) + (result.totalCarbs || 0) > 0;
-    macroArea.textContent = hasMacro ? `蛋白質 ${result.totalProtein}g　脂肪 ${result.totalFat}g　碳水 ${result.totalCarbs}g` : '';
-    if (!result.items || !result.items.length) {
-      listEl.innerHTML = '<div class="empty-state">這天還沒有任何飲食紀錄，記一筆這一餐吧</div>';
-      return;
-    }
-    const groups = {};
-    result.items.forEach(it => {
-      const key = mealPeriodOf(it.time);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(it);
-    });
-    const sourceLabel = { ai: '・AI估算', barcode: '・條碼查詢', builtin: '・資料庫', custom: '・自訂食物' };
-    const order = ['🌅 早餐', '🌞 午餐', '🌙 晚餐', '🌃 宵夜', '其他'];
-    listEl.innerHTML = order.filter(k => groups[k]).map(key => `
-      <div class="food-meal-group-label">${key}</div>
-      ${groups[key].map(it => {
-        const itHasMacro = (it.protein || 0) + (it.fat || 0) + (it.carbs || 0) > 0;
-        return `
-        <div class="food-log-item">
-          <div>
-            <div class="fl-name">${escapeHtml(it.name)}${it.servingQty ? `　<span style="font-weight:400;color:var(--ink-soft);">${it.servingQty}${escapeHtml(it.servingUnit || '')}</span>` : ''}</div>
-            <div class="fl-sub">${it.time}${sourceLabel[it.source] || ''}${itHasMacro ? `　P${it.protein} F${it.fat} C${it.carbs}` : ''}</div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div class="fl-cal">${it.calories} 大卡</div>
-            <button class="sl-del" onclick="deleteFoodLogItem('${it.id}')">✕</button>
-          </div>
-        </div>
-      `; }).join('')}
-    `).join('');
-  } catch (err) {
-    listEl.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
-  }
-}
-async function deleteFoodLogItem(id) {
-  if (!(await showConfirm('刪除這筆飲食紀錄？'))) return;
-  try {
-    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteFoodLog', id }) });
-    const result = await res.json();
-    if (result && result.error) throw new Error(result.error);
-    showToast('已刪除 🗑️');
-    loadFoodPage();
-  } catch (err) {
-    alert('刪除失敗：' + err.message);
-  }
-}
-// AI 文字估算跟條碼查詢，最後都導到同一張「確認/微調後再存」卡片，避免估算不準時沒得改
-function renderFoodConfirmCard(containerId, entry) {
-  const el = document.getElementById(containerId);
-  el.innerHTML = `
-    <div class="tool-result-box" style="margin-top:10px;">
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">名稱</div>
-      <input type="text" id="pfName_${containerId}" value="${escapeHtml(entry.name)}" style="width:100%;margin-bottom:8px;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;">
-      <div style="font-size:11px;color:var(--ink-soft);margin-bottom:4px;">熱量（大卡，估算值，可自行調整）</div>
-      <input type="number" id="pfCal_${containerId}" value="${entry.calories}" style="width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;color:var(--ink);font-family:inherit;">
-      ${entry.servingNote ? `<div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">${escapeHtml(entry.servingNote)}</div>` : ''}
-      <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="confirmAddFood('${containerId}','${entry.source}',this)">✅ 加入紀錄</button>
-    </div>
-  `;
-}
-async function confirmAddFood(containerId, source, btn) {
-  if (btn && btn.disabled) return;
-  const name = document.getElementById('pfName_' + containerId).value.trim();
-  const calories = Number(document.getElementById('pfCal_' + containerId).value) || 0;
-  if (!name) { alert('請輸入食物名稱'); return; }
-  if (btn) { btn.disabled = true; btn.textContent = '記錄中…'; }
-  try {
-    const result = await postJSON({ action: 'addFoodLog', date: fmtDate(foodDate), name, calories, source });
-    if (result && result.error) throw new Error(result.error);
-    document.getElementById(containerId).innerHTML = '';
-    if (containerId === 'foodEstimateResult') document.getElementById('foodDescInput').value = '';
-    if (containerId === 'barcodeResult') document.getElementById('manualBarcodeInput').value = '';
-    showToast('記錄好了 🍱');
-    refreshFoodList();
-    if (fmtDate(foodDate) === fmtDate(new Date())) loadTodayOverview();
-  } catch (err) {
-    alert('儲存失敗：' + err.message);
-    if (btn) { btn.disabled = false; btn.textContent = '✅ 加入紀錄'; }
-  }
-}
-async function estimateFoodCalories() {
-  const desc = document.getElementById('foodDescInput').value.trim();
-  if (!desc) { alert('請先描述吃了什麼喔'); return; }
-  const btn = document.getElementById('foodEstimateBtn');
-  const resultEl = document.getElementById('foodEstimateResult');
-  btn.disabled = true; btn.textContent = '估算中…';
-  resultEl.innerHTML = '';
-  try {
-    const result = await postJSON({ action: 'estimateCalories', description: desc });
-    if (result && result.error) throw new Error(result.error);
-    renderFoodConfirmCard('foodEstimateResult', { name: result.name, calories: result.calories, servingNote: result.servingNote, source: 'ai' });
-  } catch (err) {
-    const isBusy = /overloaded|high demand|unavailable/i.test(err.message || '');
-    const msg = isBusy
-      ? 'AI 目前太忙了，系統已自動重試幾次仍失敗，請等一下再按一次「AI 估算」'
-      : ('估算失敗：' + err.message);
-    resultEl.innerHTML = `<div class="empty-state">${escapeHtml(msg)}</div>`;
-  } finally {
-    btn.disabled = false; btn.textContent = 'AI 估算';
-  }
-}
-function toggleManualBarcodeInput() {
-  const area = document.getElementById('manualBarcodeArea');
-  area.style.display = area.style.display === 'none' ? 'block' : 'none';
-}
-async function lookupBarcodeManual() {
-  const val = document.getElementById('manualBarcodeInput').value.trim();
-  if (!val) { alert('請輸入條碼數字'); return; }
-  lookupBarcode(val);
-}
-// 條碼查詢用公開的 Open Food Facts 資料庫，不需要 API Key；查不到就讓使用者自己手動填
-async function lookupBarcode(barcode) {
-  const resultEl = document.getElementById('barcodeResult');
-  resultEl.innerHTML = '<div class="empty-state">查詢中…</div>';
-  try {
-    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,product_name_zh,nutriments,quantity`);
-    const data = await res.json();
-    if (!data || data.status !== 1 || !data.product) {
-      resultEl.innerHTML = '<div class="empty-state">查不到這個條碼的資料</div>';
-      renderFoodConfirmCard('barcodeResult', { name: '條碼 ' + barcode, calories: 0, servingNote: '資料庫查不到，請手動填寫名稱跟熱量', source: 'barcode' });
-      return;
-    }
-    const p = data.product;
-    const name = p.product_name_zh || p.product_name || ('條碼 ' + barcode);
-    const n = p.nutriments || {};
-    let calories, note;
-    if (n['energy-kcal_serving'] != null) {
-      calories = Math.round(n['energy-kcal_serving']);
-      note = '這是資料庫提供的單份熱量';
-    } else if (n['energy-kcal_100g'] != null) {
-      calories = Math.round(n['energy-kcal_100g']);
-      note = `每 100g 熱量約 ${calories} 大卡，先用 100g 估算，請依實際吃的份量調整上面的數字`;
-    } else {
-      calories = 0;
-      note = '查不到熱量資料，請手動輸入';
-    }
-    renderFoodConfirmCard('barcodeResult', { name: name, calories: calories, servingNote: note, source: 'barcode' });
-  } catch (err) {
-    resultEl.innerHTML = `<div class="empty-state">查詢失敗：${escapeHtml(err.message)}，可以改手動輸入名稱跟熱量</div>`;
-    renderFoodConfirmCard('barcodeResult', { name: '條碼 ' + barcode, calories: 0, servingNote: '查詢失敗，請手動填寫', source: 'barcode' });
-  }
-}
-// 即時鏡頭掃描：用瀏覽器原生的 BarcodeDetector，部分瀏覽器（如 iOS Safari）不支援，會提示改用手動輸入
-let barcodeStream = null;
-let barcodeDetector = null;
-let barcodeScanRAF = null;
-async function startBarcodeScan() {
-  if (!('BarcodeDetector' in window)) {
-    alert('這個瀏覽器不支援即時掃描條碼，改用下面的手動輸入喔');
-    document.getElementById('manualBarcodeArea').style.display = 'block';
-    return;
-  }
-  try {
-    barcodeStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-  } catch (err) {
-    alert('無法開啟鏡頭：' + err.message + '，改用手動輸入吧');
-    document.getElementById('manualBarcodeArea').style.display = 'block';
-    return;
-  }
-  const video = document.getElementById('barcodeVideo');
-  video.srcObject = barcodeStream;
-  document.getElementById('barcodeScannerOverlay').classList.add('show');
-  try {
-    barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128'] });
-  } catch (err) {
-    barcodeDetector = new BarcodeDetector();
-  }
-  scanBarcodeFrame();
-}
-async function scanBarcodeFrame() {
-  if (!barcodeStream) return;
-  const video = document.getElementById('barcodeVideo');
-  try {
-    const codes = await barcodeDetector.detect(video);
-    if (codes && codes.length) {
-      const value = codes[0].rawValue;
-      stopBarcodeScan();
-      lookupBarcode(value);
-      return;
-    }
-  } catch (err) {}
-  barcodeScanRAF = requestAnimationFrame(scanBarcodeFrame);
-}
-function stopBarcodeScan() {
-  document.getElementById('barcodeScannerOverlay').classList.remove('show');
-  if (barcodeScanRAF) cancelAnimationFrame(barcodeScanRAF);
-  barcodeScanRAF = null;
-  if (barcodeStream) {
-    barcodeStream.getTracks().forEach(t => t.stop());
-    barcodeStream = null;
-  }
-}
 
 async function loadStockPage() {
   if (!checkConfig()) return;
@@ -6514,7 +5957,6 @@ function renderYearCard(y, currentYear) {
 const SEARCH_FILTERS = [
   { key: 'all', label: '全部' },
   { key: 'life', label: '生活' },
-  { key: 'food', label: '飲食' },
   { key: 'exercise', label: '運動' },
   { key: 'photo', label: '照片' },
   { key: 'ticket', label: '票根' },
@@ -6591,10 +6033,10 @@ function renderSearchResults() {
   const q = document.getElementById('searchInput').value.trim();
   const r = currentSearchResults;
   if (!r) { area.innerHTML = ''; return; }
-  const life = r.life || [], exercise = r.exercise || [], food = r.food || [],
+  const life = r.life || [], exercise = r.exercise || [],
         photo = r.photo || [], ticket = r.ticket || [], stock = r.stock || [], period = r.period || [];
-  const counts = { life: life.length, exercise: exercise.length, food: food.length, photo: photo.length, ticket: ticket.length, stock: stock.length, period: period.length };
-  const total = life.length + exercise.length + food.length + photo.length + ticket.length + stock.length + period.length;
+  const counts = { life: life.length, exercise: exercise.length, photo: photo.length, ticket: ticket.length, stock: stock.length, period: period.length };
+  const total = life.length + exercise.length + photo.length + ticket.length + stock.length + period.length;
 
   if (!total) {
     area.innerHTML = `
@@ -6645,21 +6087,6 @@ function renderSearchResults() {
   if (show('exercise') && exercise.length) {
     list.appendChild(searchSectionHeader('💪 運動', exercise.length));
     exercise.forEach(e => { list.appendChild(renderTicket(e)); appendJumpLink(list, e.date); });
-  }
-  if (show('food') && food.length) {
-    list.appendChild(searchSectionHeader('🍱 飲食', food.length));
-    const box = document.createElement('div');
-    box.innerHTML = food.map(f => `
-      <div class="search-mini-item" onclick="closeSearchUI();switchTab('page-food');jumpFoodDate('${f.date}');">
-        <span class="smi-icon">🍱</span>
-        <div class="smi-main">
-          <div class="smi-title">${escapeHtml(f.name)}</div>
-          <div class="smi-sub">${f.calories} kcal</div>
-        </div>
-        <span class="smi-right">${f.date}</span>
-      </div>
-    `).join('');
-    list.appendChild(box);
   }
   if (show('ticket') && ticket.length) {
     list.appendChild(searchSectionHeader('🎟️ 票根', ticket.length));
@@ -6758,12 +6185,6 @@ async function jumpToSearchPhoto(entryId, url) {
   if (idx === -1) idx = photoWallAll.findIndex(p => String(p.entryId) === String(entryId));
   if (idx !== -1) openPhotoLightbox(idx);
 }
-function jumpFoodDate(ds) {
-  const [y, m, d] = ds.split('-').map(Number);
-  foodDate = new Date(y, m - 1, d);
-  loadFoodPage();
-}
-
 /* ================= 統計頁 ================= */
 // ---------- 月曆總覽 ----------
 let calMonth = new Date();
@@ -6818,7 +6239,6 @@ function renderCalendarGrid(ym, overview) {
         dots += `<span class="cal-dot" style="background:${c.color};"></span>`;
         legendSet[c.name] = c.color;
       });
-      if (day.hasFood) { dots += `<span class="cal-dot" style="background:#E8916A;"></span>`; legendSet['飲食'] = '#E8916A'; }
       if (day.hasExercise) { dots += `<span class="cal-dot" style="background:#3E8C5B;"></span>`; legendSet['運動'] = '#3E8C5B'; }
       if (day.hasPeriod) { dots += `<span class="cal-dot" style="background:#FF8FB3;"></span>`; legendSet['經期'] = '#FF8FB3'; }
     }
@@ -6844,7 +6264,6 @@ function selectCalendarDay(ds, cellEl) {
   document.getElementById('calDayDetailDate').textContent = `${Number(parts[1])}/${Number(parts[2])}`;
   const rows = [
     `📝 ${day.entryCount || 0} 則紀錄`,
-    `🍱 ${day.foodCount || 0} 筆飲食`,
     `💪 ${day.hasExercise ? '1' : '0'} 次運動`,
     `📷 ${day.photoCount || 0} 張照片`
   ];
@@ -6934,7 +6353,6 @@ function renderStatSummary(summary) {
   const mood = summary.mood || {};
   const life = summary.life || {};
   const exercise = summary.exercise || {};
-  const food = summary.food || {};
   const weight = summary.weight || {};
 
   // 心情
@@ -6950,13 +6368,6 @@ function renderStatSummary(summary) {
   // 運動
   document.getElementById('statExerciseValue').textContent = exercise.count ?? 0;
   document.getElementById('statExerciseDelta').innerHTML = deltaPill(exercise.delta, { decimals: 0, unit: ' 次', moreLessWord: true });
-
-  // 飲食
-  const hasFood = food.avgCalories !== null && food.avgCalories !== undefined;
-  document.getElementById('statFoodValue').textContent = hasFood ? food.avgCalories : '—';
-  document.getElementById('statFoodUnit').textContent = hasFood ? 'kcal 平均熱量' : '這個月還沒有飲食紀錄';
-  document.getElementById('statFoodSub').textContent = hasFood ? `記錄 ${food.daysLogged} 天` : '';
-  document.getElementById('statFoodDelta').innerHTML = deltaPill(food.avgCaloriesDelta, { decimals: 0, unit: ' kcal', moreLessWord: true });
 
   // 體重
   const hasWeight = weight.current !== null && weight.current !== undefined;
