@@ -2156,6 +2156,44 @@
     </div>
   </div>
 
+  <div class="page" id="page-power">
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">⚡ 本期用電</div>
+      <div class="stock-home-row">
+        <div class="stock-home-metric">
+          <div class="stock-home-metric-label">本期用電度數</div>
+          <div class="stock-home-metric-value" id="powerSummaryDegree">—</div>
+        </div>
+        <div class="stock-home-metric">
+          <div class="stock-home-metric-label">本期抄表金額</div>
+          <div class="stock-home-metric-value" id="powerSummaryAmount">—</div>
+        </div>
+        <div class="stock-home-metric">
+          <div class="stock-home-metric-label">預估每度電費</div>
+          <div class="stock-home-metric-value" id="powerSummaryRate">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">✍️ 新增電力紀錄</div>
+      <div class="stock-form-row">
+        <input type="date" id="powerDate" class="stock-date-input" style="flex:1;">
+      </div>
+      <div class="stock-form-row">
+        <input type="number" step="0.01" id="powerDegree" placeholder="用電度數（度）">
+        <input type="number" step="1" id="powerAmount" placeholder="抄表金額（$）">
+      </div>
+      <input type="text" id="powerNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
+      <button class="submit-btn" id="powerSubmitBtn" style="width:100%;" onclick="submitPowerLog()">儲存紀錄</button>
+    </div>
+
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📜 歷史紀錄</div>
+      <div id="powerLogArea" class="empty-state">還沒有任何電力紀錄</div>
+    </div>
+  </div>
+
   </div>
 
 </div>
@@ -2619,7 +2657,8 @@ const PAGE_ACCENTS = {
   'page-calendar': ['#8FB8D8', '#5F92BB'],
   'page-stats': ['#6FA8DC', '#4A85BF'],
   'page-memory': ['#B39DDB', '#8B6FC9'],
-  'page-stock': ['#5FA88F', '#3D8570']
+  'page-stock': ['#5FA88F', '#3D8570'],
+  'page-power': ['#F0B94B', '#C9922E']
 };
 // Phase01：底部列改成「使用者情境型」5 入口（今天／紀錄／回顧／統計／更多），
 // 每個舊 page 對應到其中一個情境群組，用來決定切換頁面時哪個底部按鈕該亮起來。
@@ -2635,7 +2674,8 @@ const PAGE_TO_NAV_GROUP = {
   'page-fit': 'more',
   'page-stock': 'more',
   'page-period': 'more',
-  'page-food': 'more'
+  'page-food': 'more',
+  'page-power': 'more'
 };
 function navGroupForPage(pageId) {
   return PAGE_TO_NAV_GROUP[pageId] || null;
@@ -2706,6 +2746,7 @@ function switchTab(pageId) {
   if (pageId === 'page-memory') loadMemoryPage();
   if (pageId === 'page-stock') loadStockPage();
   if (pageId === 'page-period') loadPeriodPage();
+  if (pageId === 'page-power') loadPowerPage();
 }
 
 const CATEGORIES_CACHE_KEY = 'lifelog_categories_cache';
@@ -3157,10 +3198,11 @@ const TAB_META = {
   'page-stats': { icon: '📊', label: '統計' },
   'page-memory': { icon: '🕰️', label: '回顧' },
   'page-stock': { icon: '📈', label: '股票' },
-  'page-period': { icon: '🌷', label: '經期' }
+  'page-period': { icon: '🌷', label: '經期' },
+  'page-power': { icon: '⚡', label: '電力' }
 };
 const MAX_PRIMARY_TABS = 4;
-const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-food', 'page-memory', 'page-stock', 'page-period'];
+const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-food', 'page-memory', 'page-stock', 'page-period', 'page-power'];
 // 已經存過自訂分頁順序的人，存檔裡不會有新加的分頁 id；這裡自動把 TAB_META 有、但存檔順序裡沒有的
 // 分頁補到最後面，新分頁才不會因為「使用者以前存過順序」而永遠不出現。
 // 同時用 stable id（例如 'page-stock'，不是顯示名稱「股票」）去重複：就算後端傳回的資料本身
@@ -3191,6 +3233,7 @@ const MORE_MENU_ITEMS = [
   { icon: '💪', label: '健身', page: 'page-fit' },
   { icon: '📈', label: '股票', page: 'page-stock' },
   { icon: '🌸', label: '經期', page: 'page-period' },
+  { icon: '⚡', label: '電力紀錄', page: 'page-power' },
   { icon: '🍱', label: '食物資料庫', page: 'page-food' },
   { icon: '⚙️', label: '設定', action: 'settings' },
   { icon: '❔', label: '使用教學', action: 'tutorial' }
@@ -5592,6 +5635,91 @@ async function deleteStockLogItem(id) {
     loadStockCostChart();
   } catch (err) {
     alert('刪除失敗：' + err.message);
+  }
+}
+
+/* ================= 電力紀錄 ================= */
+async function loadPowerPage() {
+  const area = document.getElementById('powerLogArea');
+  area.innerHTML = '<div class="empty-state">載入中… 🔍</div>';
+  const dateInput = document.getElementById('powerDate');
+  if (dateInput && !dateInput.value) dateInput.value = fmtDate(new Date());
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getPowerLogs`, { cache: 'no-store' });
+    const rows = await res.json();
+    if (rows.error) { area.innerHTML = `<div class="empty-state">${escapeHtml(rows.error)}</div>`; return; }
+    renderPowerSummary(rows);
+    renderPowerLogList(rows);
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// 「本期」＝目前最新一筆抄表紀錄
+function renderPowerSummary(rows) {
+  const degreeEl = document.getElementById('powerSummaryDegree');
+  const amountEl = document.getElementById('powerSummaryAmount');
+  const rateEl = document.getElementById('powerSummaryRate');
+  if (!rows.length) {
+    degreeEl.textContent = '—'; amountEl.textContent = '—'; rateEl.textContent = '—';
+    return;
+  }
+  const latest = rows[0];
+  degreeEl.textContent = latest.degree + ' 度';
+  amountEl.textContent = '$' + Math.round(latest.amount).toLocaleString();
+  rateEl.textContent = latest.degree ? ('$' + (latest.amount / latest.degree).toFixed(2) + '/度') : '—';
+}
+
+function renderPowerLogList(rows) {
+  const area = document.getElementById('powerLogArea');
+  if (!rows.length) { area.innerHTML = '<div class="empty-state">還沒有任何電力紀錄</div>'; return; }
+  area.innerHTML = rows.map(r => `
+    <div class="stock-log-item">
+      <div class="sl-main">
+        ${r.date}　${r.degree} 度　$${Math.round(r.amount).toLocaleString()}${r.note ? `　<span style="color:var(--ink-soft);">${escapeHtml(r.note)}</span>` : ''}
+      </div>
+      <div class="sl-actions">
+        <button class="sl-del" onclick="deletePowerLogItem('${r.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function submitPowerLog() {
+  const date = document.getElementById('powerDate').value || fmtDate(new Date());
+  const degree = parseFloat(document.getElementById('powerDegree').value);
+  const amount = parseFloat(document.getElementById('powerAmount').value);
+  const note = document.getElementById('powerNote').value.trim();
+  if (isNaN(degree) || isNaN(amount)) { await alert('請填寫用電度數與抄表金額'); return; }
+
+  const btn = document.getElementById('powerSubmitBtn');
+  btn.disabled = true;
+  try {
+    const result = await postJSON({ action: 'addPowerLog', date, degree, amount, note });
+    if (result && result.error) throw new Error(result.error);
+    if (result && result.ok === false) throw new Error(result.message || '新增失敗');
+    document.getElementById('powerDegree').value = '';
+    document.getElementById('powerAmount').value = '';
+    document.getElementById('powerNote').value = '';
+    showToast(pick(SAVE_MSGS));
+    loadPowerPage();
+  } catch (err) {
+    await alert('新增失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function deletePowerLogItem(id) {
+  if (!(await showConfirm('刪除這筆電力紀錄？'))) return;
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deletePowerLog', id }) });
+    const result = await res.json();
+    if (result && result.error) throw new Error(result.error);
+    showToast(pick(DELETE_MSGS));
+    loadPowerPage();
+  } catch (err) {
+    await alert('刪除失敗：' + err.message);
   }
 }
 
