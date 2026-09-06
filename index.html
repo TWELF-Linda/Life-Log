@@ -691,6 +691,14 @@
     padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;box-sizing:border-box;min-width:0;
   }
   .stock-date-input{max-width:150px;}
+
+  /* ---- 歷史日期補記：跨頁共用的日期選擇列（今天／昨天／前天／自選日期）---- */
+  .record-date-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+  .record-date-row input[type="date"]{
+    width:auto;flex:1 1 130px;min-width:110px;max-width:100%;margin-bottom:0!important;
+    background:var(--input-bg);border:1.5px solid var(--line);border-radius:10px;
+    padding:7px 8px;font-size:12.5px;color:var(--ink);font-family:inherit;box-sizing:border-box;
+  }
   .stock-filter-row{display:flex;gap:8px;margin-bottom:10px;}
   .stock-filter-row select{
     flex:1;min-width:0;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;
@@ -1486,6 +1494,7 @@
         <div class="input-panel-label">✏️ 寫下這一刻</div>
         <div class="mood-row" id="moodRow"></div>
         <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
+        <div id="editDateHint" style="display:none;font-size:11.5px;color:var(--accent-dark);margin:-4px 0 8px;">✏️ 更新後將存到這一天（可用上方 ‹ › 切換日期來搬移這筆紀錄）</div>
         <div class="add-row">
           <button class="photo-btn" onclick="document.getElementById('fileInput').click()">🖼️ 相片</button>
           <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
@@ -1593,6 +1602,12 @@
         <div class="field-label" style="margin-top:0;">🎬 居家跟練影片</div>
         <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">貼上 YouTube 網址，自動抓影片名稱加入今天的運動紀錄</div>
         <div class="gym-form">
+          <div class="record-date-row" data-picker="exerciseVideo">
+            <div class="opt-chip" data-days-ago="0">今天</div>
+            <div class="opt-chip" data-days-ago="1">昨天</div>
+            <div class="opt-chip" data-days-ago="2">前天</div>
+            <input type="date" aria-label="跟練影片記錄日期">
+          </div>
           <input type="text" id="exerciseVideoUrlInput" placeholder="貼上 YouTube 影片網址" inputmode="url">
           <button class="submit-btn" id="exerciseVideoSubmitBtn" style="width:100%;margin-top:8px;" onclick="submitExerciseVideo()">＋ 抓取名稱並加入紀錄</button>
         </div>
@@ -1662,6 +1677,13 @@
           <div id="gymEquipTip" class="plan-tip" style="display:none;"></div>
 
           <div class="gym-form">
+            <div class="field-label" style="margin-top:0;">📅 記錄日期</div>
+            <div class="record-date-row" data-picker="gym">
+              <div class="opt-chip" data-days-ago="0">今天</div>
+              <div class="opt-chip" data-days-ago="1">昨天</div>
+              <div class="opt-chip" data-days-ago="2">前天</div>
+              <input type="date" aria-label="重訓記錄日期">
+            </div>
             <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
             <datalist id="gymExerciseList"></datalist>
             <div class="gym-form-row">
@@ -1686,8 +1708,14 @@
       <div id="fitSubWeight" style="display:none;">
         <div class="card">
           <div class="field-label" style="margin-top:0;">⚖️ 體重紀錄</div>
+          <div class="record-date-row" data-picker="weight">
+            <div class="opt-chip" data-days-ago="0">今天</div>
+            <div class="opt-chip" data-days-ago="1">昨天</div>
+            <div class="opt-chip" data-days-ago="2">前天</div>
+            <input type="date" aria-label="體重記錄日期">
+          </div>
           <div class="weight-row">
-            <input type="number" step="0.1" id="weightInput" placeholder="今天的體重 (kg)">
+            <input type="number" step="0.1" id="weightInput" placeholder="體重 (kg)">
             <button class="submit-btn" id="weightSubmitBtn" onclick="submitWeight()">記錄</button>
           </div>
           <div class="weight-list" id="weightList"></div>
@@ -2075,7 +2103,13 @@
       <div class="advanced-back" onclick="showPeriodHome()">← 今日狀態</div>
 
       <div class="card" id="periodDailyCard">
-        <div class="field-label" style="margin-top:0;">📋 今日身體狀況</div>
+        <div class="field-label" style="margin-top:0;">📋 身體狀況記錄</div>
+        <div class="record-date-row" data-picker="periodDaily">
+          <div class="opt-chip" data-days-ago="0">今天</div>
+          <div class="opt-chip" data-days-ago="1">昨天</div>
+          <div class="opt-chip" data-days-ago="2">前天</div>
+          <input type="date" aria-label="身體狀況記錄日期">
+        </div>
         <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">出血量</div>
         <div class="opt-row" id="flowOptRow"></div>
         <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">經痛程度</div>
@@ -2090,7 +2124,7 @@
         <div style="font-size:11px;color:var(--ink-soft);margin:12px 0 2px;">已選擇的症狀（可調整強度）</div>
         <div class="symptom-selected-wrap" id="symptomSelectedWrap"><div class="empty-state" style="padding:4px 0;">還沒有選擇症狀</div></div>
         <textarea id="periodDailyNote" placeholder="備註（選填，例如「昨晚睡不到 5 小時」）" style="min-height:40px;margin-top:10px;"></textarea>
-        <button class="submit-btn" id="periodDailySubmitBtn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存今天的狀況</button>
+        <button class="submit-btn" id="periodDailySubmitBtn" style="width:100%;margin-top:8px;" onclick="submitPeriodDaily()">儲存這天的狀況</button>
       </div>
 
       <div class="card">
@@ -2237,6 +2271,50 @@ let editingFields = [];
 function fmtDate(d) {
   const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
   return `${y}-${m}-${day}`;
+}
+// ---------- 歷史日期補記：共用的「今天／昨天／前天／自選日期」選擇器 ----------
+// 給運動紀錄、體重、身體狀況等「單日一筆或當日多筆」的紀錄型功能共用，
+// 避免每個頁面各自刻一套不一樣的日期操作。key 是頁面自己取的識別字串（例如 'gym'、'weight'）。
+const recordDateState = {};
+function initRecordDatePicker(key, onChange) {
+  recordDateState[key] = new Date();
+  const row = document.querySelector(`.record-date-row[data-picker="${key}"]`);
+  if (!row) return;
+  row.querySelectorAll('[data-days-ago]').forEach(btn => {
+    btn.onclick = () => {
+      const d = new Date();
+      d.setDate(d.getDate() - Number(btn.dataset.daysAgo));
+      recordDateState[key] = d;
+      updateRecordDatePicker(key);
+      if (onChange) onChange(fmtDate(d));
+    };
+  });
+  const input = row.querySelector('input[type="date"]');
+  if (input) {
+    input.onchange = () => {
+      if (!input.value) return;
+      const [y, m, d] = input.value.split('-').map(Number);
+      recordDateState[key] = new Date(y, m - 1, d);
+      updateRecordDatePicker(key);
+      if (onChange) onChange(fmtDate(recordDateState[key]));
+    };
+  }
+  updateRecordDatePicker(key);
+}
+function updateRecordDatePicker(key) {
+  const row = document.querySelector(`.record-date-row[data-picker="${key}"]`);
+  if (!row) return;
+  const ds = fmtDate(recordDateState[key] || new Date());
+  row.querySelectorAll('[data-days-ago]').forEach(btn => {
+    const btnDate = new Date();
+    btnDate.setDate(btnDate.getDate() - Number(btn.dataset.daysAgo));
+    btn.classList.toggle('active', fmtDate(btnDate) === ds);
+  });
+  const input = row.querySelector('input[type="date"]');
+  if (input) input.value = ds;
+}
+function getRecordDate(key) {
+  return fmtDate(recordDateState[key] || new Date());
 }
 function getMondayStr(d) {
   const dow = d.getDay();
@@ -3938,7 +4016,7 @@ async function submitEntry() {
   // photoBase64/photoMimeType 保留給只認得單張照片的舊版後端；photos 是完整清單（多張照片要存進 Sheet/Drive 需要後端一併更新才會生效）
   const firstPhoto = photosPayload[0] || {};
   const body = isEdit
-    ? { action: 'updateEntry', id: editingEntryId, category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
+    ? { action: 'updateEntry', id: editingEntryId, date: fmtDate(currentDate), category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
         photos: photosPayload, photoBase64: firstPhoto.photoBase64 || null, photoMimeType: firstPhoto.photoMimeType || null }
     : { action: 'addEntry', date: fmtDate(currentDate),
         time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
@@ -3988,6 +4066,17 @@ function editEntry(id) {
   if (!entry) entry = (searchEntryCache || []).find(e => e.id === id);
   if (!entry) return;
   switchTab('page-log');
+  // 歷史日期補記稽核修正：編輯現在會把紀錄存到「目前日期導覽列顯示的日期」，
+  // 所以進入編輯前一定要先把 currentDate 對齊這筆紀錄原本的日期（尤其是從搜尋結果點進來時，
+  // 瀏覽中的日期通常跟這筆紀錄的日期不同），不然沒特別切換日期就直接存檔，會不小心把紀錄搬到今天。
+  if (entry.date) {
+    const [y, m, d] = entry.date.split('-').map(Number);
+    const entryDate = new Date(y, m - 1, d);
+    if (fmtDate(entryDate) !== fmtDate(currentDate)) {
+      currentDate = entryDate;
+      refresh();
+    }
+  }
   expandQuickAddCard();
   editingEntryId = id;
   selectedCategory = entry.category;
@@ -3999,12 +4088,14 @@ function editEntry(id) {
   document.getElementById('textInput').value = entry.text || '';
   document.getElementById('submitBtn').textContent = '更新這筆紀錄';
   document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  document.getElementById('editDateHint').style.display = 'block';
   document.getElementById('textInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function cancelEditEntry() {
   editingEntryId = null;
   document.getElementById('submitBtn').textContent = '記下這一刻';
   document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('editDateHint').style.display = 'none';
   document.getElementById('textInput').value = '';
   pendingPhotos = []; renderPhotoGrid();
   currentFieldValues = {};
@@ -4106,10 +4197,13 @@ async function loadFitnessPage() {
   loadWeekProgress();
   loadStreak();
   loadWeightList();
+  initRecordDatePicker('gym', () => loadGymLog());
   loadGymLog();
   loadGymExerciseNames();
   renderGymPartRow();
   loadFitHome();
+  initRecordDatePicker('weight');
+  initRecordDatePicker('exerciseVideo');
   loadExerciseVideos();
 }
 
@@ -4191,6 +4285,7 @@ async function loadPeriodPage() {
   document.getElementById('periodAdvancedWrap').style.display = 'none';
   document.getElementById('periodSubHome').style.display = 'block';
   renderPeriodOptionChips();
+  initRecordDatePicker('periodDaily', (ds) => loadPeriodDailyToday(null, ds));
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getPeriodPageData`, { cache: 'no-store' });
     const data = await res.json();
@@ -4543,9 +4638,10 @@ function setPeriodPain(opt) {
   renderPeriodOptionChips();
 }
 // 後端回傳的 symptoms 已經統一整理成 {name, category, severity} 物件（相容舊資料），前端直接使用即可
-async function loadPeriodDailyToday(preData) {
+async function loadPeriodDailyToday(preData, dateOverride) {
   try {
-    const d = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodDaily&date=${fmtDate(new Date())}`, { cache: 'no-store' })).json();
+    const ds = dateOverride || getRecordDate('periodDaily');
+    const d = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodDaily&date=${ds}`, { cache: 'no-store' })).json();
     periodDailyState = { flow: d.flow || '', pain: d.pain || '', symptoms: Array.isArray(d.symptoms) ? d.symptoms : [] };
     document.getElementById('periodDailyNote').value = d.note || '';
     renderPeriodOptionChips();
@@ -4555,16 +4651,17 @@ async function submitPeriodDaily() {
   const btn = document.getElementById('periodDailySubmitBtn');
   if (btn.disabled) return;
   const note = document.getElementById('periodDailyNote').value.trim();
+  const ds = getRecordDate('periodDaily');
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '儲存中…';
   try {
     const result = await postJSON({
-      action: 'savePeriodDaily', date: fmtDate(new Date()),
+      action: 'savePeriodDaily', date: ds,
       flow: periodDailyState.flow, pain: periodDailyState.pain, symptoms: periodDailyState.symptoms, note: note
     });
     if (result && result.error) throw new Error(result.error);
-    showToast('今天的狀況記錄好了 📋');
+    showToast(ds === fmtDate(new Date()) ? '今天的狀況記錄好了 📋' : `${ds} 的狀況記錄好了 📋`);
     loadPeriodDailyHistory();
   } catch (err) {
     alert('儲存失敗：' + err.message);
@@ -5535,7 +5632,7 @@ async function loadGymTrend(exercise) {
   } catch (err) {}
 }
 async function loadGymLog() {
-  const ds = fmtDate(new Date());
+  const ds = getRecordDate('gym');
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getGymLog&date=${ds}`, { cache: 'no-store' });
     const list = await res.json();
@@ -5566,7 +5663,7 @@ async function submitGymLog() {
   try {
     const res = await fetch(CONFIG.GAS_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'addGymLog', date: fmtDate(new Date()), exercise, weight, sets, reps })
+      body: JSON.stringify({ action: 'addGymLog', date: getRecordDate('gym'), exercise, weight, sets, reps })
     });
     const result = await res.json();
     if (result && result.error) throw new Error(result.error);
@@ -5648,7 +5745,7 @@ async function submitExerciseVideo() {
     if (!info || info.ok === false) throw new Error((info && info.message) || '抓不到影片資訊');
     const result = await postJSON({
       action: 'addEntry',
-      date: fmtDate(new Date()),
+      date: getRecordDate('exerciseVideo'),
       category: '運動健身',
       text: '居家跟練：' + info.title,
       fields: { videoUrl: info.url, videoTitle: info.title, videoAuthor: info.author || '' }
@@ -5659,7 +5756,7 @@ async function submitExerciseVideo() {
     loadExerciseVideos();
     loadWeekProgress();
     loadStreak();
-    if (fmtDate(new Date()) === fmtDate(new Date())) loadTodayOverview();
+    if (getRecordDate('exerciseVideo') === fmtDate(new Date())) loadTodayOverview();
   } catch (err) {
     alert('加入紀錄失敗：' + err.message);
   } finally {
@@ -5690,7 +5787,7 @@ async function submitWeight() {
   const originalText = btn.textContent;
   btn.textContent = '記錄中…';
   try {
-    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: fmtDate(new Date()), weight: val }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: getRecordDate('weight'), weight: val }) });
     const result = await res.json();
     if (result && result.error) throw new Error(result.error);
     document.getElementById('weightInput').value = '';
