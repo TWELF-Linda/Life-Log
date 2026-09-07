@@ -419,7 +419,6 @@
   .photo-wall-item{position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;cursor:pointer;}
   .photo-wall-item img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .15s;}
   .photo-wall-item:active img{transform:scale(0.95);}
-  .photo-wall-item.will-replace img{opacity:.35;}
   .photo-wall-date{
     position:absolute;bottom:0;left:0;right:0;padding:3px 5px;font-size:9.5px;color:#fff;
     background:linear-gradient(transparent,rgba(0,0,0,.55));
@@ -446,12 +445,25 @@
   .photo-lightbox{
     display:none;position:fixed;inset:0;background:rgba(20,15,12,.92);z-index:200;
     flex-direction:column;align-items:center;justify-content:center;padding:20px;
+    overflow:hidden;touch-action:pan-y;
   }
   .photo-lightbox.show{display:flex;}
-  .photo-lightbox img{max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain;}
-  .pl-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;}
-  .pl-info{margin-top:14px;text-align:center;}
+  .pl-img-wrap{position:relative;width:100%;display:flex;align-items:center;justify-content:center;}
+  .photo-lightbox img{max-width:100%;max-height:70vh;border-radius:12px;object-fit:contain;user-select:none;-webkit-user-drag:none;}
+  .pl-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);color:#fff;border:none;width:36px;height:36px;border-radius:50%;font-size:16px;cursor:pointer;z-index:2;}
+  .pl-nav{
+    position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);color:#fff;border:none;
+    width:38px;height:38px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  }
+  .pl-nav.pl-prev{left:6px;}
+  .pl-nav.pl-next{right:6px;}
+  .pl-nav[disabled], .pl-nav.pl-hidden{display:none;}
+  .pl-counter{color:#fff;font-size:12.5px;opacity:.85;margin-top:10px;font-family:monospace;}
+  .pl-info{margin-top:6px;text-align:center;}
   .pl-info > div{color:#fff;font-size:13px;margin-bottom:10px;opacity:.9;}
+  .pl-actions{display:flex;gap:10px;justify-content:center;margin-top:2px;}
+  .pl-actions .submit-btn{flex:none;padding:10px 20px;}
+  .pl-download{background:var(--input-bg);color:var(--ink);}
 
   .ticket{
     position:relative;
@@ -757,7 +769,7 @@
     margin-right:8px;cursor:pointer;
   }
   body.batch-mode .batch-check{display:flex;}
-  body.batch-mode .ticket-swipe-wrap{pointer-events:none;}
+  body.batch-mode .ticket{pointer-events:none;}
   body.batch-mode .batch-check{pointer-events:auto;}
   .batch-check.checked{background:var(--accent);}
   .batch-row{display:flex;align-items:flex-start;}
@@ -963,14 +975,6 @@
     to{ transform:translateY(100vh) rotate(540deg); opacity:0.3; }
   }
 
-  /* ---- 滑動刪除 ---- */
-  .ticket-swipe-wrap{position:relative;overflow:hidden;border-radius:18px;margin-bottom:12px;}
-  .ticket-swipe-bg{
-    position:absolute;top:0;right:0;bottom:0;width:96px;border-radius:18px;
-    background:linear-gradient(135deg,#FF8C7A,#F0715E);display:flex;align-items:center;justify-content:center;
-    font-size:20px;color:#fff;
-  }
-  .ticket-swipe-wrap .ticket{position:relative;margin-bottom:0;transition:transform .25s;will-change:transform;}
   .year-divider{
     font-family:'Chiron GoRound TC';font-size:16px;font-weight:800;color:var(--accent-dark);
     margin:18px 2px 10px;display:flex;align-items:center;gap:8px;
@@ -1335,6 +1339,17 @@
     </div>
 
     <div id="settingsPageOther" style="display:none;">
+      <div class="card">
+        <div class="tool-name" style="margin-bottom:2px;">🤖 AI 設定</div>
+        <div class="tool-desc" style="margin-bottom:10px;">選擇 AI 引擎的使用順序。只要至少設定一組金鑰（Gemini／OpenRouter／Groq 任一），沒設定的另外兩組會自動跳過，功能一樣正常運作。</div>
+        <div class="choice-row" id="aiModeRow"></div>
+        <div id="aiManualProviderWrap" style="display:none;margin-top:10px;">
+          <div class="tool-desc" style="margin-bottom:6px;">指定使用：</div>
+          <div class="choice-row" id="aiManualProviderRow"></div>
+        </div>
+        <div id="aiSettingsStatus" style="margin-top:10px;font-size:12px;color:var(--ink-soft);line-height:1.7;"></div>
+      </div>
+
       <div class="card">
         <div class="tool-row">
           <div>
@@ -1743,11 +1758,19 @@
   </div>
   <div class="photo-lightbox" id="photoLightbox" onclick="if(event.target===this) closePhotoLightbox()">
     <button class="pl-close" onclick="closePhotoLightbox()">✕</button>
-    <img id="photoLightboxImg" src="">
+    <div class="pl-img-wrap" id="plImgWrap">
+      <button class="pl-nav pl-prev" id="photoLightboxPrev" onclick="photoPreviewPrev()">‹</button>
+      <img id="photoLightboxImg" src="">
+      <button class="pl-nav pl-next" id="photoLightboxNext" onclick="photoPreviewNext()">›</button>
+    </div>
+    <div class="pl-counter" id="photoLightboxCounter"></div>
     <div class="pl-info">
       <div id="photoLightboxMeta"></div>
       <div id="photoLightboxText"></div>
-      <button class="submit-btn" id="photoLightboxJump" onclick="jumpToPhotoEntry()">查看這篇紀錄 →</button>
+      <div class="pl-actions">
+        <button class="submit-btn pl-download" id="photoLightboxDownload" onclick="downloadCurrentPhoto()">⬇️ 下載</button>
+        <button class="submit-btn" id="photoLightboxJump" onclick="jumpToPhotoEntry()">查看這篇紀錄 →</button>
+      </div>
     </div>
   </div>
 
@@ -2387,13 +2410,28 @@ function escapeHtml(s) {
 }
 // 產生某則紀錄的照片區塊 HTML：優先用 photoUrls（可能多張），
 // 沒有的話（例如舊快取資料）退回單張 photoUrl，確保不會漏顯示。
+// 多張照片時，點任一張都會用同一組 urls 開啟可以左右滑動切換的預覽，從點到的那張開始看。
 function entryPhotosHtml(entry) {
   const urls = (entry.photoUrls && entry.photoUrls.length) ? entry.photoUrls : (entry.photoUrl ? [entry.photoUrl] : []);
   if (!urls.length) return '';
   const cls = urls.length > 1 ? 'ticket-photos' : 'ticket-photos single';
-  // 點縮圖開啟原圖預覽（Lightbox），meta/text 透過 data-* 帶過去，避免 onclick 內嵌字串跳脫問題
   const meta = `${catIcon(entry.category)} ${entry.category}${entry.date ? '　' + entry.date : ''}`;
-  return `<div class="${cls}">${urls.map(u => `<img src="${escapeHtml(u)}" loading="lazy" data-meta="${escapeHtml(meta)}" data-text="${escapeHtml(entry.text || '')}" onclick="event.stopPropagation();openPhotoPreview(this.src, this.dataset.meta, this.dataset.text)">`).join('')}</div>`;
+  // 整組 urls / meta / text 存在外層容器的 data-* 上（只存一份，不用每張圖都重複一份），
+  // 點擊時再由 openEntryPhotoPreview() 讀出來組成完整的可滑動預覽清單，避免 onclick 內嵌字串跳脫問題
+  return `<div class="${cls}" data-entry-id="${escapeHtml(entry.id)}" data-urls="${escapeHtml(JSON.stringify(urls))}" data-meta="${escapeHtml(meta)}" data-text="${escapeHtml(entry.text || '')}">${urls.map((u, i) => `<img src="${escapeHtml(u)}" loading="lazy" data-index="${i}" onclick="event.stopPropagation();openEntryPhotoPreview(this)">`).join('')}</div>`;
+}
+// 讀出縮圖所在容器上的整組照片資料，組成可以左右滑動切換的預覽清單，從點到的那張開始看
+function openEntryPhotoPreview(imgEl) {
+  const wrap = imgEl.closest('[data-urls]');
+  if (!wrap) return;
+  let urls = [];
+  try { urls = JSON.parse(wrap.dataset.urls); } catch (err) {}
+  if (!urls.length) return;
+  const meta = wrap.dataset.meta || '';
+  const text = wrap.dataset.text || '';
+  const entryId = wrap.dataset.entryId || '';
+  const items = urls.map(u => ({ url: u, meta: meta, text: text, entryId: entryId }));
+  openPhotoPreviewSet(items, Number(imgEl.dataset.index || 0));
 }
 // 效能優化：讓非必要的工作（不影響「馬上看到什麼」的那些）延後到瀏覽器閒置時再做，
 // 避免跟首頁最重要的內容（今天的紀錄）搶時間。支援的瀏覽器用 requestIdleCallback，
@@ -2609,27 +2647,6 @@ const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 100, 200, 365];
 let celebratedWeekGoalDate = '';
 let celebratedChecklistDate = '';
 
-/* ================= 滑動刪除手勢 ================= */
-function attachSwipe(el, onSwipeDelete) {
-  let startX = 0, currentX = 0, dragging = false;
-  el.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX; dragging = true; el.style.transition = 'none';
-  }, { passive: true });
-  el.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    currentX = e.touches[0].clientX - startX;
-    if (currentX < 0) el.style.transform = `translateX(${Math.max(currentX, -100)}px)`;
-  }, { passive: true });
-  el.addEventListener('touchend', () => {
-    dragging = false;
-    el.style.transition = 'transform .25s';
-    const wasSwiped = currentX < -60;
-    el.style.transform = 'translateX(0)';
-    currentX = 0;
-    if (wasSwiped) onSwipeDelete();
-  });
-}
-
 const PAGE_ACCENTS = {
   'page-log': ['#FF8C7A', '#F0715E'],
   'page-record-hub': ['#FF8C7A', '#F0715E'],
@@ -2707,6 +2724,7 @@ function reviewYearFooterHtml(s) {
     </div>
   `;
 }
+const LAST_TAB_KEY = 'lifelog_last_tab';
 function switchTab(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
@@ -2727,6 +2745,7 @@ function switchTab(pageId) {
   if (pageId === 'page-stock') loadStockPage();
   if (pageId === 'page-period') loadPeriodPage();
   if (pageId === 'page-electric') loadElectricPage();
+  try { localStorage.setItem(LAST_TAB_KEY, pageId); } catch (err) {}
 }
 
 const CATEGORIES_CACHE_KEY = 'lifelog_categories_cache';
@@ -3008,6 +3027,7 @@ function switchSettingsTab(tab) {
   document.getElementById('stabOther').classList.toggle('active', tab === 'other');
   if (tab === 'nav') loadTabOrderSettings();
   if (tab === 'cats') renderCatManagerList();
+  if (tab === 'other') loadAISettings();
 }
 function toggleDarkMode(on) {
   document.documentElement.classList.toggle('dark-mode', on);
@@ -3035,6 +3055,82 @@ async function runHealthCheck() {
     area.innerHTML = `<div class="tool-result-box">檢查失敗：${escapeHtml(err.message)}（代表 GAS_URL 本身可能有問題）</div>`;
   }
 }
+
+// ---------- AI 設定 ----------
+const AI_MODE_OPTIONS = [
+  { key: 'auto', label: '自動（推薦）', desc: '依序嘗試 Gemini → OpenRouter → Groq，暫時故障的會自動跳過' },
+  { key: 'free_first', label: '免費優先', desc: '優先用 OpenRouter / Groq，省下 Gemini 額度，需要時才用 Gemini' },
+  { key: 'gemini_first', label: 'Gemini 優先', desc: '固定先用 Gemini，故障時才切換備援' },
+  { key: 'manual', label: '指定 AI', desc: '固定用你指定的那一個；它暫時故障時仍會自動切換到其他已設定的 Provider' }
+];
+let currentAISettings = null;
+
+async function loadAISettings() {
+  const statusEl = document.getElementById('aiSettingsStatus');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getAISettings`, { cache: 'no-store' });
+    const result = await res.json();
+    if (result.error || result.ok === false) { statusEl.textContent = '無法載入 AI 設定'; return; }
+    currentAISettings = result;
+    renderAIModeRow();
+    renderAIProviderStatus();
+  } catch (err) {
+    statusEl.textContent = '無法載入 AI 設定：' + err.message;
+  }
+}
+function renderAIModeRow() {
+  const row = document.getElementById('aiModeRow');
+  row.innerHTML = '';
+  AI_MODE_OPTIONS.forEach(opt => {
+    const chip = document.createElement('div');
+    chip.className = 'choice-chip' + (currentAISettings.mode === opt.key ? ' active' : '');
+    chip.textContent = opt.label;
+    chip.title = opt.desc;
+    chip.onclick = () => saveAIMode(opt.key);
+    row.appendChild(chip);
+  });
+  document.getElementById('aiManualProviderWrap').style.display = currentAISettings.mode === 'manual' ? 'block' : 'none';
+  if (currentAISettings.mode === 'manual') renderAIManualProviderRow();
+}
+function renderAIManualProviderRow() {
+  const row = document.getElementById('aiManualProviderRow');
+  row.innerHTML = '';
+  Object.keys(currentAISettings.providers).forEach(key => {
+    const p = currentAISettings.providers[key];
+    const chip = document.createElement('div');
+    chip.className = 'choice-chip' + (currentAISettings.manualProvider === key ? ' active' : '');
+    chip.textContent = p.name + (p.configured ? '' : '（未設定金鑰）');
+    chip.onclick = () => saveAIMode('manual', key);
+    row.appendChild(chip);
+  });
+}
+function renderAIProviderStatus() {
+  const statusEl = document.getElementById('aiSettingsStatus');
+  const lines = Object.keys(currentAISettings.providers).map(key => {
+    const p = currentAISettings.providers[key];
+    const bits = [p.configured ? '✅ 已設定' : '⬜ 未設定金鑰'];
+    if (p.configured && p.cooldown) bits.push('⏳ 暫時冷卻中（連續失敗，5 分鐘後自動恢復）');
+    return `${p.name}：${bits.join('，')}`;
+  });
+  statusEl.innerHTML = lines.join('<br>');
+}
+async function saveAIMode(mode, manualProvider) {
+  const statusEl = document.getElementById('aiSettingsStatus');
+  try {
+    const res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'saveAISettings', mode, manualProvider })
+    });
+    const result = await res.json();
+    if (result.error || result.ok === false) { statusEl.textContent = '儲存失敗'; return; }
+    currentAISettings = result;
+    renderAIModeRow();
+    renderAIProviderStatus();
+  } catch (err) {
+    statusEl.textContent = '儲存失敗：' + err.message;
+  }
+}
+
 async function saveSiteUrl() {
   const input = document.getElementById('siteUrlInput');
   const area = document.getElementById('siteUrlResult');
@@ -3706,15 +3802,9 @@ function renderTicket(entry) {
   check.onclick = () => toggleEntrySelect(entry.id, check);
   outer.appendChild(check);
 
-  const wrap = document.createElement('div');
-  wrap.className = 'ticket-swipe-wrap';
-  wrap.style.flex = '1';
-  wrap.dataset.entryId = entry.id;
-  const bg = document.createElement('div');
-  bg.className = 'ticket-swipe-bg';
-  bg.textContent = '🗑️';
   const div = document.createElement('div');
   div.className = 'ticket';
+  div.style.flex = '1';
   div.style.borderLeftColor = catColor(entry.category);
   const tm = entry.ticketMeta;
   const tmHtml = (tm && (tm.showName || tm.venue || tm.showDate)) ? `
@@ -3740,14 +3830,14 @@ function renderTicket(entry) {
     ${tmHtml}
     ${videoHtml}
   `;
-  wrap.appendChild(bg);
-  wrap.appendChild(div);
-  attachSwipe(div, () => deleteEntry(entry.id));
-  outer.appendChild(wrap);
+  outer.appendChild(div);
   return outer;
 }
 const pendingDeletes = {};
+// 刪除紀錄一律要先明確確認，不再有滑動這種容易誤觸的手勢；確認後沿用原本的「復原」緩衝，
+// 避免使用者確認完才發現按錯，多一層保險。
 async function deleteEntry(id) {
+  if (!(await showConfirm('刪除這筆紀錄？此操作無法復原。'))) return;
   const wrap = document.querySelector(`[data-entry-id="${id}"]`);
   if (wrap) wrap.style.display = 'none';
   vibrate(15);
@@ -3789,25 +3879,48 @@ function compressImage(file, maxDim, quality) {
     reader.readAsDataURL(file);
   });
 }
+// 算一個檔案「內容」的 Hash（SHA-256），用來判斷是否為相同圖片，而不是只看檔名。
+// 用瀏覽器原生的 crypto.subtle，不支援（例如非 HTTPS 環境）就回傳 null，
+// 這種情況下前端這層檢查會直接跳過，改完全依賴後端做最終把關。
+async function sha256HexOfFile_(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const digest = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (err) {
+    return null;
+  }
+}
 async function handlePhoto(event) {
   const files = Array.from(event.target.files || []);
   event.target.value = ''; // 清空，讓使用者之後選同一批檔案也能再次觸發
   if (!files.length) return;
   const today = new Date();
+  let skippedCount = 0;
+  // 情境 A：同一次選取裡有重複（含跟這次之前已加入的待上傳照片比較），用內容 Hash 判斷，
+  // 不是只比對檔名——這裡是前端立即擋下的第一層，後端仍會再做一次最終確認（情境 B/C）。
+  const knownHashes = pendingPhotos.map(p => p.hash).filter(Boolean);
   for (const file of files) {
     try {
-      const [{ base64, mimeType, dataUrl }, takenAt] = await Promise.all([
+      const [{ base64, mimeType, dataUrl }, takenAt, hash] = await Promise.all([
         compressImage(file),
-        getPhotoTakenDate(file)
+        getPhotoTakenDate(file),
+        sha256HexOfFile_(file)
       ]);
+      if (hash && knownHashes.indexOf(hash) !== -1) {
+        skippedCount++;
+        continue; // 這張跟目前已選取的某張照片內容完全相同，略過不加入
+      }
       const takenToday = isSameLocalDay(takenAt, today);
-      pendingPhotos.push({ base64, mimeType, dataUrl, selected: takenToday, takenAt, takenToday });
+      pendingPhotos.push({ base64, mimeType, dataUrl, selected: takenToday, takenAt, takenToday, hash });
+      if (hash) knownHashes.push(hash);
     } catch (err) {
       alert('有張照片處理失敗，已略過：' + err.message);
     }
   }
   pendingPhotos.sort((a, b) => (b.takenToday ? 1 : 0) - (a.takenToday ? 1 : 0));
   renderPhotoGrid();
+  if (skippedCount) showToast(`這張照片已經存在，已略過 ${skippedCount} 張重複照片`);
 }
 function renderPhotoGrid() {
   const grid = document.getElementById('photoPreviewGrid');
@@ -3832,8 +3945,9 @@ function renderPhotoGrid() {
   hint.style.display = 'block';
   renderExistingPhotoArea();
 }
-// 編輯既有紀錄時，顯示「原本已經有的照片」：不選新照片就保留它們、選了新照片就會取代它們。
-// 每次 renderPhotoGrid() 都會呼叫這裡，讓提示文字即時反映目前是否已經選了新照片要取代。
+// 編輯既有紀錄時，顯示「原本已經有的照片」：預設全部保留，使用者可以逐張按 ✕ 移除，
+// 新增的照片會「加上去」而不是取代掉這些保留下來的舊照片。
+// 每次 renderPhotoGrid() 都會呼叫這裡，讓提示文字即時反映目前保留/新增的張數。
 function renderExistingPhotoArea() {
   const area = document.getElementById('existingPhotoArea');
   const grid = document.getElementById('existingPhotoGrid');
@@ -3845,16 +3959,26 @@ function renderExistingPhotoArea() {
     hint.textContent = '';
     return;
   }
-  const willReplace = pendingPhotos.some(p => p.selected);
   area.style.display = 'block';
-  grid.innerHTML = editingExistingPhotoUrls.map(u => `
-    <div class="photo-wall-item${willReplace ? ' will-replace' : ''}" data-url="${escapeHtml(u)}" onclick="openPhotoPreview(this.dataset.url,'原本的照片','')">
-      <img src="${escapeHtml(u)}" loading="lazy">
+  grid.innerHTML = editingExistingPhotoUrls.map((u, i) => `
+    <div class="photo-wall-item" data-index="${i}">
+      <img src="${escapeHtml(u)}" loading="lazy" onclick="openExistingPhotoPreview(${i})">
+      <button class="photo-remove" onclick="event.stopPropagation();removeExistingPhoto(${i})">✕</button>
     </div>
   `).join('');
-  hint.textContent = willReplace
-    ? '已選擇新照片，儲存後將取代這張原本的照片'
-    : '不選新照片的話，儲存時會保留這張原本的照片';
+  const newCount = pendingPhotos.filter(p => p.selected).length;
+  hint.textContent = newCount
+    ? `會保留這 ${editingExistingPhotoUrls.length} 張原本的照片，並新增 ${newCount} 張新照片`
+    : `這 ${editingExistingPhotoUrls.length} 張原本的照片會繼續保留，點 ✕ 可以移除不要的`;
+}
+// 開啟「原本已存在」照片的預覽，一樣支援左右滑動切換
+function openExistingPhotoPreview(index) {
+  const items = editingExistingPhotoUrls.map(u => ({ url: u, meta: '原本的照片', text: '' }));
+  openPhotoPreviewSet(items, index);
+}
+function removeExistingPhoto(index) {
+  editingExistingPhotoUrls.splice(index, 1);
+  renderExistingPhotoArea();
 }
 function togglePendingPhoto(i) {
   if (!pendingPhotos[i]) return;
@@ -4063,6 +4187,9 @@ async function submitEntry() {
   const firstPhoto = photosPayload[0] || {};
   const body = isEdit
     ? { action: 'updateEntry', id: editingEntryId, date: fmtDate(currentDate), category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
+        // existingPhotoUrls：使用者這次選擇要保留的舊照片（在編輯畫面裡按 ✕ 移除的就不會在這裡面）。
+        // 後端會把這份清單當「保留」，再加上這次新增的 photos，是合併而不是整包覆蓋。
+        existingPhotoUrls: editingExistingPhotoUrls.slice(),
         photos: photosPayload, photoBase64: firstPhoto.photoBase64 || null, photoMimeType: firstPhoto.photoMimeType || null }
     : { action: 'addEntry', date: fmtDate(currentDate),
         time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
@@ -4075,7 +4202,14 @@ async function submitEntry() {
     pendingPhotos = []; renderPhotoGrid();
     currentFieldValues = {}; renderExtraFields();
     if (isEdit) cancelEditEntry();
-    showToast(isEdit ? pick(UPDATE_MSGS) : pick(SAVE_MSGS));
+    // 後端做了最終的重複照片把關（情境 B/C：內容跟既有照片或彼此重複），有略過的話另外提示，
+    // 跟儲存成功的提示分開顯示，避免蓋掉「已略過」這個比較重要的訊息。
+    if (result && result.skippedDuplicates) {
+      showToast(`已略過 ${result.skippedDuplicates} 張重複照片`);
+      setTimeout(() => showToast(isEdit ? pick(UPDATE_MSGS) : pick(SAVE_MSGS)), 2300);
+    } else {
+      showToast(isEdit ? pick(UPDATE_MSGS) : pick(SAVE_MSGS));
+    }
     loadTodayOverview();
     await loadEntries();
     if (!isEdit && isTicketCat && result.photoUrl && result.id) {
@@ -5634,6 +5768,7 @@ async function submitFitnessProfile() {
       body: JSON.stringify({ action: 'saveFitnessProfile', daysPerWeek: selectedDays, location: selectedLocation, goal: selectedGoal })
     });
     const result = await res.json();
+    if (result.ok === false) { document.getElementById('fitnessPlanArea').innerHTML = `<div class="empty-state">${escapeHtml(result.message || '生成失敗')}</div>`; return; }
     if (result.error) { document.getElementById('fitnessPlanArea').innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
     renderPlan(result.plan);
     loadWeekProgress();
@@ -5906,9 +6041,11 @@ function setPhotoWallFilter(key) {
   renderPhotoWallFilterRow();
   renderPhotoWall();
 }
+let photoWallCurrentList = []; // 目前實際渲染出來的（依篩選條件過濾後的）照片清單，跟畫面上的縮圖順序一致
 function renderPhotoWall() {
   const area = document.getElementById('photoWallArea');
   const photos = photoWallFilter === 'all' ? photoWallAll : photoWallAll.filter(p => p.category === photoWallFilter);
+  photoWallCurrentList = photos;
   if (!photos.length) {
     area.innerHTML = photoWallAll.length
       ? '<div class="empty-state">這個類別還沒有照片</div>'
@@ -5916,42 +6053,140 @@ function renderPhotoWall() {
     return;
   }
   area.innerHTML = `<div class="photo-wall-grid">${photos.map((p, i) => `
-    <div class="photo-wall-item" onclick="openPhotoLightbox(${photoWallFilter === 'all' ? i : photoWallAll.indexOf(p)})">
+    <div class="photo-wall-item" onclick="openPhotoLightbox(${i})">
       <img src="${p.url}" loading="lazy">
       <div class="photo-wall-date">${p.date}</div>
     </div>
   `).join('')}</div>`;
 }
+// index 是「目前畫面上顯示的（已篩選過的）清單」裡的位置，可以左右滑動切換到同清單裡的其他照片
 function openPhotoLightbox(index) {
-  const p = photoWallAll[index];
-  if (!p) return;
-  openPhotoPreview(p.url, `${catIcon(p.category)} ${p.category}　${p.date}`, p.text, p.date);
+  if (!photoWallCurrentList.length) return;
+  const items = photoWallCurrentList.map(p => ({
+    url: p.url, meta: `${catIcon(p.category)} ${p.category}　${p.date}`, text: p.text, jumpDate: p.date, entryId: p.entryId
+  }));
+  openPhotoPreviewSet(items, index);
 }
 // 共用的照片原圖預覽（Lightbox）：不管照片是從照片牆、既有紀錄列表、還是編輯頁裡的
 // 「原本的照片」點進來的，都走這裡，確保任何地方點縮圖都能看到同一份完整體驗。
-// jumpDate 有值時才顯示「查看這篇紀錄 →」，例如已經在當天紀錄列表裡點開就不需要再跳轉。
+// items 是同一組可以左右滑動切換的照片（例如同一則紀錄的所有照片、或目前篩選出的整個照片牆），
+// 每個 item 可以有自己的 meta/text/jumpDate/entryId（例如照片牆裡每張照片來自不同紀錄）。
+let photoPreviewItems = [];
+let photoPreviewIndex = 0;
+function openPhotoPreviewSet(items, startIndex) {
+  if (!items || !items.length) return;
+  photoPreviewItems = items;
+  photoPreviewIndex = Math.max(0, Math.min(startIndex || 0, items.length - 1));
+  document.getElementById('photoLightbox').classList.add('show');
+  renderPhotoPreviewCurrent_();
+}
+// 相容舊呼叫方式：單張照片預覽
 function openPhotoPreview(url, meta, text, jumpDate) {
-  document.getElementById('photoLightboxImg').src = url;
-  document.getElementById('photoLightboxMeta').textContent = meta || '';
-  document.getElementById('photoLightboxText').textContent = text || '';
+  openPhotoPreviewSet([{ url: url, meta: meta, text: text, jumpDate: jumpDate }], 0);
+}
+function renderPhotoPreviewCurrent_() {
+  const item = photoPreviewItems[photoPreviewIndex];
+  if (!item) return;
+  document.getElementById('photoLightboxImg').src = item.url;
+  document.getElementById('photoLightboxMeta').textContent = item.meta || '';
+  document.getElementById('photoLightboxText').textContent = item.text || '';
   const lb = document.getElementById('photoLightbox');
   const jumpBtn = document.getElementById('photoLightboxJump');
-  if (jumpDate) {
+  if (item.jumpDate) {
     jumpBtn.style.display = '';
-    lb.dataset.date = jumpDate;
+    lb.dataset.date = item.jumpDate;
   } else {
     jumpBtn.style.display = 'none';
     delete lb.dataset.date;
   }
-  lb.classList.add('show');
+  const multi = photoPreviewItems.length > 1;
+  document.getElementById('photoLightboxPrev').classList.toggle('pl-hidden', !multi);
+  document.getElementById('photoLightboxNext').classList.toggle('pl-hidden', !multi);
+  document.getElementById('photoLightboxCounter').textContent = multi ? `${photoPreviewIndex + 1} / ${photoPreviewItems.length}` : '';
+  // 下載按鈕需要知道這張照片屬於哪一筆紀錄；沒有 entryId 的話（理論上不會發生）就先隱藏，避免下載失敗
+  document.getElementById('photoLightboxDownload').style.display = item.entryId ? '' : 'none';
+  if (multi) { // 預先載入上一張/下一張，讓左右滑動更順暢
+    [photoPreviewItems[(photoPreviewIndex + 1) % photoPreviewItems.length], photoPreviewItems[(photoPreviewIndex - 1 + photoPreviewItems.length) % photoPreviewItems.length]]
+      .forEach(it => { if (it && it.url) { const im = new Image(); im.src = it.url; } });
+  }
+}
+function photoPreviewPrev() {
+  if (photoPreviewItems.length < 2) return;
+  photoPreviewIndex = (photoPreviewIndex - 1 + photoPreviewItems.length) % photoPreviewItems.length;
+  renderPhotoPreviewCurrent_();
+}
+function photoPreviewNext() {
+  if (photoPreviewItems.length < 2) return;
+  photoPreviewIndex = (photoPreviewIndex + 1) % photoPreviewItems.length;
+  renderPhotoPreviewCurrent_();
 }
 function closePhotoLightbox() {
   document.getElementById('photoLightbox').classList.remove('show');
+  photoPreviewItems = [];
+  photoPreviewIndex = 0;
 }
 function jumpToPhotoEntry() {
   const ds = document.getElementById('photoLightbox').dataset.date;
   closePhotoLightbox();
   if (ds) jumpToDate(ds);
+}
+// 桌面：左右方向鍵切換照片（只有 Lightbox 開著的時候才生效，避免跟其他鍵盤操作衝突）
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('photoLightbox').classList.contains('show')) return;
+  if (e.key === 'ArrowLeft') photoPreviewPrev();
+  else if (e.key === 'ArrowRight') photoPreviewNext();
+});
+// 手機／平板：觸控左右滑動切換照片。用「橫向位移明顯大於縱向」判斷是刻意的左右滑動，
+// 避免跟原本可能存在的上下滾動、下拉刷新手勢互相干擾。
+(function initPhotoLightboxSwipe_() {
+  const wrap = document.getElementById('plImgWrap');
+  if (!wrap) return;
+  let startX = 0, startY = 0, dragging = false;
+  wrap.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    startX = e.touches[0].clientX; startY = e.touches[0].clientY; dragging = true;
+  }, { passive: true });
+  wrap.addEventListener('touchend', e => {
+    if (!dragging) return;
+    dragging = false;
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx < 0) photoPreviewNext(); else photoPreviewPrev();
+    }
+  }, { passive: true });
+})();
+// 下載目前正在 Lightbox 裡看的這張「原圖」（不是縮圖，這個 App 本來就只存一份壓縮後的完整畫質圖）。
+// 透過後端把照片內容轉成 base64 回來，前端組成 Blob 再用 <a download> 觸發存檔，
+// 避免直接對 Google 圖片網址發 fetch 時遇到跨網域限制抓不到內容。
+async function downloadCurrentPhoto() {
+  const item = photoPreviewItems[photoPreviewIndex];
+  if (!item || !item.entryId) return;
+  const btn = document.getElementById('photoLightboxDownload');
+  const originalLabel = btn.textContent;
+  btn.disabled = true; btn.textContent = '下載中…';
+  try {
+    const url = `${CONFIG.GAS_URL}?action=downloadPhoto&entryId=${encodeURIComponent(item.entryId)}&url=${encodeURIComponent(item.url)}`;
+    const res = await fetch(url, { cache: 'no-store' });
+    const result = await res.json();
+    if (!result.ok) throw new Error(result.message || '下載失敗');
+    const byteChars = atob(result.base64);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([new Uint8Array(byteNumbers)], { type: result.mimeType || 'image/jpeg' });
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = result.fileName || 'photo.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+  } catch (err) {
+    alert('下載失敗：' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = originalLabel;
+  }
 }
 
 async function loadMemoryPage() {
@@ -6235,6 +6470,7 @@ function renderSearchPhotoItem(p) {
 async function jumpToSearchPhoto(entryId, url) {
   closeSearchUI();
   switchTab('page-photos');
+  photoWallFilter = 'all'; // 從搜尋結果跳過來時，先重設篩選成「全部」，這樣等一下算出來的 idx 才會對得上實際畫面上的清單
   await loadPhotoWall();
   let idx = photoWallAll.findIndex(p => String(p.entryId) === String(entryId) && p.url === url);
   if (idx === -1) idx = photoWallAll.findIndex(p => String(p.entryId) === String(entryId));
@@ -6625,6 +6861,7 @@ async function regenerateAffirmation(silent) {
   if (!silent) { btn.disabled = true; btn.textContent = '生成中… ✨'; }
   try {
     const result = await postJSON({ action: 'generateAffirmation', date: fmtDate(new Date()) }, 60000);
+    if (result.ok === false) { if (!silent) alert(result.message || '生成失敗'); return; }
     if (result.error) { if (!silent) alert('生成失敗：' + result.error); return; }
     textEl.textContent = result.text;
     if (!silent) vibrate(12);
@@ -6677,8 +6914,12 @@ function startApp() {
   renderOfflineBadge();
   flushOfflineQueue();
   loadCategories().then(refresh).then(() => {
-    if (location.hash === '#quick') quickRecord();
-    if (location.hash === '#today') switchTab('page-log');
+    if (location.hash === '#quick') { quickRecord(); return; }
+    if (location.hash === '#today') { switchTab('page-log'); return; }
+    try {
+      const lastTab = localStorage.getItem(LAST_TAB_KEY);
+      if (lastTab && lastTab !== 'page-log' && document.getElementById(lastTab)) switchTab(lastTab);
+    } catch (err) {}
   });
 }
 async function loadSavedTabOrder() {
