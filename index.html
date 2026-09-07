@@ -3110,6 +3110,7 @@ function renderAIProviderStatus() {
     const p = currentAISettings.providers[key];
     const bits = [p.configured ? '✅ 已設定' : '⬜ 未設定金鑰'];
     if (p.configured && p.cooldown) bits.push('⏳ 暫時冷卻中（連續失敗，5 分鐘後自動恢復）');
+    if (p.configured && p.lastError) bits.push(`❌ ${p.lastError.time} ${p.lastError.errorType}：${escapeHtml(p.lastError.message)}`);
     return `${p.name}：${bits.join('，')}`;
   });
   statusEl.innerHTML = lines.join('<br>');
