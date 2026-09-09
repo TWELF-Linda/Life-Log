@@ -186,8 +186,6 @@
   .stock-home-mini-name{font-weight:700;color:var(--ink);}
   .stock-home-mini-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
   .stock-home-mini-right{text-align:right;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;}
-  .home-holding-row{cursor:pointer;}
-  .home-holding-row:active{background:var(--input-bg);border-radius:10px;}
 
   /* ---- Phase04: 回顧生活 整合體驗 ---- */
   .review-header{
@@ -1471,9 +1469,9 @@
     <div class="home-hero">
       <div class="date-nav">
         <button onclick="changeDate(-1)">‹</button>
-        <div class="date-label-wrap">
+        <div class="date-label-wrap" onclick="openDateJumpPicker()">
           <div class="date-label" id="dateLabel">今天</div>
-          <input type="date" id="dateJump" class="date-jump-input" onchange="jumpToDateInput(this.value)" onclick="openDateJumpPicker(this)" onfocus="openDateJumpPicker(this)">
+          <input type="date" id="dateJump" class="date-jump-input" onchange="jumpToDateInput(this.value)">
         </div>
         <button onclick="changeDate(1)">›</button>
       </div>
@@ -1523,13 +1521,6 @@
         <div id="photoPreviewGrid"></div>
         <div id="photoGridHint"></div>
       </div>
-    </div>
-
-    <!-- Phase：記錄頁面「目前持有股票」快覽卡。資料直接沿用股票頁既有的 getStockDashboard（加權平均成本法算出的持股），
-         不另外維護第二套持倉資料；只在 App 啟動時載入一次（跟目前日期無關，切換日期不用重打）。 -->
-    <div class="card home-holdings-card" id="homeHoldingsCard" style="display:none;">
-      <div class="field-label" style="margin-top:0;">📈 目前持有股票</div>
-      <div id="homeHoldingsBody"></div>
     </div>
 
     <!-- 第四區：今天的生活（最近紀錄） -->
@@ -1632,7 +1623,7 @@
             <div class="opt-chip" data-days-ago="0">今天</div>
             <div class="opt-chip" data-days-ago="1">昨天</div>
             <div class="opt-chip" data-days-ago="2">前天</div>
-            <input type="date" aria-label="跟練影片記錄日期">
+            <input type="date" aria-label="跟練影片記錄日期" onclick="openNativeDatePicker(this)">
           </div>
           <input type="text" id="exerciseVideoUrlInput" placeholder="貼上 YouTube 影片網址" inputmode="url">
           <button class="submit-btn" id="exerciseVideoSubmitBtn" style="width:100%;margin-top:8px;" onclick="submitExerciseVideo()">＋ 抓取名稱並加入紀錄</button>
@@ -1708,7 +1699,7 @@
               <div class="opt-chip" data-days-ago="0">今天</div>
               <div class="opt-chip" data-days-ago="1">昨天</div>
               <div class="opt-chip" data-days-ago="2">前天</div>
-              <input type="date" aria-label="重訓記錄日期">
+              <input type="date" aria-label="重訓記錄日期" onclick="openNativeDatePicker(this)">
             </div>
             <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
             <datalist id="gymExerciseList"></datalist>
@@ -1738,7 +1729,7 @@
             <div class="opt-chip" data-days-ago="0">今天</div>
             <div class="opt-chip" data-days-ago="1">昨天</div>
             <div class="opt-chip" data-days-ago="2">前天</div>
-            <input type="date" aria-label="體重記錄日期">
+            <input type="date" aria-label="體重記錄日期" onclick="openNativeDatePicker(this)">
           </div>
           <div class="weight-row">
             <input type="number" step="0.1" id="weightInput" placeholder="體重 (kg)">
@@ -2063,7 +2054,7 @@
           <div class="opt-chip" data-days-ago="0">今天</div>
           <div class="opt-chip" data-days-ago="1">昨天</div>
           <div class="opt-chip" data-days-ago="2">前天</div>
-          <input type="date" aria-label="身體狀況記錄日期">
+          <input type="date" aria-label="身體狀況記錄日期" onclick="openNativeDatePicker(this)">
         </div>
         <div style="font-size:11px;color:var(--ink-soft);margin-bottom:2px;">出血量</div>
         <div class="opt-row" id="flowOptRow"></div>
@@ -2134,7 +2125,7 @@
       <div class="record-date-row" data-picker="elecReading">
         <div class="opt-chip" data-days-ago="0">今天</div>
         <div class="opt-chip" data-days-ago="1">昨天</div>
-        <input type="date" aria-label="電表讀數記錄日期">
+        <input type="date" aria-label="電表讀數記錄日期" onclick="openNativeDatePicker(this)">
       </div>
       <div class="stock-form-row">
         <input type="number" step="0.1" id="elecReadingInput" placeholder="目前電表讀數，例如 12345">
@@ -3598,6 +3589,18 @@ function jumpToDateInput(val) {
   currentDate = new Date(y, m - 1, d);
   refresh();
 }
+// 桌機 Chrome/Edge 的 <input type="date"> 只有點到那顆小小的日曆圖示才會跳出月曆，
+// 點欄位其他地方沒有反應——手機不會有這個問題（整個欄位都能點開）。這裡用 showPicker()
+// 強制在點擊當下打開月曆，不管點到欄位裡哪個位置；不支援 showPicker() 的舊瀏覽器，或呼叫時
+// 剛好被瀏覽器擋下（例如尚未成為使用者手勢的一部分），都安全地什麼都不做，不會讓頁面壞掉。
+function openNativeDatePicker(el) {
+  if (el && typeof el.showPicker === 'function') {
+    try { el.showPicker(); } catch (err) {}
+  }
+}
+function openDateJumpPicker() {
+  openNativeDatePicker(document.getElementById('dateJump'));
+}
 async function loadTodayOverview() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getTodayOverview`, { cache: 'no-store' });
@@ -3675,18 +3678,6 @@ function collapseQuickAddCard() {
   if (editingEntryId) cancelEditEntry();
   document.getElementById('quickAddCard').style.display = 'none';
   document.getElementById('ctaRecordBtn').style.display = 'block';
-}
-// 桌機瀏覽器（尤其是 Chrome/Edge）在把 <input type="date"> 用 opacity:0 蓋在文字上面當作「點文字開日期選擇器」
-// 的做法時，滑鼠點下去只是把游標移進輸入框、不一定會跳出月曆小picker——月曆通常只有點到那顆看不見的
-// 小圖示才會跳出來。這裡改用 showPicker() 主動叫出來，滑鼠點或鍵盤 tab 進來都能開，
-// 不支援 showPicker() 的舊瀏覽器（例如 Safari 16.4 以前）就讓它維持原本「點進輸入框自己打日期」的行為。
-function openDateJumpPicker(inputEl) {
-  try {
-    if (typeof inputEl.showPicker === 'function') inputEl.showPicker();
-  } catch (err) {
-    // 有些瀏覽器要求「使用者手勢觸發」才准呼叫 showPicker，onfocus 有時候不算數而丟例外；
-    // 這種情況就放著讓使用者自己點一次輸入框，不用特別跳錯誤訊息打擾。
-  }
 }
 async function refresh() {
   const isToday = fmtDate(currentDate) === fmtDate(new Date());
@@ -3894,8 +3885,7 @@ async function deleteEntry(id) {
     } catch (err) {}
   }, 6000);
 }
-function compressImage(file, maxDim, quality) {
-  maxDim = maxDim || 1280; quality = quality || 0.72;
+function compressImageNative_(file, maxDim, quality) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -3918,6 +3908,47 @@ function compressImage(file, maxDim, quality) {
     reader.onerror = () => reject(new Error('檔案讀取失敗'));
     reader.readAsDataURL(file);
   });
+}
+// iPhone 相機預設存成 HEIC/HEIF 格式，大多數瀏覽器的 <img>/<canvas> 沒辦法直接解碼，
+// 會在 compressImageNative_ 失敗。這裡偵測到「看起來像 HEIC」時，改用 heic2any 轉成 JPEG 再重試一次。
+function looksLikeHeic_(file) {
+  const name = (file.name || '').toLowerCase();
+  const type = (file.type || '').toLowerCase();
+  return name.endsWith('.heic') || name.endsWith('.heif') || type.indexOf('heic') !== -1 || type.indexOf('heif') !== -1;
+}
+let heic2anyLoadPromise = null;
+function ensureHeic2AnyLoaded_() {
+  if (typeof heic2any !== 'undefined') return Promise.resolve();
+  if (!heic2anyLoadPromise) {
+    heic2anyLoadPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+      script.onload = resolve;
+      script.onerror = () => { heic2anyLoadPromise = null; reject(new Error('HEIC 轉檔工具載入失敗，請檢查網路連線')); };
+      document.head.appendChild(script);
+    });
+  }
+  return heic2anyLoadPromise;
+}
+async function compressImage(file, maxDim, quality) {
+  maxDim = maxDim || 1280; quality = quality || 0.72;
+  try {
+    return await compressImageNative_(file, maxDim, quality);
+  } catch (err) {
+    // 原生解碼失敗——如果檔名/類型看起來像 HEIC，或瀏覽器完全沒認出格式（type 是空字串，
+    // iPhone 有些分享路徑會這樣），都值得試著用 HEIC 轉檔工具救看看，而不是直接放棄。
+    if (looksLikeHeic_(file) || !file.type) {
+      try {
+        await ensureHeic2AnyLoaded_();
+        const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+        const jpegBlob = Array.isArray(converted) ? converted[0] : converted;
+        return await compressImageNative_(jpegBlob, maxDim, quality);
+      } catch (heicErr) {
+        throw new Error('這張可能是 iPhone 的 HEIC 格式相片，轉檔失敗了。可以到 iPhone「設定 → 相機 → 格式」改成「最相容」，或改用截圖後再上傳這張照片');
+      }
+    }
+    throw err;
+  }
 }
 // 算一個檔案「內容」的 Hash（SHA-256），用來判斷是否為相同圖片，而不是只看檔名。
 // 用瀏覽器原生的 crypto.subtle，不支援（例如非 HTTPS 環境）就回傳 null，
@@ -4405,52 +4436,6 @@ async function generateSummary() {
   }
 }
 
-// 記錄頁面「目前持有股票」：跟股票頁「我的投資」共用同一顆 getStockDashboard API，
-// 不建立第二套持倉計算邏輯。App 啟動時載入一次即可，日期切換不影響（持股本來就跟瀏覽中的日期無關）。
-async function loadHomeHoldings() {
-  const card = document.getElementById('homeHoldingsCard');
-  const body = document.getElementById('homeHoldingsBody');
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockDashboard`, { cache: 'no-store' });
-    const dash = await res.json();
-    if (dash && dash.error) throw new Error(dash.error);
-    const holdings = dash.holdings || [];
-    card.style.display = 'block';
-    if (!holdings.length) {
-      body.className = 'empty-state';
-      body.style.padding = '6px 0';
-      body.textContent = '目前沒有持有中的股票';
-      return;
-    }
-    body.className = '';
-    body.style.padding = '';
-    body.innerHTML = holdings.map(h => `
-      <div class="stock-home-mini-row home-holding-row" onclick="jumpToStockCode('${escapeHtml(h.code)}')">
-        <div><div class="stock-home-mini-name">${escapeHtml(h.name || h.code)}（${escapeHtml(h.code)}）</div>
-        <div class="stock-home-mini-sub">持有 ${h.qty} 股・均價 ${h.avgCost ? h.avgCost.toLocaleString() : '—'}</div></div>
-        <div class="stock-home-mini-right">總成本 $${Math.round(h.costBasis || (h.qty * h.avgCost) || 0).toLocaleString()}</div>
-      </div>
-    `).join('');
-  } catch (err) {
-    // 抓不到就整張卡先不顯示，不要在首頁留一個壞掉的空卡片
-    card.style.display = 'none';
-  }
-}
-// 點「目前持有股票」裡的某一檔 → 直接跳到股票頁的交易明細，並自動篩選成這一檔，
-// 不需要使用者自己再找一次。
-async function jumpToStockCode(code) {
-  switchTab('page-stock');
-  try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockPageData`, { cache: 'no-store' });
-    const data = await res.json();
-    if (!data.error) loadStockLogList(data.log);
-  } catch (err) {}
-  stockLogFilter.code = code;
-  stockLogFilter.year = 'all';
-  showStockAdvanced('log');
-  renderStockFilterRow('logFilterRow', stockLogAll, stockLogFilter, 'Log');
-  renderStockLog();
-}
 async function loadWeekSummary() {
   const weekStart = getMondayStr(currentDate);
   try {
@@ -7042,7 +7027,6 @@ function startApp() {
   loadSavedTabOrder();
   loadTodayAffirmation();
   loadTodayOverview();
-  loadHomeHoldings();
   renderOfflineBadge();
   flushOfflineQueue();
   loadCategories().then(refresh).then(() => {
