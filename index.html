@@ -186,6 +186,8 @@
   .stock-home-mini-name{font-weight:700;color:var(--ink);}
   .stock-home-mini-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
   .stock-home-mini-right{text-align:right;font-size:12.5px;color:var(--ink-soft);white-space:nowrap;}
+  .home-holding-row{cursor:pointer;}
+  .home-holding-row:active{background:var(--input-bg);border-radius:10px;}
 
   /* ---- Phase04: 回顧生活 整合體驗 ---- */
   .review-header{
@@ -1521,6 +1523,13 @@
         <div id="photoPreviewGrid"></div>
         <div id="photoGridHint"></div>
       </div>
+    </div>
+
+    <!-- Phase：記錄頁面「目前持有股票」快覽卡。資料直接沿用股票頁既有的 getStockDashboard（加權平均成本法算出的持股），
+         不另外維護第二套持倉資料；只在 App 啟動時載入一次（跟目前日期無關，切換日期不用重打）。 -->
+    <div class="card home-holdings-card" id="homeHoldingsCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;">📈 目前持有股票</div>
+      <div id="homeHoldingsBody"></div>
     </div>
 
     <!-- 第四區：今天的生活（最近紀錄） -->
@@ -4396,6 +4405,52 @@ async function generateSummary() {
   }
 }
 
+// 記錄頁面「目前持有股票」：跟股票頁「我的投資」共用同一顆 getStockDashboard API，
+// 不建立第二套持倉計算邏輯。App 啟動時載入一次即可，日期切換不影響（持股本來就跟瀏覽中的日期無關）。
+async function loadHomeHoldings() {
+  const card = document.getElementById('homeHoldingsCard');
+  const body = document.getElementById('homeHoldingsBody');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockDashboard`, { cache: 'no-store' });
+    const dash = await res.json();
+    if (dash && dash.error) throw new Error(dash.error);
+    const holdings = dash.holdings || [];
+    card.style.display = 'block';
+    if (!holdings.length) {
+      body.className = 'empty-state';
+      body.style.padding = '6px 0';
+      body.textContent = '目前沒有持有中的股票';
+      return;
+    }
+    body.className = '';
+    body.style.padding = '';
+    body.innerHTML = holdings.map(h => `
+      <div class="stock-home-mini-row home-holding-row" onclick="jumpToStockCode('${escapeHtml(h.code)}')">
+        <div><div class="stock-home-mini-name">${escapeHtml(h.name || h.code)}（${escapeHtml(h.code)}）</div>
+        <div class="stock-home-mini-sub">持有 ${h.qty} 股・均價 ${h.avgCost ? h.avgCost.toLocaleString() : '—'}</div></div>
+        <div class="stock-home-mini-right">總成本 $${Math.round(h.costBasis || (h.qty * h.avgCost) || 0).toLocaleString()}</div>
+      </div>
+    `).join('');
+  } catch (err) {
+    // 抓不到就整張卡先不顯示，不要在首頁留一個壞掉的空卡片
+    card.style.display = 'none';
+  }
+}
+// 點「目前持有股票」裡的某一檔 → 直接跳到股票頁的交易明細，並自動篩選成這一檔，
+// 不需要使用者自己再找一次。
+async function jumpToStockCode(code) {
+  switchTab('page-stock');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockPageData`, { cache: 'no-store' });
+    const data = await res.json();
+    if (!data.error) loadStockLogList(data.log);
+  } catch (err) {}
+  stockLogFilter.code = code;
+  stockLogFilter.year = 'all';
+  showStockAdvanced('log');
+  renderStockFilterRow('logFilterRow', stockLogAll, stockLogFilter, 'Log');
+  renderStockLog();
+}
 async function loadWeekSummary() {
   const weekStart = getMondayStr(currentDate);
   try {
@@ -6987,6 +7042,7 @@ function startApp() {
   loadSavedTabOrder();
   loadTodayAffirmation();
   loadTodayOverview();
+  loadHomeHoldings();
   renderOfflineBadge();
   flushOfflineQueue();
   loadCategories().then(refresh).then(() => {
