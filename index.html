@@ -7059,20 +7059,24 @@ window.fetch = function(url, options) {
 };
 
 function startApp() {
+  // 先切回上次瀏覽的頁面，不用等下面這些網路請求跑完——不然畫面會先閃一下 HTML 預設的
+  // 首頁（page-log），等資料回來才跳到原本的頁面，使用者會看到「先回首頁再跳回去」的閃爍。
+  restoreLastTab_();
   renderTabbarButtons(DEFAULT_TAB_ORDER);
   loadSavedTabOrder();
   loadTodayAffirmation();
   loadTodayOverview();
   renderOfflineBadge();
   flushOfflineQueue();
-  loadCategories().then(refresh).then(() => {
-    if (location.hash === '#quick') { quickRecord(); return; }
-    if (location.hash === '#today') { switchTab('page-log'); return; }
-    try {
-      const lastTab = localStorage.getItem(LAST_TAB_KEY);
-      if (lastTab && lastTab !== 'page-log' && document.getElementById(lastTab)) switchTab(lastTab);
-    } catch (err) {}
-  });
+  loadCategories().then(refresh);
+}
+function restoreLastTab_() {
+  if (location.hash === '#quick') { quickRecord(); return; }
+  if (location.hash === '#today') { switchTab('page-log'); return; }
+  try {
+    const lastTab = localStorage.getItem(LAST_TAB_KEY);
+    if (lastTab && lastTab !== 'page-log' && document.getElementById(lastTab)) switchTab(lastTab);
+  } catch (err) {}
 }
 async function loadSavedTabOrder() {
   try {
