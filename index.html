@@ -1704,9 +1704,9 @@
             <input type="text" id="gymExerciseInput" list="gymExerciseList" placeholder="器械/動作，例如：腿推機">
             <datalist id="gymExerciseList"></datalist>
             <div class="gym-form-row">
-              <input type="number" step="0.5" id="gymWeightInput" placeholder="重量(kg)">
-              <input type="number" id="gymSetsInput" placeholder="組數">
-              <input type="number" id="gymRepsInput" placeholder="次數/組">
+              <input type="number" step="0.5" id="gymWeightInput" inputmode="decimal" placeholder="重量(kg)">
+              <input type="number" id="gymSetsInput" inputmode="numeric" placeholder="組數">
+              <input type="number" id="gymRepsInput" inputmode="numeric" placeholder="次數/組">
             </div>
             <button class="submit-btn" id="gymLogSubmitBtn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
             <button class="gen-btn" id="repeatSetBtn" style="width:100%;margin-top:8px;display:none;" onclick="repeatLastSet()">🔁 重複上一組</button>
@@ -1732,7 +1732,7 @@
             <input type="date" aria-label="體重記錄日期" onclick="openNativeDatePicker(this)">
           </div>
           <div class="weight-row">
-            <input type="number" step="0.1" id="weightInput" placeholder="體重 (kg)">
+            <input type="number" step="0.1" id="weightInput" inputmode="decimal" placeholder="體重 (kg)">
             <button class="submit-btn" id="weightSubmitBtn" onclick="submitWeight()">記錄</button>
           </div>
           <div class="weight-list" id="weightList"></div>
@@ -1939,11 +1939,6 @@
       </div>
 
       <div class="card">
-        <div class="field-label" style="margin-top:0;">💼 持有</div>
-        <div id="stockHomeHoldings" class="empty-state" style="padding:6px 0;">目前沒有持股</div>
-      </div>
-
-      <div class="card">
         <div class="field-label" style="margin-top:0;">📜 最近交易</div>
         <div id="stockHomeRecent" class="empty-state" style="padding:6px 0;">還沒有交易紀錄</div>
       </div>
@@ -1973,12 +1968,12 @@
           </div>
           <div class="choice-row" id="stockActionRow"></div>
           <div class="stock-form-row">
-            <input type="number" id="stockShares" placeholder="股數">
-            <input type="number" step="0.01" id="stockPrice" placeholder="成交價">
+            <input type="number" id="stockShares" inputmode="numeric" placeholder="股數">
+            <input type="number" step="0.01" id="stockPrice" inputmode="decimal" placeholder="成交價">
           </div>
           <div class="stock-form-row">
-            <input type="number" step="0.01" id="stockFee" placeholder="手續費（選填）">
-            <input type="number" step="0.01" id="stockTax" placeholder="交易稅（選填）">
+            <input type="number" step="0.01" id="stockFee" inputmode="decimal" placeholder="手續費（選填）">
+            <input type="number" step="0.01" id="stockTax" inputmode="decimal" placeholder="交易稅（選填）">
           </div>
           <div class="stock-form-row">
             <input type="date" id="stockDate" class="stock-date-input" style="flex:1;">
@@ -1986,6 +1981,11 @@
           <input type="text" id="stockNote" placeholder="備註（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-bottom:8px;">
           <button class="submit-btn" id="stockSubmitBtn" style="width:100%;" onclick="submitStockLog()">記錄這筆交易</button>
           <button class="gen-btn" id="stockCancelEditBtn" style="display:none;margin-top:8px;width:100%;" onclick="cancelEditStockLog()">取消編輯</button>
+        </div>
+
+        <div class="card">
+          <div class="field-label" style="margin-top:0;">💼 持有</div>
+          <div id="stockRecordHoldings" class="empty-state" style="padding:6px 0;">目前沒有持股</div>
         </div>
       </div>
 
@@ -2128,7 +2128,7 @@
         <input type="date" aria-label="電表讀數記錄日期" onclick="openNativeDatePicker(this)">
       </div>
       <div class="stock-form-row">
-        <input type="number" step="0.1" id="elecReadingInput" placeholder="目前電表讀數，例如 12345">
+        <input type="number" step="0.1" id="elecReadingInput" inputmode="decimal" placeholder="目前電表讀數，例如 12345">
         <button class="submit-btn" id="elecReadingSubmitBtn" onclick="submitElecReading()">記錄</button>
       </div>
       <div id="elecReadingResult"></div>
@@ -2157,16 +2157,16 @@
         <div class="tool-desc" style="margin-bottom:8px;">收到台電帳單時，把上面的數字填進來，系統會自動跟你的讀數估算值比對準不準</div>
         <input type="text" id="elecBillPeriodLabel" placeholder="計費期間，例如 2026/05/08~2026/07/08" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-family:inherit;margin-bottom:8px;">
         <div class="stock-form-row">
-          <input type="number" id="elecBillKwh" placeholder="計費度數">
-          <input type="number" step="0.1" id="elecBillFlowFee" placeholder="流動電費(元)">
+          <input type="number" id="elecBillKwh" inputmode="numeric" placeholder="計費度數">
+          <input type="number" step="0.1" id="elecBillFlowFee" inputmode="decimal" placeholder="流動電費(元)">
         </div>
         <div class="stock-form-row">
-          <input type="number" step="0.1" id="elecBillPublicFee" placeholder="公共設施電費(選填)">
-          <input type="number" step="0.1" id="elecBillSavingReward" placeholder="節電獎勵，折抵填負數(選填)">
+          <input type="number" step="0.1" id="elecBillPublicFee" inputmode="decimal" placeholder="公共設施電費(選填)">
+          <input type="number" step="0.1" id="elecBillSavingReward" inputmode="decimal" placeholder="節電獎勵，折抵填負數(選填)">
         </div>
         <div class="stock-form-row">
-          <input type="number" step="0.1" id="elecBillPrevBalance" placeholder="上期預繳餘額，折抵填負數(選填)">
-          <input type="number" step="0.1" id="elecBillTotalDue" placeholder="應繳總金額">
+          <input type="number" step="0.1" id="elecBillPrevBalance" inputmode="decimal" placeholder="上期預繳餘額，折抵填負數(選填)">
+          <input type="number" step="0.1" id="elecBillTotalDue" inputmode="decimal" placeholder="應繳總金額">
         </div>
         <button class="submit-btn" id="elecBillSubmitBtn" style="width:100%;" onclick="submitElecBill()">登打這筆帳單</button>
       </div>
@@ -2191,15 +2191,15 @@
         <input type="date" id="elecSettingRefDate" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-family:inherit;margin:6px 0 14px;">
 
         <div class="tool-desc">超過幾天沒記錄要提醒（預設7天）</div>
-        <input type="number" id="elecSettingMissedDays" placeholder="7" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-family:inherit;margin:6px 0 14px;">
+        <input type="number" id="elecSettingMissedDays" inputmode="numeric" placeholder="7" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-family:inherit;margin:6px 0 14px;">
 
         <div class="tool-desc">單次用電超過近期平均幾倍要警示（預設1.8）</div>
-        <input type="number" step="0.1" id="elecSettingAnomalyMultiplier" placeholder="1.8" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-family:inherit;margin:6px 0 14px;">
+        <input type="number" step="0.1" id="elecSettingAnomalyMultiplier" inputmode="decimal" placeholder="1.8" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-family:inherit;margin:6px 0 14px;">
 
         <div class="tool-desc">夏月／非夏月每期電費預算（留空＝不啟用）</div>
         <div class="stock-form-row">
-          <input type="number" id="elecSettingBudgetSummer" placeholder="夏月預算(元)">
-          <input type="number" id="elecSettingBudgetNormal" placeholder="非夏月預算(元)">
+          <input type="number" id="elecSettingBudgetSummer" inputmode="numeric" placeholder="夏月預算(元)">
+          <input type="number" id="elecSettingBudgetNormal" inputmode="numeric" placeholder="非夏月預算(元)">
         </div>
 
         <div class="tool-desc" style="margin-top:8px;">LINE 推播（選填，設定後可以直接傳數字給 LINE 記錄，App 跟 LINE 資料共用）</div>
@@ -2968,6 +2968,33 @@ function switchStockSubTab(tab) {
   document.getElementById('stockTabOverview').classList.toggle('active', tab === 'overview');
   document.getElementById('stockTabPl').classList.toggle('active', tab === 'pl');
   document.getElementById('stockTabLog').classList.toggle('active', tab === 'log');
+  if (tab === 'record') loadStockRecordHoldings();
+}
+// 持有清單移到「紀錄」分頁下方，方便新增交易時對照目前持股；沿用既有的 getStockDashboard 端點，不用另外打 API
+async function loadStockRecordHoldings() {
+  const holdingsEl = document.getElementById('stockRecordHoldings');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getStockDashboard`, { cache: 'no-store' });
+    const dash = await res.json();
+    const holdings = dash.holdings || [];
+    if (holdings.length) {
+      holdingsEl.className = '';
+      holdingsEl.innerHTML = holdings.map(h => `
+        <div class="stock-home-mini-row">
+          <div><div class="stock-home-mini-name">${escapeHtml(h.name || h.code)}</div><div class="stock-home-mini-sub">${escapeHtml(h.code)}・${h.qty} 股</div></div>
+          <div class="stock-home-mini-right">${h.price !== null && h.price !== undefined ? '$' + Math.round(h.marketValue).toLocaleString() : '成本 $' + Math.round(h.marketValue).toLocaleString()}</div>
+        </div>
+      `).join('');
+    } else {
+      holdingsEl.className = 'empty-state';
+      holdingsEl.style.padding = '6px 0';
+      holdingsEl.textContent = '目前沒有持股';
+    }
+  } catch (err) {
+    holdingsEl.className = 'empty-state';
+    holdingsEl.style.padding = '6px 0';
+    holdingsEl.textContent = '讀取失敗';
+  }
 }
 // Phase07：股票頁預設只顯示「我的投資」總覽卡，紀錄／總覽／損益／明細／批次新增收進「進階功能」
 function showStockAdvanced(tab) {
@@ -2995,22 +3022,6 @@ async function loadStockHome() {
       const pl = Math.round(dash.todayPL);
       plEl.textContent = (pl > 0 ? '+' : '') + '$' + pl.toLocaleString();
       plEl.className = 'stock-home-metric-value ' + (pl > 0 ? 'pl-up' : pl < 0 ? 'pl-down' : '');
-    }
-
-    const holdingsEl = document.getElementById('stockHomeHoldings');
-    const holdings = dash.holdings || [];
-    if (holdings.length) {
-      holdingsEl.className = '';
-      holdingsEl.innerHTML = holdings.map(h => `
-        <div class="stock-home-mini-row">
-          <div><div class="stock-home-mini-name">${escapeHtml(h.name || h.code)}</div><div class="stock-home-mini-sub">${escapeHtml(h.code)}・${h.qty} 股</div></div>
-          <div class="stock-home-mini-right">${h.price !== null && h.price !== undefined ? '$' + Math.round(h.marketValue).toLocaleString() : '成本 $' + Math.round(h.marketValue).toLocaleString()}</div>
-        </div>
-      `).join('');
-    } else {
-      holdingsEl.className = 'empty-state';
-      holdingsEl.style.padding = '6px 0';
-      holdingsEl.textContent = '目前沒有持股';
     }
 
     const recentEl = document.getElementById('stockHomeRecent');
@@ -5307,10 +5318,10 @@ function renderBatchRows() {
           <option value="sell"${r.stockAction === 'sell' ? ' selected' : ''}>賣出</option>
         </select>
         <input type="date" value="${r.date}" oninput="updateBatchRow(${i},'date',this.value)">
-        <input type="number" placeholder="股數" value="${r.shares}" oninput="updateBatchRow(${i},'shares',this.value)">
-        <input type="number" step="0.01" placeholder="成交價" value="${r.price}" oninput="updateBatchRow(${i},'price',this.value)">
-        <input type="number" step="0.01" placeholder="手續費" value="${r.fee}" oninput="updateBatchRow(${i},'fee',this.value)">
-        <input type="number" step="0.01" placeholder="交易稅" value="${r.tax}" oninput="updateBatchRow(${i},'tax',this.value)">
+        <input type="number" inputmode="numeric" placeholder="股數" value="${r.shares}" oninput="updateBatchRow(${i},'shares',this.value)">
+        <input type="number" step="0.01" inputmode="decimal" placeholder="成交價" value="${r.price}" oninput="updateBatchRow(${i},'price',this.value)">
+        <input type="number" step="0.01" inputmode="decimal" placeholder="手續費" value="${r.fee}" oninput="updateBatchRow(${i},'fee',this.value)">
+        <input type="number" step="0.01" inputmode="decimal" placeholder="交易稅" value="${r.tax}" oninput="updateBatchRow(${i},'tax',this.value)">
       </div>
       <input type="text" class="batch-row-note" placeholder="備註（選填）" value="${escapeHtml(r.note)}" oninput="updateBatchRow(${i},'note',this.value)">
     </div>
@@ -5431,6 +5442,7 @@ async function submitStockLog() {
     loadStockLogList();
     loadStockNameMap();
     loadStockCostChart();
+    loadStockRecordHoldings();
   } catch (err) {
     alert((isEdit ? '更新失敗：' : '記錄失敗：') + err.message);
   } finally {
