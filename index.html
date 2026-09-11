@@ -5379,6 +5379,9 @@ let editingStockId = null;
 function editStockLog(id) {
   const r = stockLogAll.find(x => x.id === id);
   if (!r) return;
+  // 明細（log）分頁點編輯時，實際的編輯表單是在「紀錄」分頁裡（兩個分頁互斥顯示），
+  // 不先切過去的話，欄位雖然填好了，但畫面還停在明細分頁，使用者會覺得「點了沒反應」。
+  switchStockSubTab('record');
   editingStockId = id;
   document.getElementById('stockCode').value = r.code;
   document.getElementById('stockName').value = r.name || '';
