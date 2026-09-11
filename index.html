@@ -1939,6 +1939,11 @@
       </div>
 
       <div class="card">
+        <div class="field-label" style="margin-top:0;">💼 目前持有</div>
+        <div id="stockHomeHoldings" class="empty-state" style="padding:6px 0;">目前沒有持股</div>
+      </div>
+
+      <div class="card">
         <div class="field-label" style="margin-top:0;">📜 最近交易</div>
         <div id="stockHomeRecent" class="empty-state" style="padding:6px 0;">還沒有交易紀錄</div>
       </div>
@@ -3022,6 +3027,22 @@ async function loadStockHome() {
       const pl = Math.round(dash.todayPL);
       plEl.textContent = (pl > 0 ? '+' : '') + '$' + pl.toLocaleString();
       plEl.className = 'stock-home-metric-value ' + (pl > 0 ? 'pl-up' : pl < 0 ? 'pl-down' : '');
+    }
+
+    const holdingsEl = document.getElementById('stockHomeHoldings');
+    const holdings = dash.holdings || [];
+    if (holdings.length) {
+      holdingsEl.className = '';
+      holdingsEl.innerHTML = holdings.map(h => `
+        <div class="stock-home-mini-row">
+          <div><div class="stock-home-mini-name">${escapeHtml(h.name || h.code)}</div><div class="stock-home-mini-sub">${escapeHtml(h.code)}・${h.qty} 股</div></div>
+          <div class="stock-home-mini-right">${h.price !== null && h.price !== undefined ? '$' + Math.round(h.marketValue).toLocaleString() : '成本 $' + Math.round(h.marketValue).toLocaleString()}</div>
+        </div>
+      `).join('');
+    } else {
+      holdingsEl.className = 'empty-state';
+      holdingsEl.style.padding = '6px 0';
+      holdingsEl.textContent = '目前沒有持股';
     }
 
     const recentEl = document.getElementById('stockHomeRecent');
