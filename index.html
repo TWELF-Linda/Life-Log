@@ -3722,7 +3722,7 @@ async function refresh() {
   // 效能優化：「今天的紀錄」是首頁最重要的內容，先單獨載入讓它最快出現；
   // 今日總結／週摘要不影響這件事，改成閒置時再一起平行載入（原本是三個 await 排隊、等於等三次網路來回）。
   await loadEntries();
-  ric(() => { loadSummary(); loadWeekSummary(); });
+  ric(() => { loadSummary(); loadWeekSummary(); loadDailyBlessing(); });
 }
 let entriesFilter = 'all';
 let entriesGroupMode = localStorage.getItem('lifelog_entries_group_mode') === '1';
@@ -4393,26 +4393,36 @@ function cancelEditEntry() {
 async function loadSummary() {
   const ds = fmtDate(currentDate);
   try {
-    // 先打 getDailyGuidance——如果今天還沒生成過，這一次呼叫會在後端把彙整也一起生成寫入。
-    // 一定要先等它做完，再去讀 getSummary，不然兩個平行呼叫可能會讀到「生成中、還沒寫入」的空狀態。
     const guidanceRes = await fetch(`${CONFIG.GAS_URL}?action=getDailyGuidance&date=${ds}`, { cache: 'no-store' });
     const guidance = await guidanceRes.json();
     const summaryRes = await fetch(`${CONFIG.GAS_URL}?action=getSummary&date=${ds}`, { cache: 'no-store' });
     const summary = await summaryRes.json();
     renderSummary(summary, guidance);
-    renderDailyReminder(guidance, ds === fmtDate(new Date()));
   } catch (err) {
     document.getElementById('summaryArea').innerHTML = '';
   }
 }
-// 首頁表頭「🌿 今日的提醒」——今天且已生成：顯示內容；今天但還沒生成好：顯示柔和 placeholder（背景會自動補生成，
-// 不會擋住其他首頁內容）；非今天且沒有歷史資料：顯示「這一天尚未建立提醒」，絕對不會自動生成過去/未來的靈性預言。
-function renderDailyReminder(guidance, isToday) {
+// 首頁表頭「🌿 今日的提醒」——跟「今日彙整」（5個靈性視角＋今日總結＋回饋）完全脫鉤的獨立小功能：
+// 不需要當天已經有紀錄就能生成，取材自「今天以前」最近7天的節奏，語氣走「一天開始前的祝福」。
+// 今天且已生成：顯示內容；今天但還沒生成好：顯示柔和 placeholder（背景會自動補生成，不會擋住其他首頁內容）；
+// 非今天且沒有歷史資料：顯示「這一天尚未建立提醒」，絕對不會自動生成過去/未來的內容。
+async function loadDailyBlessing() {
+  const ds = fmtDate(currentDate);
+  const isToday = ds === fmtDate(new Date());
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getDailyBlessing&date=${ds}`, { cache: 'no-store' });
+    const blessing = await res.json();
+    renderDailyReminder(blessing, isToday);
+  } catch (err) {
+    renderDailyReminder(null, isToday);
+  }
+}
+function renderDailyReminder(blessing, isToday) {
   const textEl = document.getElementById('dailyReminderText');
-  if (guidance && guidance.exists && guidance.dailyReminder) {
-    textEl.textContent = guidance.dailyReminder;
+  if (blessing && blessing.exists && blessing.text) {
+    textEl.textContent = blessing.text;
     textEl.classList.remove('placeholder');
-  } else if (guidance && guidance.generateFailed) {
+  } else if (blessing && blessing.generateFailed) {
     // AI 這次生成失敗了，不要一直卡在「正在準備」，改顯示一句溫和的預設提醒
     textEl.textContent = '今天不用急著把所有事情都做好，先照顧好自己的心，再走下一步。';
     textEl.classList.remove('placeholder');
@@ -4462,7 +4472,8 @@ async function generateSummary() {
     if (result.ok === false) { area.innerHTML = `<div class="empty-state">${result.message || '生成失敗'}</div>`; return; }
     if (result.error) { area.innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
     renderSummary(result, Object.assign({ exists: true }, result));
-    renderDailyReminder(Object.assign({ exists: true }, result), ds === fmtDate(new Date()));
+    // 注意：「🌿 今日的提醒」跟這裡的「今日彙整」已經脫鉤，不會因為在這裡按重新生成而跟著變動，
+    // 它有自己獨立的每日生成機制（見 loadDailyBlessing）。
   } catch (err) {
     area.innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
   }
