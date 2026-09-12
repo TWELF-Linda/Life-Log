@@ -484,6 +484,9 @@
   .ticket-time{font-size:11px;font-family:monospace;color:var(--ink-soft);opacity:.7;}
   .ticket-text{
     font-size:14px;line-height:1.55;white-space:pre-wrap;
+  }
+  /* 需要摘要效果（例如未來的預覽卡片）時可另外套用這個 class，不影響一般票根的完整顯示 */
+  .ticket-text-clamp{
     display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;
   }
   .ticket img{width:100%;border-radius:12px;margin-top:8px;display:block;}
@@ -1060,11 +1063,17 @@
   }
   .settings-overlay.show{display:block;}
   .settings-header{
-    display:flex;align-items:center;justify-content:space-between;padding:20px 16px 10px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:calc(20px + env(safe-area-inset-top, 0px)) 16px 10px;
     position:sticky;top:0;background:var(--bg);z-index:2;
   }
   .settings-header h2{font-family:'Chiron GoRound TC';font-size:18px;margin:0;color:var(--ink);}
-  .settings-close{background:none;border:none;font-size:22px;color:var(--ink-soft);cursor:pointer;}
+  .settings-close{
+    background:none;border:none;font-size:22px;color:var(--ink-soft);cursor:pointer;
+    min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;
+    padding:0;margin:-11px -12px -11px 0;position:relative;z-index:3;
+    touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.08);
+  }
 
   /* ---- 股票批次新增 ---- */
   .batch-overlay{
@@ -1072,7 +1081,8 @@
   }
   .batch-overlay.show{display:block;}
   .batch-header{
-    display:flex;align-items:center;justify-content:space-between;padding:20px 16px 10px;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:calc(20px + env(safe-area-inset-top, 0px)) 16px 10px;
     position:sticky;top:0;background:var(--bg);z-index:2;
   }
   .batch-header h2{font-family:'Chiron GoRound TC';font-size:18px;margin:0;color:var(--ink);}
@@ -3650,7 +3660,7 @@ async function loadTodayOverview() {
     // 4 張資訊卡：心情／運動／紀錄／身體狀況，皆為「有資料才顯示」
     row.innerHTML = `
       ${moodObj ? `<div class="tov-chip" onclick="quickRecord()"><div class="tov-icon">${moodObj.e}</div><div class="tov-value">${moodObj.v}/5</div><div class="tov-label">心情</div></div>` : ''}
-      <div class="tov-chip" onclick="switchTab('page-fit')"><div class="tov-icon">💪</div><div class="tov-value">${d.hasExercise ? '已完成' : '尚未運動'}</div><div class="tov-label">運動</div></div>
+      <div class="tov-chip" onclick="switchTab('page-fit')"><div class="tov-icon">💪</div><div class="tov-value">${d.gymSetsCount ? d.gymSetsCount + ' 組' : (d.hasExercise ? '已完成' : '尚未運動')}</div><div class="tov-label">${d.gymSetsCount ? '今日運動' : '運動'}</div></div>
       ${d.entriesCount ? `<div class="tov-chip" onclick="scrollToEntriesList()"><div class="tov-icon">📝</div><div class="tov-value">${d.entriesCount} 則</div><div class="tov-label">紀錄</div></div>` : ''}
       ${periodHtml}
     `;
@@ -5777,6 +5787,7 @@ async function submitGymLog() {
     loadGymExerciseNames();
     loadWeekProgress();
     loadStreak();
+    if (getRecordDate('gym') === fmtDate(new Date())) loadTodayOverview();
   } catch (err) {
     alert('記錄失敗：' + err.message);
   } finally {
@@ -5802,6 +5813,7 @@ async function deleteGymLogItem(id) {
     loadGymLog();
     loadWeekProgress();
     loadStreak();
+    if (getRecordDate('gym') === fmtDate(new Date())) loadTodayOverview();
   } catch (err) {
     alert('刪除失敗：' + err.message);
   }
