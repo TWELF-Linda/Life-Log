@@ -2351,8 +2351,14 @@ function fmtDate(d) {
 // 給運動紀錄、體重、身體狀況等「單日一筆或當日多筆」的紀錄型功能共用，
 // 避免每個頁面各自刻一套不一樣的日期操作。key 是頁面自己取的識別字串（例如 'gym'、'weight'）。
 const recordDateState = {};
+// 2026 修正：只要使用者「還沒有手動選過日期」（沒點過任何預設按鈕、沒改過日期輸入框），
+// 就一律即時抓當下的日期，不要用分頁打開當下算好、之後就再也不會變的舊值——
+// 否則手機分頁如果跨過午夜沒有重新整理，會把新增的紀錄悄悄存成「昨天」。
+// 只有使用者確實手動選過日期（含手動點「今天」），才會固定用那個選擇。
+const recordDateExplicit = {};
 function initRecordDatePicker(key, onChange) {
   recordDateState[key] = new Date();
+  recordDateExplicit[key] = false;
   const row = document.querySelector(`.record-date-row[data-picker="${key}"]`);
   if (!row) return;
   row.querySelectorAll('[data-days-ago]').forEach(btn => {
@@ -2360,6 +2366,7 @@ function initRecordDatePicker(key, onChange) {
       const d = new Date();
       d.setDate(d.getDate() - Number(btn.dataset.daysAgo));
       recordDateState[key] = d;
+      recordDateExplicit[key] = true;
       updateRecordDatePicker(key);
       if (onChange) onChange(fmtDate(d));
     };
@@ -2370,6 +2377,7 @@ function initRecordDatePicker(key, onChange) {
       if (!input.value) return;
       const [y, m, d] = input.value.split('-').map(Number);
       recordDateState[key] = new Date(y, m - 1, d);
+      recordDateExplicit[key] = true;
       updateRecordDatePicker(key);
       if (onChange) onChange(fmtDate(recordDateState[key]));
     };
@@ -2379,7 +2387,7 @@ function initRecordDatePicker(key, onChange) {
 function updateRecordDatePicker(key) {
   const row = document.querySelector(`.record-date-row[data-picker="${key}"]`);
   if (!row) return;
-  const ds = fmtDate(recordDateState[key] || new Date());
+  const ds = getRecordDate(key);
   row.querySelectorAll('[data-days-ago]').forEach(btn => {
     const btnDate = new Date();
     btnDate.setDate(btnDate.getDate() - Number(btn.dataset.daysAgo));
@@ -2389,6 +2397,12 @@ function updateRecordDatePicker(key) {
   if (input) input.value = ds;
 }
 function getRecordDate(key) {
+  // 還沒手動選過日期：每次呼叫都直接重新抓「現在」的日期，不吃記憶體裡的舊值，
+  // 順便把 recordDateState 同步更新，讓畫面上的「今天」按鈕、日期輸入框也一起校正回來。
+  if (!recordDateExplicit[key]) {
+    recordDateState[key] = new Date();
+    return fmtDate(recordDateState[key]);
+  }
   return fmtDate(recordDateState[key] || new Date());
 }
 function getMondayStr(d) {
