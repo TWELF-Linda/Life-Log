@@ -5189,6 +5189,17 @@ async function loadElecSyncStatus(withPreview) {
     html += '</div>';
     if (L.preview) {
       const p = L.preview;
+      const dc = p.detectedColumns;
+      if (dc) {
+        const hd = (dc.headers || []).map((h, i) => `${i + 1}:${escapeHtml(h || '（空）')}`).join('｜');
+        html += `<div style="margin-top:6px;font-size:12px;word-break:break-all;">表頭列：第 ${p.headerRow || 1} 列<br>${hd}<br>偵測 → 日期欄 ${dc.dateCol}、讀數欄 ${dc.readingCol}${dc.timeCol > 0 ? '、時間欄 ' + dc.timeCol : ''}${p.legacyTimezone ? '（舊表時區 ' + escapeHtml(p.legacyTimezone) + '）' : ''}</div>`;
+      }
+      if (p.sampleRawRows && p.sampleRawRows.length) {
+        html += `<div style="margin-top:4px;font-size:12px;word-break:break-all;">舊表前幾列原始值：<br>${p.sampleRawRows.map(r => escapeHtml(r.join(' | '))).join('<br>')}</div>`;
+      }
+      if (p.anomalyDetail && p.anomalyDetail.length) {
+        html += `<div style="margin-top:4px;font-size:12px;color:#C9705E;word-break:break-all;">異常範例：${p.anomalyDetail.map(a => `第${a.row}列「${escapeHtml(a.rawDate)}／${escapeHtml(a.rawReading)}」${escapeHtml(a.reason)}`).join('；')}</div>`;
+      }
       if (p.ok === false) html += `<div style="margin-top:6px;color:#C9705E;">匯入預覽失敗：${escapeHtml(p.message || '')}</div>`;
       else {
         html += `<div style="margin-top:6px;">舊表預覽：共 ${p.totalRows} 列，<b>可匯入 ${p.importable} 筆</b>、已存在 ${p.duplicates} 筆、異常 ${p.anomalies} 筆</div>`;
