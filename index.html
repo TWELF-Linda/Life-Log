@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<title>生活手帳 Life Log</title>
+<title>生活手帳</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#FF8C7A">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1128,6 +1128,7 @@
   }
   .affirmation-icon{font-size:20px;margin-bottom:4px;}
   .affirmation-text{font-size:14px;line-height:1.6;color:#4A3F35;font-weight:600;margin-bottom:8px;}
+  .affirmation-author{font-size:12px;color:#B8863D;margin:-2px 0 8px;}
   .affirmation-refresh{
     background:none;border:1px solid #E8C99A;color:#B8863D;border-radius:14px;
     padding:5px 12px;font-size:11.5px;cursor:pointer;font-weight:700;
@@ -1197,15 +1198,16 @@
 
 <header>
   <h1>📖 生活手帳</h1>
-  <p id="greetingText">LIFE LOG · 記錄每一個當下</p>
+  <p id="greetingText">記錄每一個當下</p>
   <button class="search-toggle" onclick="toggleSearch()">🔍</button>
   <button class="settings-toggle" onclick="toggleSettings()">⚙️</button>
 </header>
 
 <div class="wrap">
   <div class="affirmation-card" id="affirmationCard">
-    <div class="affirmation-icon">💛</div>
+    <div class="affirmation-icon" id="affirmationIcon">💛</div>
     <div class="affirmation-text" id="affirmationText">今天也是值得被自己肯定的一天。</div>
+    <div class="affirmation-author" id="affirmationAuthor" style="display:none;"></div>
     <button class="affirmation-refresh" id="affirmationRefreshBtn" onclick="regenerateAffirmation()">✨ AI 客製化一句</button>
   </div>
 </div>
@@ -1393,7 +1395,7 @@
 
         <div class="tool-row">
           <div>
-            <div class="tool-name">🔗 App 網址（SITE_URL）</div>
+            <div class="tool-name">🔗 App 網址</div>
             <div class="tool-desc">設定後，每日提醒信、週彙整提醒信才會附上可以直接點的連結；請填瀏覽器網址列上看到的完整網址</div>
           </div>
         </div>
@@ -1406,7 +1408,7 @@
 
       <div class="card">
         <div class="field-label" style="margin-top:0;">💛 關於</div>
-        <div class="tool-desc">生活手帳 Life Log — 記錄日常、運動、經期、股票、電力與生活點滴的個人小工具。</div>
+        <div class="tool-desc">生活手帳 — 記錄日常、運動、經期、股票、電力與生活點滴的個人小工具。</div>
       </div>
     </div>
 
@@ -1570,6 +1572,21 @@
     </div>
   </div>
 
+  <div class="page" id="page-quotes">
+    <div class="advanced-back" onclick="switchTab('page-record-hub')">← 紀錄</div>
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📜 收藏一句名言佳句</div>
+      <textarea id="quoteTextInput" maxlength="300" placeholder="寫下打動你的一句話……"></textarea>
+      <input type="text" id="quoteAuthorInput" maxlength="60" placeholder="作者或出處（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-top:8px;">
+      <button class="submit-btn" id="quoteSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitQuote()">收藏這一句</button>
+      <div class="tool-desc" style="margin-top:8px;">首頁的句子會自然輪替：雙數日顯示你收藏的名言（依收藏順序逐句輪流），單數日顯示每日鼓勵語。</div>
+    </div>
+    <div class="card">
+      <div class="field-label" style="margin-top:0;">📚 我的名言佳句（<span id="quoteCount">0</span>）</div>
+      <div id="quoteListArea"><div class="empty-state">載入中…</div></div>
+    </div>
+  </div>
+
   <div class="page" id="page-record-hub">
     <div class="card" style="text-align:center;">
       <div class="cute-font" style="font-size:15px;font-weight:700;">✍️ 我要記錄什麼？</div>
@@ -1607,6 +1624,10 @@
       <div class="record-hub-item" onclick="openRecordEntry('photo')">
         <div class="rh-icon" style="background:var(--c-soul);">📷</div>
         <div class="rh-label">照片</div>
+      </div>
+      <div class="record-hub-item" onclick="openRecordEntry('quote')">
+        <div class="rh-icon" style="background:#F0DDB0;">📜</div>
+        <div class="rh-label">名言佳句</div>
       </div>
     </div>
   </div>
@@ -2425,10 +2446,18 @@ function dateLabel(d) {
 // confirm 因為原本是同步回傳布林值、現在改成非同步回傳 Promise，
 // 這裡刻意不覆寫 window.confirm（會讓舊的 `if (!confirm(...))` 邏輯悄悄失效變成永遠不觸發），
 // 改用 showConfirm()，呼叫的地方都已經手動改成 await。
+function localizeErrorText_(msg) {
+  let s = String(msg == null ? '' : msg);
+  s = s.replace(/failed to fetch|networkerror[^\s]*|load failed|network request failed/ig, '網路連線失敗，請檢查網路後再試一次');
+  s = s.replace(/unexpected token.*json.*/i, '伺服器回傳的資料格式有誤，請稍後再試');
+  s = s.replace(/aborterror|the user aborted a request/ig, '連線已中斷');
+  s = s.replace(/unknown action/ig, '未知的操作');
+  return s;
+}
 function showAlert(message) {
   return new Promise(resolve => {
     const overlay = document.getElementById('appModalOverlay');
-    document.getElementById('appModalMessage').textContent = message;
+    document.getElementById('appModalMessage').textContent = localizeErrorText_(message);
     document.getElementById('appModalButtons').innerHTML = '<button class="app-modal-btn-primary" id="appModalOkBtn">好</button>';
     overlay.classList.add('show');
     document.getElementById('appModalOkBtn').onclick = () => {
@@ -2559,7 +2588,8 @@ const FAB_MENU_ITEMS = [
   { icon: '⚡', label: '電力', type: 'electric' },
   { icon: '💪', label: '運動', type: 'exercise' },
   { icon: '🌸', label: '身體狀況', type: 'condition' },
-  { icon: '📈', label: '股票交易', type: 'stock' }
+  { icon: '📈', label: '股票交易', type: 'stock' },
+  { icon: '📜', label: '名言佳句', type: 'quote' }
 ];
 let fabMenuOpen = false;
 function toggleFabMenu() {
@@ -2622,6 +2652,9 @@ function openRecordEntry(type) {
       const el = document.getElementById('stockCode');
       if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
     }, 80);
+  } else if (type === 'quote') {
+    switchTab('page-quotes');
+    setTimeout(() => { const el = document.getElementById('quoteTextInput'); if (el) el.focus(); }, 80);
   } else if (type === 'photo') {
     switchTab('page-log');
     expandQuickAddCard();
@@ -2704,7 +2737,8 @@ const PAGE_ACCENTS = {
   'page-stats': ['#6FA8DC', '#4A85BF'],
   'page-memory': ['#B39DDB', '#8B6FC9'],
   'page-stock': ['#5FA88F', '#3D8570'],
-  'page-electric': ['#E8B930', '#C99614']
+  'page-electric': ['#E8B930', '#C99614'],
+  'page-quotes': ['#E8A33D', '#C9861F']
 };
 // Phase01：底部列改成「使用者情境型」5 入口（今天／紀錄／回顧／統計／更多），
 // 每個舊 page 對應到其中一個情境群組，用來決定切換頁面時哪個底部按鈕該亮起來。
@@ -2720,7 +2754,8 @@ const PAGE_TO_NAV_GROUP = {
   'page-fit': 'more',
   'page-stock': 'more',
   'page-period': 'more',
-  'page-electric': 'more'
+  'page-electric': 'more',
+  'page-quotes': 'record'
 };
 function navGroupForPage(pageId) {
   return PAGE_TO_NAV_GROUP[pageId] || null;
@@ -2792,6 +2827,7 @@ function switchTab(pageId) {
   if (pageId === 'page-stock') loadStockPage();
   if (pageId === 'page-period') loadPeriodPage();
   if (pageId === 'page-electric') loadElectricPage();
+  if (pageId === 'page-quotes') loadQuotesPage();
   try { localStorage.setItem(LAST_TAB_KEY, pageId); } catch (err) {}
 }
 
@@ -4462,6 +4498,7 @@ function renderSummary(summary, guidance) {
   const area = document.getElementById('summaryArea');
   const guidanceViews = [
     { icon: '🪷', label: '菩薩的一句提醒', key: 'bodhisattva' },
+    { icon: '🌟', label: '本靈的一句提醒', key: 'selfSpirit' },
     { icon: '👼', label: '天使的一句提醒', key: 'angel' },
     { icon: '🛡️', label: '守護靈的一句提醒', key: 'guardianSpirit' },
     { icon: '🧭', label: '指導靈的一句提醒', key: 'spiritGuide' },
@@ -4469,7 +4506,7 @@ function renderSummary(summary, guidance) {
   ];
   let guidanceHtml = '';
   if (guidance && guidance.exists) {
-    guidanceHtml = guidanceViews.map(v => `
+    guidanceHtml = guidanceViews.filter(v => guidance[v.key]).map(v => `
       <div class="card summary-card guidance-card"><div class="label">${v.icon} ${v.label}</div><p>${escapeHtml(guidance[v.key] || '')}</p></div>
     `).join('');
   } else {
@@ -7023,6 +7060,87 @@ function getTodayAffirmationIndex(dateStr) {
   for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0;
   return hash % AFFIRMATIONS.length;
 }
+async function loadQuotesPage() {
+  if (!checkConfig()) return;
+  const area = document.getElementById('quoteListArea');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getQuotes`, { cache: 'no-store' });
+    const list = await res.json();
+    if (list.error) throw new Error(list.error);
+    document.getElementById('quoteCount').textContent = list.length;
+    if (!list.length) { area.innerHTML = '<div class="empty-state">還沒有收藏任何名言佳句 🌱<br>寫下第一句吧</div>'; return; }
+    area.innerHTML = list.map(q => `
+      <div class="gym-log-item" style="align-items:flex-start;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;">「${escapeHtml(q.text)}」</div>
+          ${q.author ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">—— ${escapeHtml(q.author)}</div>` : ''}
+        </div>
+        <button class="gl-del" onclick="deleteQuoteItem('${q.id}')">✕</button>
+      </div>
+    `).join('');
+  } catch (err) {
+    area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(localizeErrorText_(err.message))}</div>`;
+  }
+}
+async function submitQuote() {
+  const btn = document.getElementById('quoteSubmitBtn');
+  if (btn.disabled) return;
+  const text = document.getElementById('quoteTextInput').value.trim();
+  const author = document.getElementById('quoteAuthorInput').value.trim();
+  if (!text) { alert('請先寫下一句名言佳句'); return; }
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '收藏中…';
+  try {
+    const result = await postJSON({ action: 'addQuote', text, author });
+    if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message);
+    document.getElementById('quoteTextInput').value = '';
+    document.getElementById('quoteAuthorInput').value = '';
+    showToast('收藏好了 📜');
+    loadQuotesPage();
+    loadTodayQuote();
+  } catch (err) {
+    alert('收藏失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+async function deleteQuoteItem(id) {
+  if (!(await showConfirm('刪除這一句名言佳句？'))) return;
+  try {
+    const result = await postJSON({ action: 'deleteQuote', id });
+    if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message);
+    showToast('已刪除 🗑️');
+    loadQuotesPage();
+    loadTodayQuote();
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
+}
+// 名言佳句與每日鼓勵語輪替：偶數天顯示名言，奇數天顯示鼓勵語（沒有收藏名言時一律是鼓勵語）
+async function loadTodayQuote() {
+  const icon = document.getElementById('affirmationIcon');
+  const textEl = document.getElementById('affirmationText');
+  const authorEl = document.getElementById('affirmationAuthor');
+  const btn = document.getElementById('affirmationRefreshBtn');
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getTodayQuote&date=${fmtDate(new Date())}`, { cache: 'no-store' });
+    const r = await res.json();
+    if (r && r.isQuoteDay && r.quote) {
+      icon.textContent = '📜';
+      textEl.textContent = '「' + r.quote.text + '」';
+      authorEl.textContent = r.quote.author ? '—— ' + r.quote.author : '';
+      authorEl.style.display = r.quote.author ? 'block' : 'none';
+      btn.style.display = 'none';
+    } else {
+      icon.textContent = '💛';
+      authorEl.style.display = 'none';
+      btn.style.display = '';
+      loadTodayAffirmation();
+    }
+  } catch (err) {}
+}
 function loadTodayAffirmation() {
   const todayStr = fmtDate(new Date());
   const idx = getTodayAffirmationIndex(todayStr);
@@ -7102,6 +7220,7 @@ function startApp() {
   renderTabbarButtons(DEFAULT_TAB_ORDER);
   loadSavedTabOrder();
   loadTodayAffirmation();
+  loadTodayQuote();
   loadTodayOverview();
   renderOfflineBadge();
   flushOfflineQueue();
