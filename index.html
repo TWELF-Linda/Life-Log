@@ -490,6 +490,23 @@
     display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;
   }
   .ticket img{width:100%;border-radius:12px;margin-top:8px;display:block;}
+  .ticket{min-width:0;overflow-wrap:anywhere;word-break:break-word;}
+  .entry-title{font-size:16px;font-weight:700;line-height:1.4;margin:2px 0 6px;padding-right:56px;}
+  .entry-info{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:8px 0;padding:9px 11px;background:var(--input-bg);border-radius:12px;}
+  .entry-info-row{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .entry-info-row.wide{grid-column:1/-1;}
+  .entry-info-label{font-size:11px;color:var(--ink-soft);letter-spacing:.3px;}
+  .entry-info-value{font-size:13px;line-height:1.45;color:var(--ink);}
+  .entry-section-title{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--accent-dark);margin-bottom:4px;}
+  .entry-note{margin-top:10px;padding-top:9px;border-top:1px dashed var(--line);}
+  .entry-note.plain{margin-top:2px;padding-top:0;border-top:none;}
+  .entry-note-text{font-size:14px;line-height:1.7;white-space:pre-wrap;}
+  .entry-note-text.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:6;overflow:hidden;}
+  .entry-note-toggle{background:none;border:none;color:var(--accent-dark);font-size:12px;font-weight:700;padding:4px 0 0;cursor:pointer;font-family:inherit;}
+  .entry-photos{margin-top:10px;}
+  .entry-photos .ticket-photos{margin-top:0;}
+  .entry-video{margin-top:8px;font-size:12px;}
+  .entry-video a{color:var(--accent-dark);font-weight:700;text-decoration:none;}
   .ticket-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin-top:8px;}
   .ticket-photos img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:12px;margin-top:0;display:block;cursor:pointer;}
   .ticket-photos.single{grid-template-columns:1fr;}
@@ -819,7 +836,7 @@
   /* ---- 票根牆：垂直票券資訊卡列表 ---- */
   .ticket-wall-list{display:flex;flex-direction:column;}
   .ticket-card{
-    display:flex;align-items:stretch;min-height:110px;max-height:145px;
+    display:flex;align-items:stretch;min-height:110px;
     background:var(--card);border-radius:14px;overflow:hidden;
     border:1px solid var(--line);
     box-shadow:0 4px 12px rgba(180,150,120,0.16), 0 1px 3px rgba(180,150,120,0.10);
@@ -843,18 +860,57 @@
     text-shadow:0 1px 2px rgba(0,0,0,0.22);
   }
   .ticket-card .ticket-body{
-    flex:1;min-width:0;padding:7px 10px;display:flex;flex-direction:column;
-    justify-content:center;gap:2px;overflow:hidden;
+    flex:1;min-width:0;padding:8px 10px;display:flex;flex-direction:row;
+    align-items:flex-start;justify-content:space-between;gap:8px;
   }
-  .ticket-card .ticket-date{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ticket-card .ticket-artist{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ticket-card .ticket-venue{font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .ticket-card .ticket-seat{font-size:11px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ticket-card .tb-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .ticket-card .ticket-date{font-size:12px;font-weight:700;color:var(--ink);overflow-wrap:anywhere;}
+  .ticket-card .ticket-artist{font-size:12px;font-weight:600;color:var(--ink);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .ticket-card .ticket-venue{font-size:12px;color:var(--ink-soft);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .ticket-card .ticket-seat{font-size:11px;color:var(--ink-soft);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .ticket-empty{padding:38px 20px 32px;}
   .ticket-empty .te-icon{font-size:32px;margin-bottom:10px;}
   .ticket-empty .te-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;}
   .ticket-empty .te-desc{font-size:13px;color:var(--ink-soft);margin-bottom:16px;line-height:1.6;}
   .ticket-empty .gen-btn{margin:0 auto;display:inline-block;padding:8px 18px;font-size:12.5px;}
+
+  /* ---- 票根：右上角價格區、地址、統計區、價格表單 ---- */
+  .ticket-card .tb-price{
+    flex:0 0 auto;max-width:50%;display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;
+  }
+  .ticket-card .tp-row{display:flex;align-items:baseline;justify-content:flex-end;gap:5px;max-width:100%;}
+  .ticket-card .tp-label{font-size:10px;color:var(--ink-soft);white-space:nowrap;}
+  .ticket-card .tp-val{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+  .ticket-card .tp-row.orig .tp-val{font-weight:600;color:var(--ink-soft);}
+  .ticket-card .tp-val.tp-empty{font-weight:500;color:var(--ink-soft);opacity:.75;}
+  .ticket-card .tp-legacy{font-size:10px;line-height:1.3;color:var(--ink-soft);overflow-wrap:anywhere;}
+  .ticket-card .ticket-addr{font-size:11px;color:var(--ink-soft);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .ticket-card .ticket-venue-empty{opacity:.7;}
+  @media (max-width:420px){
+    .ticket-card .ti-image{width:76px;}
+    .ticket-card .tb-price{max-width:52%;}
+  }
+  .tstat-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 4px 12px rgba(180,150,120,0.12);}
+  .tstat-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .tstat-title{font-size:12.5px;font-weight:700;color:var(--ink-soft);}
+  .tstat-total{font-size:19px;font-weight:800;color:var(--ink);}
+  .tstat-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .tstat-chip{font-size:11.5px;background:var(--input-bg);border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink);}
+  .tstat-chip.warn{border-color:var(--accent-dark);}
+  .tstat-note{font-size:11.5px;line-height:1.5;color:var(--ink-soft);margin-top:8px;}
+  .tstat-details{margin-top:8px;}
+  .tstat-details summary{font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;}
+  .tstat-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;}
+  .tstat-table td{padding:4px 0;border-bottom:1px dashed var(--line);color:var(--ink);}
+  .tstat-table td:last-child{text-align:right;white-space:nowrap;}
+  .tstat-sub{font-size:10.5px;color:var(--ink-soft);}
+  .tp-form{background:var(--input-bg);border:1.5px dashed var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;}
+  .tp-form-title{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:8px;}
+  .tp-form-group{margin-bottom:10px;}
+  .tp-form-group:last-child{margin-bottom:0;}
+  .tp-form-label{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px;}
+  .tp-form-hint{font-size:11px;color:var(--ink-soft);margin-bottom:5px;line-height:1.4;}
+  .tp-form-legacy{font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:10px;padding:6px 8px;border-radius:8px;background:var(--card);border:1px solid var(--line);}
 
   /* ---- 溫暖提示 toast ---- */
   .help-fab{
@@ -1517,6 +1573,7 @@
       <div class="input-panel">
         <div class="input-panel-label">✏️ 寫下這一刻</div>
         <div class="mood-row" id="moodRow"></div>
+        <div class="tp-form" id="ticketPriceBox" style="display:none;"></div>
         <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
         <div id="editDateHint" style="display:none;font-size:11.5px;color:var(--accent-dark);margin:-4px 0 8px;">✏️ 更新後將存到這一天（可用上方 ‹ › 切換日期來搬移這筆紀錄）</div>
         <div class="add-row">
@@ -1785,6 +1842,8 @@
       <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">收藏你看過的每一場演出</div>
     </div>
     <div class="cat-row" id="ticketFilterRow" style="margin-bottom:14px;"></div>
+    <div class="cat-row" id="ticketYearRow" style="margin-bottom:14px;"></div>
+    <div id="ticketStatsArea"></div>
     <div id="ticketWallArea"></div>
     <div class="card review-year-footer" id="reviewYearFooter-tickets"></div>
   </div>
@@ -2154,6 +2213,7 @@
       </div>
       <div class="stat-card-sub" id="elecPeriodSub"></div>
       <div class="stat-card-sub" id="elecPeriodCompareSub"></div>
+      <div id="elecLoadError" style="margin-top:6px;"></div>
     </div>
 
     <div class="card">
@@ -2244,6 +2304,13 @@
 
         <button class="submit-btn" style="width:100%;" onclick="saveElecSettingsHandler()">儲存設定</button>
         <div id="elecSettingsResult"></div>
+      </div>
+      <div class="card">
+        <div class="field-label" style="margin-top:0;">🔄 雲端同步狀態</div>
+        <div class="tool-desc">顯示 App 目前實際讀寫的是哪一份試算表，以及舊表「電力資料」分頁是否讀得到、有多少筆還沒匯入。</div>
+        <div id="elecSyncStatusArea" class="tool-desc" style="margin-top:8px;"></div>
+        <button class="submit-btn" style="width:100%;margin-top:8px;" onclick="loadElecSyncStatus(true)">檢查同步狀態</button>
+        <button class="submit-btn" id="elecLegacyImportBtn" style="width:100%;margin-top:8px;display:none;" onclick="importElecLegacy()">匯入舊表尚未同步的讀數</button>
       </div>
     </div>
 
@@ -2897,12 +2964,20 @@ function renderCatRow() {
     chip.className = 'cat-chip' + (active ? ' active' : '');
     if (active) { chip.style.background = c.color; chip.style.borderColor = 'transparent'; }
     chip.textContent = c.icon + ' ' + c.name;
-    chip.onclick = () => { selectedCategory = c.name; currentFieldValues = {}; renderCatRow(); };
+    chip.onclick = () => { selectedCategory = c.name; currentFieldValues = c.ticketScan ? pickTicketPriceKeys_(currentFieldValues) : {}; renderCatRow(); };
     row.appendChild(chip);
   });
   renderExtraFields();
 }
 function renderExtraFields() {
+  renderTicketPriceForm();
+  try {
+    const ti = document.getElementById('textInput');
+    const c0 = catByName(selectedCategory);
+    if (ti) ti.placeholder = (c0 && c0.ticketScan)
+      ? '寫下你的心得與感受……（劇名、場地、座位、票價請填在上方欄位）'
+      : '寫下這一刻……即使只有一兩句話也沒關係 🌷';
+  } catch (e) {}
   const row = document.getElementById('moodRow');
   const cat = catByName(selectedCategory);
   const fields = cat ? cat.fields : [];
@@ -2911,6 +2986,7 @@ function renderExtraFields() {
   row.style.flexWrap = 'wrap';
   row.innerHTML = '';
   fields.forEach(f => {
+    if (cat && cat.ticketScan && f.key === 'price') return; // 舊「票價」純文字欄位：票券類改用下方的價格資訊，舊資料照常保留
     const wrap = document.createElement('div');
     if (f.type === 'mood') {
       wrap.style.display = 'flex'; wrap.style.gap = '6px';
@@ -2935,8 +3011,13 @@ function renderExtraFields() {
       input.type = f.type === 'number' ? 'number' : 'text';
       input.placeholder = f.label;
       input.value = currentFieldValues[f.key] || '';
-      input.style.cssText = 'background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:110px;';
+      input.style.cssText = 'background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;';
       input.oninput = () => { currentFieldValues[f.key] = input.value; };
+      const lab = document.createElement('div');
+      lab.textContent = f.label;
+      lab.style.cssText = 'font-size:11px;color:var(--ink-soft);margin:0 0 3px 2px;';
+      wrap.style.cssText = 'flex:1 1 130px;min-width:0;';
+      wrap.appendChild(lab);
       wrap.appendChild(input);
     }
     row.appendChild(wrap);
@@ -3860,14 +3941,110 @@ function moodEmoji(v) {
   const m = MOODS.find(m => m.v === Number(v));
   return m ? m.e : '';
 }
-function fieldsSummaryHtml(cat, fields) {
-  if (!fields) return '';
-  const catDef = catByName(cat);
-  if (!catDef) return '';
-  const parts = (catDef.fields || [])
-    .filter(f => f.type !== 'mood' && fields[f.key])
-    .map(f => escapeHtml(String(fields[f.key])));
-  return parts.length ? `<div style="margin-top:6px;font-size:12px;color:var(--ink-soft);">${parts.join('　・　')}</div>` : '';
+// ---------- 生活記錄卡片：資訊分層 ----------
+// 資料來源各司其職，絕不混在一起：
+//   entry.text       ＝ 使用者自己寫的心得（舊資料也一律當心得原樣顯示，不拆分、不改寫）
+//   entry.fields     ＝ 依類別定義的結構化欄位（劇名、場地、座位、價格…）
+//   entry.ticketMeta ＝ 票券掃描辨識結果（只補 fields 沒有的資訊）
+const ENTRY_SYSTEM_FIELD_KEYS = ['healthKey', 'videoUrl', 'videoTitle', 'videoAuthor',
+  'origAmount', 'origCurrency', 'paidAmount', 'paidCurrency', 'paidTwdEquiv', 'paidTwdSource', 'venueAddress'];
+const ENTRY_TITLE_KEYS = ['showName', 'title', 'exhibitName', 'tourName', 'artist'];
+// 系統自動產生的紀錄文字（健身、手錶、跟練），不是使用者寫的心得
+const AUTO_TEXT_RE = /^(🏋️ 重量訓練：|完成健身：|⌚ |居家跟練：)/;
+function entryFieldVal_(v) {
+  return (v === null || v === undefined) ? '' : String(v).trim();
+}
+function entryInfo(entry) {
+  const f = entry.fields || {};
+  const tm = entry.ticketMeta || {};
+  const cat = catByName(entry.category);
+  const isTicket = !!(cat && cat.ticketScan);
+  const defs = (cat && cat.fields) || [];
+  const rows = [];
+  const seen = new Set();
+  const push = (label, value, wide) => {
+    value = entryFieldVal_(value);
+    if (!value) return;
+    const k = value.toLowerCase();
+    if (seen.has(k)) return;
+    seen.add(k);
+    rows.push({ label, value, wide: !!wide || value.length > 18 });
+  };
+  // 標題：掃描辨識的名稱優先，其次類別的名稱欄位
+  let title = entryFieldVal_(tm.showName);
+  let titleKey = '';
+  for (const k of ENTRY_TITLE_KEYS) {
+    if (defs.some(d => d.key === k) && entryFieldVal_(f[k])) {
+      if (!title) title = entryFieldVal_(f[k]);
+      titleKey = titleKey || k;
+      break;
+    }
+  }
+  if (title) seen.add(title.toLowerCase());
+  defs.forEach(d => {
+    if (d.type === 'mood' || d.key === titleKey) return;
+    if (ENTRY_SYSTEM_FIELD_KEYS.includes(d.key)) return;
+    if (isTicket && (d.key === 'price' || /票價|價格|票錢/.test(d.label || ''))) return; // 價格由下方統一列出
+    push(d.label, f[d.key]);
+  });
+  if (!defs.some(d => d.key === 'seat')) push('座位', f.seat, false);
+  if (isTicket) {
+    push('日期', tm.showDate);
+    push('場地', tm.venue, true);
+    push('地址', entryFieldVal_(f.venueAddress) || tm.address, true);
+    const p = ticketPriceOf(entry);
+    const priceRows = [];
+    if (p.orig) priceRows.push(['原始票價', formatMoney(p.orig.amount, p.orig.currency)]);
+    if (p.paid) priceRows.push(['實付', formatMoney(p.paid.amount, p.paid.currency)]);
+    if (p.paid && p.paid.currency !== 'TWD' && p.twdEquiv !== null) priceRows.push(['帳單金額', formatMoney(p.twdEquiv, 'TWD')]);
+    if (p.legacy) priceRows.push(['票價', p.legacy]);
+    priceRows.forEach(r => rows.push({ label: r[0], value: r[1], wide: false }));
+  }
+  return { title, rows, isTicket };
+}
+function entryInfoHtml(info) {
+  if (!info.rows.length) return '';
+  return `<div class="entry-info">${info.rows.map(r =>
+    `<div class="entry-info-row${r.wide ? ' wide' : ''}"><span class="entry-info-label">${escapeHtml(r.label)}</span><span class="entry-info-value">${escapeHtml(r.value)}</span></div>`
+  ).join('')}</div>`;
+}
+// 心得區塊：保留換行與段落；內容很長才預設收合（短文字絕不被藏起來）
+function entryNoteHtml(entry, info) {
+  const text = entry.text;
+  if (!text || !String(text).trim()) return '';
+  const t = String(text);
+  const isAuto = AUTO_TEXT_RE.test(t);
+  const structured = info.isTicket || info.title || info.rows.length;
+  const long = t.length > 110 || (t.match(/\n/g) || []).length >= 4;
+  const body = `<div class="entry-note-text${long ? ' clamp' : ''}">${escapeHtml(t)}</div>` +
+    (long ? `<button type="button" class="entry-note-toggle" onclick="toggleEntryNote(this)">展開全文</button>` : '');
+  if (isAuto || !structured) return `<div class="entry-note plain">${body}</div>`;
+  const heading = info.isTicket ? '📝 我的心得' : '💭 當下感受';
+  return `<div class="entry-note"><div class="entry-section-title">${heading}</div>${body}</div>`;
+}
+function toggleEntryNote(btn) {
+  const el = btn.previousElementSibling;
+  const open = el.classList.toggle('clamp');
+  btn.textContent = open ? '展開全文' : '收合';
+}
+// 卡片內容：基本資訊 → 票券／活動資訊 → 心得 → 照片。renderTicket 與「往年今日」共用，確保各處呈現一致。
+function entryCardBodyHtml(entry, opts) {
+  opts = opts || {};
+  const info = entryInfo(entry);
+  const videoHtml = (entry.fields && entry.fields.videoUrl) ? `
+    <div class="entry-video"><a href="${escapeHtml(entry.fields.videoUrl)}" target="_blank" rel="noopener">▶️ ${escapeHtml(entry.fields.videoTitle || '跟練影片')}</a></div>` : '';
+  const dateHtml = (opts.showDate && entry.date) ? `${escapeHtml(entry.date)} ` : '';
+  const photos = entryPhotosHtml(entry);
+  return `
+    <div class="ticket-top">
+      <span class="ticket-cat">${catIcon(entry.category)} ${escapeHtml(entry.category)} ${entry.mood ? moodEmoji(entry.mood) : ''}</span>
+      <span class="ticket-time">${dateHtml}${escapeHtml(entry.time || '')}</span>
+    </div>
+    ${info.title ? `<div class="entry-title">${escapeHtml(info.title)}</div>` : ''}
+    ${entryInfoHtml(info)}
+    ${entryNoteHtml(entry, info)}
+    ${videoHtml}
+    ${photos ? `<div class="entry-photos">${photos}</div>` : ''}`;
 }
 let batchMode = false;
 let selectedEntryIds = new Set();
@@ -3915,7 +4092,7 @@ async function batchDeleteEntries() {
     alert('刪除失敗：' + err.message);
   }
 }
-function renderTicket(entry) {
+function renderTicket(entry, opts) {
   const outer = document.createElement('div');
   outer.className = 'batch-row';
   outer.dataset.entryId = entry.id;
@@ -3929,29 +4106,10 @@ function renderTicket(entry) {
   div.className = 'ticket';
   div.style.flex = '1';
   div.style.borderLeftColor = catColor(entry.category);
-  const tm = entry.ticketMeta;
-  const tmHtml = (tm && (tm.showName || tm.venue || tm.showDate)) ? `
-    <div style="margin-top:6px;font-size:12px;color:var(--accent-dark);font-weight:700;">
-      🎫 ${escapeHtml(tm.showName || '')} ${tm.venue ? '・' + escapeHtml(tm.venue) : ''} ${tm.showDate ? '・' + escapeHtml(tm.showDate) : ''}
-    </div>` : '';
-  const videoHtml = (entry.fields && entry.fields.videoUrl) ? `
-    <div style="margin-top:6px;font-size:12px;">
-      <a href="${escapeHtml(entry.fields.videoUrl)}" target="_blank" rel="noopener" style="color:var(--accent-dark);font-weight:700;text-decoration:none;">
-        ▶️ ${escapeHtml(entry.fields.videoTitle || '跟練影片')}
-      </a>
-    </div>` : '';
   div.innerHTML = `
     <button class="del-btn" onclick="deleteEntry('${entry.id}')" style="right:10px;">✕</button>
     <button class="del-btn" onclick="editEntry('${entry.id}')" style="right:34px;">✎</button>
-    <div class="ticket-top">
-      <span class="ticket-cat">${catIcon(entry.category)} ${entry.category} ${entry.mood ? moodEmoji(entry.mood) : ''}</span>
-      <span class="ticket-time">${entry.time}</span>
-    </div>
-    ${entry.text ? `<div class="ticket-text">${escapeHtml(entry.text)}</div>` : ''}
-    ${entryPhotosHtml(entry)}
-    ${fieldsSummaryHtml(entry.category, entry.fields)}
-    ${tmHtml}
-    ${videoHtml}
+    ${entryCardBodyHtml(entry, opts)}
   `;
   outer.appendChild(div);
   return outer;
@@ -4248,7 +4406,13 @@ async function postJSON(bodyObj, timeoutMs) {
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify(bodyObj), signal: controller.signal });
-    return await res.json();
+    const raw = await res.text();
+    try {
+      return JSON.parse(raw);
+    } catch (parseErr) {
+      // GAS 在權限不足、部署網址失效或程式當掉時會回 HTML 頁面而不是 JSON；明確說出來，而不是顯示難懂的 JSON 解析錯誤
+      throw new Error('伺服器回應不是有效資料（HTTP ' + res.status + '）。可能是 Apps Script 部署版本／網址／權限設定有問題：' + raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80));
+    }
   } catch (err) {
     if (err.name === 'AbortError') throw new Error('連線逾時，請檢查網路連線後再試一次');
     throw err;
@@ -4337,6 +4501,11 @@ async function submitEntry() {
   const text = document.getElementById('textInput').value.trim();
   const selectedPhotos = pendingPhotos.filter(p => p.selected);
   if (!text && !selectedPhotos.length && !editingEntryId) { alert('至少寫點文字或加張照片喔 🌷'); return; }
+  const priceCat = catByName(selectedCategory);
+  if (priceCat && priceCat.ticketScan) {
+    const priceErr = normalizeTicketPriceValues_();
+    if (priceErr) { alert(priceErr); return; }
+  }
   const btn = document.getElementById('submitBtn');
   const isEdit = !!editingEntryId;
   btn.disabled = true; btn.textContent = isEdit ? '更新中…' : '記錄中…';
@@ -4748,7 +4917,7 @@ function switchElecSubTab(tab) {
   document.getElementById('elecTabSettings').classList.toggle('active', tab === 'settings');
   if (tab === 'bills') loadElecBills();
   if (tab === 'predict') loadElecPrediction();
-  if (tab === 'settings') loadElecSettingsForm();
+  if (tab === 'settings') { loadElecSettingsForm(); loadElecSyncStatus(false); }
 }
 async function loadElectricPage() {
   if (!checkConfig()) return;
@@ -4764,6 +4933,8 @@ async function loadElecHome() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getElecSummary`, { cache: 'no-store' });
     const summary = await res.json();
+    if (summary && summary.error) throw new Error(summary.error);
+    document.getElementById('elecLoadError').innerHTML = '';
 
     if (summary.period) {
       document.getElementById('elecPeriodBillValue').textContent = '$' + Math.round(summary.period.bill).toLocaleString();
@@ -4782,7 +4953,9 @@ async function loadElecHome() {
       recentEl.innerHTML = summary.recentLog.map(r => `
         <div class="stock-home-mini-row">
           <div><div class="stock-home-mini-name">${r.reading} 度</div><div class="stock-home-mini-sub">${r.date}${r.source ? '・' + escapeHtml(r.source) : ''}</div></div>
-          <div class="stock-home-mini-right">${r.diffKwh !== '' && r.diffKwh !== undefined ? '+' + r.diffKwh + ' 度' : '（第一筆）'}</div>
+          <div class="stock-home-mini-right">${r.diffKwh !== '' && r.diffKwh !== undefined ? '+' + r.diffKwh + ' 度' : '（第一筆）'}
+            <span style="margin-left:8px;cursor:pointer;" title="編輯" onclick="editElecReading('${escapeHtml(String(r.id))}','${escapeHtml(r.date)}','${Number(r.reading)}')">✎</span>
+            <span style="margin-left:6px;cursor:pointer;" title="刪除" onclick="deleteElecReadingUI('${escapeHtml(String(r.id))}','${escapeHtml(r.date)}','${Number(r.reading)}')">✕</span></div>
         </div>
       `).join('');
     } else {
@@ -4790,7 +4963,24 @@ async function loadElecHome() {
       recentEl.style.padding = '6px 0';
       recentEl.textContent = '還沒有任何讀數紀錄';
     }
-  } catch (err) {}
+  } catch (err) {
+    // 讀取雲端失敗時明確提示，而不是安靜地留著舊畫面讓人以為資料是最新的
+    document.getElementById('elecLoadError').innerHTML = `<div class="tool-desc" style="color:#C9705E;">⚠️ 無法從雲端讀取最新電力資料：${escapeHtml(elecErrMsg_(err))}（畫面上的數字可能不是最新）</div>`;
+  }
+}
+// 同一組「日期＋讀數」重送時沿用同一個 clientId：第一次請求若其實已寫入、只是回應逾時，重送不會產生第二筆
+let elecPendingClient = null; // { key, id }
+function elecClientIdFor_(date, reading) {
+  const key = date + '|' + reading;
+  if (!elecPendingClient || elecPendingClient.key !== key) {
+    elecPendingClient = { key, id: 'app_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10) };
+  }
+  return elecPendingClient.id;
+}
+function elecErrMsg_(err) {
+  const m = (err && err.message) || String(err);
+  if (m === 'AUTH_REQUIRED') return '登入已過期，請重新整理頁面並重新登入後再試';
+  return m;
 }
 async function submitElecReading() {
   const btn = document.getElementById('elecReadingSubmitBtn');
@@ -4801,24 +4991,59 @@ async function submitElecReading() {
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '記錄中…';
+  const resultEl = document.getElementById('elecReadingResult');
   try {
-    const result = await postJSON({ action: 'addElecReading', date: getRecordDate('elecReading'), reading: Number(val) });
-    if (result && result.error) throw new Error(result.error);
-    const resultEl = document.getElementById('elecReadingResult');
-    let html = `<div class="tool-desc" style="margin-top:8px;">✅ 已記錄讀數：${result.reading} 度`;
-    if (result.diff !== '') html += `　本次間隔 ${result.intervalLabel}，用電 ${result.diff} 度（日均 ${result.dailyAvg} 度/天）`;
-    else if (result.note) html += `　${result.note}`;
+    const date = getRecordDate('elecReading');
+    const clientId = elecClientIdFor_(date, Number(val));
+    const result = await postJSON({ action: 'addElecReading', date, reading: Number(val), clientId });
+    if (!result) throw new Error('伺服器沒有回應內容，無法確認是否已寫入');
+    if (result.error) throw new Error(result.error);
+    // 只有後端明確回報 ok 並附上資料列 id，才算「已寫入試算表」；其餘一律不顯示成功
+    if (result.ok !== true || !result.id) throw new Error('後端沒有確認寫入成功（回應內容不完整），請稍後重新整理確認是否已有這筆紀錄');
+    elecPendingClient = null;
+    let html = `<div class="tool-desc" style="margin-top:8px;">✅ ${result.duplicate ? '這筆先前已寫入雲端（沒有重複新增）' : '已寫入雲端試算表'}：${result.reading} 度`;
+    if (result.diff !== '' && result.diff !== undefined) html += `　本次間隔 ${result.intervalLabel}，用電 ${result.diff} 度（日均 ${result.dailyAvg} 度/天）`;
+    else if (result.note) html += `　${escapeHtml(result.note)}`;
     else html += '（這是第一筆紀錄，之後才能算用電量）';
+    if (result.sheetName && result.row) html += `<br><span style="font-size:11px;color:var(--ink-soft);">分頁「${escapeHtml(result.sheetName)}」第 ${result.row} 列</span>`;
     html += '</div>';
     if (result.anomalyNote) html += `<div class="tool-desc" style="color:#C9705E;margin-top:4px;">⚠️ ${escapeHtml(result.anomalyNote)}</div>`;
     resultEl.innerHTML = html;
     document.getElementById('elecReadingInput').value = '';
     loadElecHome();
   } catch (err) {
-    alert('記錄失敗：' + err.message);
+    // 失敗時保留輸入框內容，並明確說明這筆「沒有確認寫入」
+    const timedOut = /逾時/.test(err.message || '');
+    resultEl.innerHTML = `<div class="tool-desc" style="color:#C9705E;margin-top:8px;">❌ 沒有確認寫入雲端：${escapeHtml(elecErrMsg_(err))}${timedOut ? '<br>這筆可能已寫入、也可能沒有；你填的內容還在，直接再按一次「記錄」即可，系統會自動避免重複。' : '<br>你填的內容還在，可以直接重試。'}</div>`;
   } finally {
     btn.disabled = false;
     btn.textContent = originalText;
+  }
+}
+async function editElecReading(id, date, reading) {
+  const nd = prompt('日期（yyyy-MM-dd）', date);
+  if (nd === null) return;
+  const nr = prompt('電表讀數', reading);
+  if (nr === null) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(nd.trim()) || nr.trim() === '' || isNaN(Number(nr)) || Number(nr) < 0) { alert('日期或讀數格式不正確，未修改'); return; }
+  try {
+    const result = await postJSON({ action: 'updateElecReading', id, date: nd.trim(), reading: Number(nr) });
+    if (!result || result.error || result.ok !== true) throw new Error((result && result.error) || '後端沒有確認修改成功');
+    showToast('已更新 ✏️');
+    loadElecHome();
+  } catch (err) {
+    alert('修改失敗（資料未變動）：' + elecErrMsg_(err));
+  }
+}
+async function deleteElecReadingUI(id, date, reading) {
+  if (!(await showConfirm(`確定刪除 ${date} 的讀數 ${reading} 度？此操作無法復原。`))) return;
+  try {
+    const result = await postJSON({ action: 'deleteElecReading', id });
+    if (!result || result.error || result.ok !== true) throw new Error((result && result.error) || '後端沒有確認刪除成功');
+    showToast('已刪除 🗑️');
+    loadElecHome();
+  } catch (err) {
+    alert('刪除失敗（資料未變動）：' + elecErrMsg_(err));
   }
 }
 async function loadElecBills() {
@@ -4891,6 +5116,55 @@ async function loadElecPrediction() {
     `;
   } catch (err) {
     area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+  }
+}
+async function loadElecSyncStatus(withPreview) {
+  const area = document.getElementById('elecSyncStatusArea');
+  const importBtn = document.getElementById('elecLegacyImportBtn');
+  area.textContent = '檢查中…';
+  importBtn.style.display = 'none';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getElecSyncStatus${withPreview ? '&preview=1' : ''}`, { cache: 'no-store' });
+    const raw = await res.text();
+    let st;
+    try { st = JSON.parse(raw); } catch (e) { throw new Error('伺服器回應不是有效資料（HTTP ' + res.status + '），可能是部署網址、部署版本或權限問題'); }
+    if (st.error === 'AUTH_REQUIRED') throw new Error('登入已過期，請重新整理頁面重新登入');
+    if (st.error) throw new Error(st.error);
+    if (st.ok !== true && !st.spreadsheetId) throw new Error('後端回應不完整，這個部署版本可能還不是最新程式碼（請重新部署）');
+    const L = st.legacy || {};
+    let html = `<div>📄 App 目前讀寫的試算表：<b>${escapeHtml(st.spreadsheetName)}</b><br><span style="font-size:11px;word-break:break-all;">ID：${escapeHtml(st.spreadsheetId)}</span></div>`;
+    html += `<div style="margin-top:6px;">分頁「${escapeHtml(st.sheetName)}」：${st.sheetExists ? st.rowCount + ' 筆' : '尚未建立（第一次記錄時會自動建立）'}${st.latest ? `，最新 ${escapeHtml(st.latest.date)}／${st.latest.reading} 度` : ''}</div>`;
+    html += `<div style="margin-top:6px;">舊表（${escapeHtml(String(L.id || '').slice(0, 8))}…，gid ${L.gid}）：`;
+    if (L.sameAsBound) html += '與 App 使用同一份試算表';
+    else html += '是另一份試算表（App 新記錄的讀數<b>不會</b>自動寫進舊表）';
+    html += '<br>';
+    if (L.accessible) html += `可讀取，分頁「${escapeHtml(L.sheetName || '')}」${L.gidFound ? '' : '（找不到指定 gid，改用第一個分頁）'}，約 ${L.rowCount} 列`;
+    else html += `<span style="color:#C9705E;">❌ 無法讀取：${escapeHtml(L.error || '')}</span>`;
+    html += '</div>';
+    if (L.preview) {
+      const p = L.preview;
+      if (p.ok === false) html += `<div style="margin-top:6px;color:#C9705E;">匯入預覽失敗：${escapeHtml(p.message || '')}</div>`;
+      else {
+        html += `<div style="margin-top:6px;">舊表預覽：共 ${p.totalRows} 列，<b>可匯入 ${p.importable} 筆</b>、已存在 ${p.duplicates} 筆、異常 ${p.anomalies} 筆</div>`;
+        if (p.importable > 0) importBtn.style.display = 'block';
+      }
+    }
+    area.innerHTML = html;
+  } catch (err) {
+    area.innerHTML = `<span style="color:#C9705E;">❌ 檢查失敗：${escapeHtml(elecErrMsg_(err))}</span>`;
+  }
+}
+async function importElecLegacy() {
+  if (!(await showConfirm('把舊表尚未同步的讀數匯入 App？（只會新增、不會修改或刪除舊表，已存在的讀數會自動跳過）'))) return;
+  const area = document.getElementById('elecSyncStatusArea');
+  try {
+    const result = await postJSON({ action: 'importElecLegacy', dryRun: false }, 90000);
+    if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認匯入成功');
+    showToast(`已匯入 ${result.imported} 筆 ✅`);
+    await loadElecSyncStatus(true);
+    loadElecHome();
+  } catch (err) {
+    area.innerHTML = `<span style="color:#C9705E;">❌ 匯入失敗：${escapeHtml(elecErrMsg_(err))}</span>`;
   }
 }
 async function loadElecSettingsForm() {
@@ -6086,6 +6360,7 @@ async function loadTicketWall() {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getTicketWall`, { cache: 'no-store' });
     ticketWallAll = await res.json();
     renderTicketFilterRow();
+    renderTicketYearRow();
     renderTicketWall();
   } catch (err) {
     area.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
@@ -6108,18 +6383,360 @@ function renderTicketFilterRow() {
 function setTicketFilter(key) {
   ticketWallFilter = key;
   renderTicketFilterRow();
+  renderTicketYearRow();
   renderTicketWall();
 }
+// ==== TICKET-PRICE-BEGIN ====
+// ---------- 票價：原始票價／最終實際支付金額 ----------
+// 資料存放在每筆紀錄既有的 fields（FieldsJSON）裡，貨幣代碼與數值分開存：
+//   origAmount / origCurrency   原始票價（購票時的原價與貨幣）
+//   paidAmount / paidCurrency   最終實際支付金額（信用卡／帳單實際扣款）
+//   paidTwdEquiv / paidTwdSource 外幣實付時，使用者依帳單填的 TWD 金額（source 固定為 'user-bill'）
+//   venueAddress                場地地址（選填）
+// 舊資料的 fields.price（純文字、貨幣不明）完全保留，只顯示、不計入任何金額統計。
+const TICKET_CURRENCIES = [
+  ['TWD', '新台幣'], ['JPY', '日圓'], ['KRW', '韓元'], ['USD', '美元'], ['EUR', '歐元'],
+  ['HKD', '港幣'], ['SGD', '新加坡幣'], ['CNY', '人民幣'], ['GBP', '英鎊'], ['AUD', '澳幣'],
+  ['CAD', '加幣'], ['THB', '泰銖'], ['MYR', '馬來西亞令吉'], ['PHP', '菲律賓披索'],
+  ['VND', '越南盾'], ['IDR', '印尼盾'], ['NZD', '紐西蘭幣'], ['CHF', '瑞士法郎'], ['MOP', '澳門幣']
+];
+const ZERO_DECIMAL_CURRENCIES = { JPY: true, KRW: true, VND: true };
+const TICKET_PRICE_KEYS = ['price', 'origAmount', 'origCurrency', 'paidAmount', 'paidCurrency', 'paidTwdEquiv', 'paidTwdSource', 'venueAddress'];
+
+function hasMoneyAmount(v) {
+  if (v === null || v === undefined || v === '') return false;
+  const n = Number(v);
+  return isFinite(n) && n >= 0;
+}
+// 顯示用的小數位：日圓／韓元／越南盾不顯示小數；TWD 預設整數、但輸入有小數時不吃掉；其他貨幣固定兩位
+function moneyFractionDigits_(cur) {
+  if (ZERO_DECIMAL_CURRENCIES[cur]) return [0, 0];
+  if (cur === 'TWD') return [0, 2];
+  return [2, 2];
+}
+// 全系統統一格式：「貨幣代碼＋一個半形空格＋千分位金額」，沒填金額一律顯示「未填寫」（絕不顯示成 0）
+function formatMoney(amount, currency) {
+  if (!hasMoneyAmount(amount) || !currency) return '未填寫';
+  const cur = String(currency).toUpperCase();
+  const d = moneyFractionDigits_(cur);
+  return cur + ' ' + Number(amount).toLocaleString('en-US', { minimumFractionDigits: d[0], maximumFractionDigits: d[1] });
+}
+// 舊版「票價」文字：key 為 price，或類別裡標籤含「票價／價格」的自訂欄位。只讀取，不改寫、不猜幣別。
+function legacyPriceText(t) {
+  const f = (t && t.fields) || {};
+  if (f.price !== null && f.price !== undefined && String(f.price).trim() !== '') return String(f.price).trim();
+  const cat = catByName(t && t.category);
+  if (cat) {
+    for (const d of (cat.fields || [])) {
+      if (d.key !== 'price' && /票價|價格|票錢/.test(d.label || '') && f[d.key] !== null && f[d.key] !== undefined && String(f[d.key]).trim() !== '') {
+        return String(f[d.key]).trim();
+      }
+    }
+  }
+  return '';
+}
+// 把一筆票根整理成統計與顯示共用的價格物件。
+//   orig：原始票價；paid：最終實際支付；twdEquiv：可以計入 TWD 總支出的金額（只有「TWD 實付」或「使用者填了帳單 TWD 金額」才有）
+function ticketPriceOf(t) {
+  const f = (t && t.fields) || {};
+  const orig = (hasMoneyAmount(f.origAmount) && f.origCurrency)
+    ? { amount: Number(f.origAmount), currency: String(f.origCurrency).toUpperCase() } : null;
+  const paid = (hasMoneyAmount(f.paidAmount) && f.paidCurrency)
+    ? { amount: Number(f.paidAmount), currency: String(f.paidCurrency).toUpperCase() } : null;
+  let twdEquiv = null;
+  if (paid) {
+    if (paid.currency === 'TWD') twdEquiv = paid.amount;
+    else if (hasMoneyAmount(f.paidTwdEquiv)) twdEquiv = Number(f.paidTwdEquiv);
+  }
+  const legacy = (!orig && !paid) ? legacyPriceText(t) : '';
+  return { orig: orig, paid: paid, twdEquiv: twdEquiv, legacy: legacy };
+}
+// 統計：每次都從傳入的清單重新算，不累加任何全域狀態，所以重新載入／切換／重繪都不會重複計算。
+// 金額一律用「分」的整數累加，避免浮點誤差。實際支出只看最終實際支付，原始票價只做各幣別小計，兩者不會相加。
+function computeTicketStats(list) {
+  const toCents = n => Math.round(Number(n) * 100);
+  const add = (map, key, cents) => { const b = map[key] || (map[key] = { cents: 0, count: 0 }); b.cents += cents; b.count++; };
+  const s = {
+    total: list.length, twdCents: 0, twdCount: 0, paidCount: 0, pendingCount: 0,
+    noOrigCount: 0, legacyCount: 0, foreignPaid: {}, origByCur: {}, byYear: {}, byCat: {}
+  };
+  list.forEach(t => {
+    const p = ticketPriceOf(t);
+    if (p.orig) add(s.origByCur, p.orig.currency, toCents(p.orig.amount)); else s.noOrigCount++;
+    if (p.legacy) s.legacyCount++;
+    if (!p.paid) { s.pendingCount++; return; }
+    s.paidCount++;
+    if (p.twdEquiv !== null) {
+      const c = toCents(p.twdEquiv);
+      s.twdCents += c; s.twdCount++;
+      add(s.byYear, (t.date || '').substring(0, 4) || '未知', c);
+      add(s.byCat, t.category || '未分類', c);
+    } else {
+      add(s.foreignPaid, p.paid.currency, toCents(p.paid.amount));
+    }
+  });
+  return s;
+}
+function moneyBucketsText_(map, withCount) {
+  return Object.keys(map).sort().map(c => formatMoney(map[c].cents / 100, c) + (withCount ? `（${map[c].count} 張）` : '')).join('、');
+}
+function twdSpendText_(s) {
+  return s.twdCount ? formatMoney(s.twdCents / 100, 'TWD') : '尚無已確認支出';
+}
+// 表單送出前整理價格欄位：空的不存、數字轉成 number、貨幣轉大寫；兩組欄位各自處理，絕不互相覆蓋。回傳錯誤訊息（空字串代表通過）。
+function normalizeTicketPriceValues_() {
+  const v = currentFieldValues;
+  const pairs = [['origAmount', 'origCurrency', '原始票價'], ['paidAmount', 'paidCurrency', '最終實際支付金額']];
+  for (const p of pairs) {
+    const ak = p[0], ck = p[1], label = p[2];
+    const raw = v[ak];
+    if (raw === null || raw === undefined || raw === '') { delete v[ak]; delete v[ck]; continue; }
+    const n = Number(raw);
+    if (!isFinite(n) || n < 0) return label + '請輸入大於或等於 0 的數字';
+    const cur = String(v[ck] || 'TWD').toUpperCase();
+    if (ZERO_DECIMAL_CURRENCIES[cur] && !Number.isInteger(n)) return label + '：' + cur + ' 不使用小數';
+    if (Math.abs(n * 100 - Math.round(n * 100)) > 1e-6) return label + '最多只能到小數點後兩位';
+    v[ak] = n; v[ck] = cur;
+  }
+  // 帳單 TWD 金額只對「外幣實付」有意義；TWD 實付或沒填實付就清掉
+  if (!hasMoneyAmount(v.paidAmount) || v.paidCurrency === 'TWD' || !hasMoneyAmount(v.paidTwdEquiv)) {
+    delete v.paidTwdEquiv; delete v.paidTwdSource;
+  } else {
+    const e = Number(v.paidTwdEquiv);
+    if (Math.abs(e * 100 - Math.round(e * 100)) > 1e-6) return '帳單 TWD 金額最多只能到小數點後兩位';
+    v.paidTwdEquiv = e; v.paidTwdSource = 'user-bill';
+  }
+  if (typeof v.venueAddress === 'string') {
+    v.venueAddress = v.venueAddress.trim();
+    if (!v.venueAddress) delete v.venueAddress;
+  }
+  return '';
+}
+// ==== TICKET-PRICE-END ====
+
+// ---------- 票價表單（新增／編輯共用，只在票券類類別顯示） ----------
+function pickTicketPriceKeys_(src) {
+  const out = {};
+  TICKET_PRICE_KEYS.forEach(k => { if (src && src[k] !== undefined) out[k] = src[k]; });
+  return out;
+}
+function makeCurrencySelect_(value) {
+  const sel = document.createElement('select');
+  sel.className = 'choice-chip';
+  sel.style.cssText = 'padding:9px 8px;flex:0 0 112px;min-width:0;';
+  const codes = TICKET_CURRENCIES.map(c => c[0]);
+  const list = TICKET_CURRENCIES.slice();
+  if (value && codes.indexOf(value) === -1) list.push([value, '']);
+  sel.innerHTML = list.map(c => `<option value="${escapeHtml(c[0])}" ${c[0] === value ? 'selected' : ''}>${escapeHtml(c[0] + (c[1] ? ' ' + c[1] : ''))}</option>`).join('');
+  return sel;
+}
+function makeAmountInput_(value, currency, placeholder) {
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = ZERO_DECIMAL_CURRENCIES[currency] ? '1' : '0.01';
+  input.setAttribute('inputmode', 'decimal');
+  input.placeholder = placeholder;
+  input.value = hasMoneyAmount(value) ? String(value) : '';
+  input.style.cssText = 'flex:1;min-width:0;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;';
+  return input;
+}
+// 一組「貨幣選擇器＋金額」。amountKey／currencyKey 只改自己這一組，不碰另一組。
+function buildMoneyRow_(title, hint, amountKey, currencyKey, onCurrencyChange) {
+  const v = currentFieldValues;
+  const wrap = document.createElement('div');
+  wrap.className = 'tp-form-group';
+  const lab = document.createElement('div');
+  lab.className = 'tp-form-label';
+  lab.textContent = title;
+  wrap.appendChild(lab);
+  if (hint) {
+    const h = document.createElement('div');
+    h.className = 'tp-form-hint';
+    h.textContent = hint;
+    wrap.appendChild(h);
+  }
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  const cur = String(v[currencyKey] || 'TWD').toUpperCase();
+  const sel = makeCurrencySelect_(cur);
+  const input = makeAmountInput_(v[amountKey], cur, '金額（可留空）');
+  sel.onchange = () => {
+    v[currencyKey] = sel.value;
+    input.step = ZERO_DECIMAL_CURRENCIES[sel.value] ? '1' : '0.01';
+    if (onCurrencyChange) onCurrencyChange();
+  };
+  input.oninput = () => {
+    v[amountKey] = input.value === '' ? null : Number(input.value);
+    v[currencyKey] = sel.value;
+  };
+  row.appendChild(sel);
+  row.appendChild(input);
+  wrap.appendChild(row);
+  return wrap;
+}
+function renderTicketPriceForm() {
+  const box = document.getElementById('ticketPriceBox');
+  if (!box) return;
+  const cat = catByName(selectedCategory);
+  if (!cat || !cat.ticketScan) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const v = currentFieldValues;
+  box.style.display = 'block';
+  box.innerHTML = '';
+  const title = document.createElement('div');
+  title.className = 'tp-form-title';
+  title.textContent = '💰 價格資訊（選填）';
+  box.appendChild(title);
+
+  // 舊票價文字：保留顯示，提醒使用者補填；不會被當成新台幣
+  const legacy = (!hasMoneyAmount(v.origAmount) && !hasMoneyAmount(v.paidAmount)) ? legacyPriceText({ category: selectedCategory, fields: v }) : '';
+  if (legacy) {
+    const note = document.createElement('div');
+    note.className = 'tp-form-legacy';
+    note.textContent = `舊紀錄的票價：「${legacy}」。貨幣與性質（原始票價或實付金額）尚未確認，不會被當成新台幣統計；有需要請在下面補填。`;
+    box.appendChild(note);
+  }
+
+  box.appendChild(buildMoneyRow_('原始票價', '購票時標示的原價與貨幣', 'origAmount', 'origCurrency', null));
+  box.appendChild(buildMoneyRow_('最終實際支付金額', '信用卡／帳單實際扣款的金額；還沒收到帳單就先留空', 'paidAmount', 'paidCurrency', renderTicketPriceForm));
+
+  if (String(v.paidCurrency || 'TWD').toUpperCase() !== 'TWD') {
+    const g = document.createElement('div');
+    g.className = 'tp-form-group';
+    g.innerHTML = '<div class="tp-form-label">帳單上的 TWD 金額（選填）</div><div class="tp-form-hint">實付是外幣時，想計入新台幣總支出才需要填；請填帳單實際扣款，系統不會自動換匯。</div>';
+    const input = makeAmountInput_(v.paidTwdEquiv, 'TWD', 'TWD 金額（可留空）');
+    input.style.width = '100%';
+    input.style.boxSizing = 'border-box';
+    input.oninput = () => { v.paidTwdEquiv = input.value === '' ? null : Number(input.value); };
+    g.appendChild(input);
+    box.appendChild(g);
+  }
+
+  const ag = document.createElement('div');
+  ag.className = 'tp-form-group';
+  ag.innerHTML = '<div class="tp-form-label">場地地址（選填）</div>';
+  const addr = document.createElement('input');
+  addr.type = 'text';
+  addr.placeholder = '例如：完整地址';
+  addr.value = v.venueAddress || '';
+  addr.style.cssText = 'width:100%;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;';
+  addr.oninput = () => { v.venueAddress = addr.value; };
+  ag.appendChild(addr);
+  box.appendChild(ag);
+}
+
+// ---------- 票根牆：卡片內容 ----------
+function ticketPriceBlockHtml(t) {
+  const p = ticketPriceOf(t);
+  if (!p.orig && !p.paid) {
+    if (p.legacy) {
+      return `<div class="tp-row"><span class="tp-label">票價</span><span class="tp-val tp-empty">未填寫</span></div>` +
+        `<div class="tp-legacy">舊紀錄：${escapeHtml(p.legacy)}（幣別待確認）</div>`;
+    }
+    return `<div class="tp-row"><span class="tp-label">票價</span><span class="tp-val tp-empty">未填寫</span></div>`;
+  }
+  let html = `<div class="tp-row orig"><span class="tp-label">原價</span><span class="tp-val${p.orig ? '' : ' tp-empty'}">${escapeHtml(p.orig ? formatMoney(p.orig.amount, p.orig.currency) : '未填寫')}</span></div>`;
+  html += `<div class="tp-row"><span class="tp-label">實付</span><span class="tp-val${p.paid ? '' : ' tp-empty'}">${escapeHtml(p.paid ? formatMoney(p.paid.amount, p.paid.currency) : '待確認')}</span></div>`;
+  if (p.paid && p.paid.currency !== 'TWD' && p.twdEquiv !== null) {
+    html += `<div class="tp-row orig"><span class="tp-label">帳單</span><span class="tp-val">${escapeHtml(formatMoney(p.twdEquiv, 'TWD'))}</span></div>`;
+  }
+  return html;
+}
+function ticketBodyHtml(t) {
+  const { performer, venue, address, seat } = ticketCardInfo(t);
+  let loc = '';
+  if (venue) loc += `<div class="ticket-venue">📍 ${escapeHtml(venue)}</div>`;
+  if (address) loc += `<div class="ticket-addr">${venue ? '' : '📍 '}${escapeHtml(address)}</div>`;
+  if (!venue && !address) loc = `<div class="ticket-venue ticket-venue-empty">📍 尚未填寫</div>`;
+  return `
+    <div class="tb-main">
+      <div class="ticket-date">${ticketDateLabel(t.date)}${t.time ? ' ' + escapeHtml(t.time) : ''}</div>
+      ${performer ? `<div class="ticket-artist">${escapeHtml(performer)}</div>` : ''}
+      ${loc}
+      ${seat ? `<div class="ticket-seat">${escapeHtml(seat)}</div>` : ''}
+    </div>
+    <div class="tb-price">${ticketPriceBlockHtml(t)}</div>`;
+}
+// ---------- 票根牆：統計區與年份篩選 ----------
+let ticketWallYear = 'all';
+function ticketWallFilteredList_() {
+  let list = ticketWallFilter === 'all' ? ticketWallAll : ticketWallAll.filter(t => t.category === ticketWallFilter);
+  if (ticketWallYear !== 'all') list = list.filter(t => (t.date || '').substring(0, 4) === ticketWallYear);
+  return list;
+}
+function renderTicketYearRow() {
+  const row = document.getElementById('ticketYearRow');
+  if (!row) return;
+  const base = ticketWallFilter === 'all' ? ticketWallAll : ticketWallAll.filter(t => t.category === ticketWallFilter);
+  const years = Array.from(new Set(base.map(t => (t.date || '').substring(0, 4)).filter(Boolean))).sort().reverse();
+  if (ticketWallYear !== 'all' && years.indexOf(ticketWallYear) === -1) ticketWallYear = 'all';
+  if (years.length <= 1) { row.innerHTML = ''; return; }
+  const chips = [{ key: 'all', label: '全部年份' }].concat(years.map(y => ({ key: y, label: y })));
+  row.innerHTML = chips.map(c => {
+    const active = ticketWallYear === c.key;
+    return `<div class="cat-chip${active ? ' active' : ''}" style="${active ? 'background:var(--accent);border-color:transparent;' : ''}" onclick="setTicketYear('${c.key}')">${escapeHtml(c.label)}</div>`;
+  }).join('');
+}
+function setTicketYear(y) {
+  ticketWallYear = y;
+  renderTicketYearRow();
+  renderTicketWall();
+}
+function renderTicketStats(list) {
+  const el = document.getElementById('ticketStatsArea');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = ''; return; }
+  const s = computeTicketStats(list);
+  const rows = (map, order) => {
+    const keys = Object.keys(map).sort(order);
+    return keys.length
+      ? `<table class="tstat-table">${keys.map(k => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(formatMoney(map[k].cents / 100, 'TWD'))}　<span class="tstat-sub">${map[k].count} 張</span></td></tr>`).join('')}</table>`
+      : '<div class="tstat-note">還沒有已確認的支出</div>';
+  };
+  const origRows = Object.keys(s.origByCur).sort().map(c =>
+    `<tr><td>${escapeHtml(c)}</td><td>${escapeHtml(formatMoney(s.origByCur[c].cents / 100, c))}　<span class="tstat-sub">${s.origByCur[c].count} 張</span></td></tr>`).join('');
+  const foreignText = moneyBucketsText_(s.foreignPaid, true);
+  el.innerHTML = `
+    <div class="tstat-card">
+      <div class="tstat-head">
+        <div class="tstat-title">💰 已確認的實際支出</div>
+        <div class="tstat-total">${escapeHtml(twdSpendText_(s))}</div>
+      </div>
+      <div class="tstat-chips">
+        <span class="tstat-chip">已確認實付 ${s.paidCount} 張</span>
+        <span class="tstat-chip${s.pendingCount ? ' warn' : ''}">待確認實付 ${s.pendingCount} 張</span>
+        <span class="tstat-chip${s.noOrigCount ? ' warn' : ''}">未填原始票價 ${s.noOrigCount} 張</span>
+      </div>
+      ${s.paidCount !== s.twdCount ? `<div class="tstat-note">有 ${s.paidCount - s.twdCount} 張是外幣實付、還沒填帳單 TWD 金額，所以沒有算進上面的新台幣總額：${escapeHtml(foreignText)}</div>` : ''}
+      ${s.legacyCount ? `<div class="tstat-note">有 ${s.legacyCount} 張只有舊版的票價文字，貨幣與性質待確認，沒有計入任何金額。</div>` : ''}
+      <details class="tstat-details"><summary>依年份</summary>${rows(s.byYear, (a, b) => b.localeCompare(a))}</details>
+      <details class="tstat-details"><summary>依類別</summary>${rows(s.byCat, (a, b) => s.byCat[b].cents - s.byCat[a].cents)}</details>
+      <details class="tstat-details"><summary>各幣別原始票價小計</summary>${origRows ? `<table class="tstat-table">${origRows}</table>` : '<div class="tstat-note">還沒有填寫原始票價</div>'}<div class="tstat-note">不同貨幣不會相加，也不會跟實際支出合併計算。</div></details>
+    </div>`;
+}
+// 年度回顧：用同一套 computeTicketStats，算整年（不受類別篩選影響）
+function ticketWrapSpendHtml(year) {
+  const list = ticketWallAll.filter(t => (t.date || '').substring(0, 4) === String(year));
+  if (!list.length) return '';
+  const s = computeTicketStats(list);
+  const orig = moneyBucketsText_(s.origByCur, false);
+  return `<div style="margin-top:6px;">🎟️ 票根實際支出 ${escapeHtml(twdSpendText_(s))}（已確認 ${s.paidCount} 張・待確認 ${s.pendingCount} 張）${orig ? '<br>原始票價：' + escapeHtml(orig) : ''}</div>`;
+}
+
 // 從票根的 AI 辨識結果（ticketMeta）與類別自訂欄位（fields）中，
-// 整理出票券卡片要顯示的標題／表演者／場地／座位，盡量沿用既有資料，不新增資料結構。
+// 整理出票券卡片要顯示的標題／表演者／場地／地址／座位，盡量沿用既有資料，不新增資料結構。
+// 場地依序取 ticketMeta.venue、fields.venue；地址取 fields.venueAddress / fields.address、ticketMeta.address，
+// 地址若跟場地名稱一樣就不重複顯示。找不到的欄位保持空字串，絕不自行推測。
 function ticketCardInfo(t) {
   const meta = t.ticketMeta || {};
   const fields = t.fields || {};
   const title = meta.showName || fields.showName || fields.title || fields.exhibitName || fields.tourName || t.text || '未命名紀錄';
   const performer = fields.artist || fields.cast || fields.starring || fields.guests || fields.director || meta.artist || '';
-  const venue = meta.venue || fields.venue || '';
+  const venue = String(meta.venue || fields.venue || '').trim();
+  let address = String(fields.venueAddress || fields.address || meta.address || meta.venueAddress || '').trim();
+  if (address && venue && address.toLowerCase() === venue.toLowerCase()) address = '';
   const seat = fields.seat || fields.seatNo || fields.seatNumber || '';
-  return { title, performer, venue, seat };
+  return { title, performer, venue, address, seat };
 }
 // 把 yyyy-MM-dd 轉成「yyyy/MM/dd (週X)」，用本地時間建構避免時區跑掉一天。
 function ticketDateLabel(ds) {
@@ -6133,7 +6750,8 @@ function ticketDateLabel(ds) {
 }
 function renderTicketWall() {
   const area = document.getElementById('ticketWallArea');
-  const tickets = ticketWallFilter === 'all' ? ticketWallAll : ticketWallAll.filter(t => t.category === ticketWallFilter);
+  const tickets = ticketWallFilteredList_();
+  renderTicketStats(tickets);
   if (!tickets.length) {
     area.innerHTML = ticketWallAll.length
       ? '<div class="empty-state">這個類別還沒有紀錄</div>'
@@ -6170,7 +6788,7 @@ function renderTicketWall() {
     const list = document.createElement('div');
     list.className = 'ticket-wall-list';
     byYear[year].forEach(t => {
-      const { title, performer, venue, seat } = ticketCardInfo(t);
+      const { title } = ticketCardInfo(t);
       const imgUrl = t.photoUrl || (t.photoUrls && t.photoUrls[0]) || '';
       const titleColor = catColor(t.category);
       const card = document.createElement('div');
@@ -6184,12 +6802,7 @@ function renderTicketWall() {
         </div>
         <div class="ticket-info">
           <div class="ticket-title-bar" style="background:${titleColor};">${escapeHtml(title)}</div>
-          <div class="ticket-body">
-            <div class="ticket-date">${ticketDateLabel(t.date)}${t.time ? ' ' + escapeHtml(t.time) : ''}</div>
-            ${performer ? `<div class="ticket-artist">${escapeHtml(performer)}</div>` : ''}
-            ${venue ? `<div class="ticket-venue">${escapeHtml(venue)}</div>` : ''}
-            ${seat ? `<div class="ticket-seat">${escapeHtml(seat)}</div>` : ''}
-          </div>
+          <div class="ticket-body">${ticketBodyHtml(t)}</div>
         </div>`;
       list.appendChild(card);
     });
@@ -6200,14 +6813,17 @@ function renderTicketWall() {
 function ticketYearOverviewHtml(list) {
   const venueCounts = {};
   list.forEach(t => {
-    const venue = t.ticketMeta && t.ticketMeta.venue;
+    const venue = ticketCardInfo(t).venue;
     if (venue) venueCounts[venue] = (venueCounts[venue] || 0) + 1;
   });
   const topVenues = Object.keys(venueCounts).sort((a, b) => venueCounts[b] - venueCounts[a]).slice(0, 3);
   const venueText = topVenues.length
     ? '常去：' + topVenues.map(v => `${escapeHtml(v)}(${venueCounts[v]})`).join('、')
     : '';
-  return `<div class="yto-stat">🎫 共 ${list.length} 場${venueText ? '　·　' + venueText : ''}</div>`;
+  const s = computeTicketStats(list);
+  const orig = moneyBucketsText_(s.origByCur, false);
+  return `<div class="yto-stat">🎫 共 ${list.length} 場${venueText ? '　·　' + venueText : ''}</div>` +
+    `<div class="yto-stat" style="margin-top:2px;">💰 實際支出 ${escapeHtml(twdSpendText_(s))}（已確認 ${s.paidCount}／待確認 ${s.pendingCount}）${orig ? '　·　原始票價 ' + escapeHtml(orig) : ''}</div>`;
 }
 async function generateWrap(year) {
   const wrapArea = document.getElementById('wrapArea-' + year);
@@ -6225,6 +6841,7 @@ async function generateWrap(year) {
       ${escapeHtml(result.narrative)}
       <div style="margin-top:10px;font-size:12px;color:var(--ink-soft);">
         共 ${s.totalEntries} 則紀錄・運動 ${s.exerciseDaysCount} 天・看了 ${s.showCount} 場演出${extra.length ? '・' + extra.join('・') : ''}
+        ${ticketWrapSpendHtml(year)}
       </div>
     </div>`;
   } catch (err) {
@@ -6458,12 +7075,7 @@ function renderYearCard(y, currentYear) {
     html += `<div class="summary-card" style="margin-bottom:10px;"><div class="label">當天總結</div><p>${escapeHtml(y.summary.summary)}</p></div>`;
   }
   y.entries.forEach(e => {
-    html += `<div class="ticket" style="margin-bottom:8px;border-left-color:${catColor(e.category)};">
-      <div class="ticket-top"><span class="ticket-cat">${catIcon(e.category)} ${e.category}</span><span class="ticket-time">${e.time}</span></div>
-      ${e.text ? `<div class="ticket-text">${escapeHtml(e.text)}</div>` : ''}
-      ${entryPhotosHtml(e)}
-      ${fieldsSummaryHtml(e.category, e.fields)}
-    </div>`;
+    html += `<div class="ticket" style="margin-bottom:8px;border-left-color:${catColor(e.category)};">${entryCardBodyHtml(e)}</div>`;
   });
   div.innerHTML = html;
   return div;
@@ -6598,11 +7210,11 @@ function renderSearchResults() {
 
   if (show('life') && life.length) {
     list.appendChild(searchSectionHeader('📔 生活紀錄', life.length));
-    life.forEach(e => { list.appendChild(renderTicket(e)); appendJumpLink(list, e.date); });
+    life.forEach(e => { list.appendChild(renderTicket(e, { showDate: true })); appendJumpLink(list, e.date); });
   }
   if (show('exercise') && exercise.length) {
     list.appendChild(searchSectionHeader('💪 運動', exercise.length));
-    exercise.forEach(e => { list.appendChild(renderTicket(e)); appendJumpLink(list, e.date); });
+    exercise.forEach(e => { list.appendChild(renderTicket(e, { showDate: true })); appendJumpLink(list, e.date); });
   }
   if (show('ticket') && ticket.length) {
     list.appendChild(searchSectionHeader('🎟️ 票根', ticket.length));
@@ -6658,7 +7270,7 @@ function searchSectionHeader(label, count) {
 }
 // 票根搜尋結果：外觀沿用票根牆的 .ticket-card，點下去跟票根牆一樣直接跳到當天完整內容
 function renderSearchTicketCard(t) {
-  const { title, performer, venue, seat } = ticketCardInfo(t);
+  const { title } = ticketCardInfo(t);
   const imgUrl = t.photoUrl || (t.photoUrls && t.photoUrls[0]) || '';
   const titleColor = catColor(t.category);
   const card = document.createElement('div');
@@ -6670,12 +7282,7 @@ function renderSearchTicketCard(t) {
     </div>
     <div class="ticket-info">
       <div class="ticket-title-bar" style="background:${titleColor};">${escapeHtml(title)}</div>
-      <div class="ticket-body">
-        <div class="ticket-date">${ticketDateLabel(t.date)}${t.time ? ' ' + escapeHtml(t.time) : ''}</div>
-        ${performer ? `<div class="ticket-artist">${escapeHtml(performer)}</div>` : ''}
-        ${venue ? `<div class="ticket-venue">${escapeHtml(venue)}</div>` : ''}
-        ${seat ? `<div class="ticket-seat">${escapeHtml(seat)}</div>` : ''}
-      </div>
+      <div class="ticket-body">${ticketBodyHtml(t)}</div>
     </div>`;
   return card;
 }
