@@ -5187,6 +5187,12 @@ async function loadElecSyncStatus(withPreview) {
     if (L.accessible) html += `可讀取，分頁「${escapeHtml(L.sheetName || '')}」${L.gidFound ? '' : '（找不到指定 gid，改用第一個分頁）'}，約 ${L.rowCount} 列`;
     else html += `<span style="color:#C9705E;">❌ 無法讀取：${escapeHtml(L.error || '')}</span>`;
     html += '</div>';
+    if (L.bills) {
+      html += L.bills.ok
+        ? `<div style="margin-top:6px;">帳單（舊表分頁「${escapeHtml(L.bills.sheetName || '')}」）：可讀取，約 ${L.bills.rowCount} 筆</div>`
+        : `<div style="margin-top:6px;color:#C9705E;">❌ 帳單分頁無法讀取：${escapeHtml(L.bills.error || '')}</div>`;
+    }
+    html += '<div style="margin-top:6px;font-size:12px;color:var(--ink-soft);">度數與帳單以舊表為主（讀取＋寫入），App 內的 ElecReadingLog／ElecBills 為備份。</div>';
     if (L.preview) {
       const p = L.preview;
       const dc = p.detectedColumns;
