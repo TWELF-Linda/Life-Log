@@ -5092,24 +5092,57 @@ async function deleteElecReadingUI(id, date, reading) {
     alert('刪除失敗（資料未變動）：' + elecErrMsg_(err));
   }
 }
+function elecFmtNum_(v, digits) {
+  if (v === '' || v === null || v === undefined || isNaN(Number(v))) return '—';
+  const f = Math.pow(10, digits === undefined ? 1 : digits);
+  return (Math.round(Number(v) * f) / f).toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
 async function loadElecBills() {
   const area = document.getElementById('elecBillsArea');
-  area.innerHTML = '<div class="empty-state">載入中…</div>';
+  area.className = 'empty-state';
+  area.innerHTML = '載入中…';
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getElecBills&limit=10`, { cache: 'no-store' });
     const bills = await res.json();
-    if (!bills.length || bills.error) { area.innerHTML = '<div class="empty-state">還沒有任何帳單資料</div>'; return; }
-    area.innerHTML = bills.map(b => `
-      <div class="period-daily-history-item">
-        <div>
-          <div style="color:var(--ink);font-weight:700;">${escapeHtml(b.periodLabel)}</div>
-          <div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">實際：${b.billedKwh} 度／${b.flowFee} 元，應繳 ${b.totalDue} 元</div>
-          ${typeof b.estFlowFee === 'number' ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:1px;">系統估算：${b.estKwh} 度／${b.estFlowFee} 元（誤差 ${b.feeDiff>0?'+':''}${b.feeDiff}元，${b.feeDiffPct>0?'+':''}${b.feeDiffPct}%）</div>` : ''}
+    if (!bills.length || bills.error) { area.innerHTML = '還沒有任何帳單資料'; return; }
+    area.className = '';
+    area.style.textAlign = 'left';
+    const stat = (label, value, unit) => `
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;color:var(--ink-soft);">${label}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;">${value}<span style="font-size:11px;font-weight:500;color:var(--ink-soft);margin-left:2px;">${unit}</span></div>
+      </div>`;
+    area.innerHTML = bills.map(b => {
+      const hasEst = b.estFlowFee !== '' && b.estFlowFee !== null && b.estFlowFee !== undefined && !isNaN(Number(b.estFlowFee));
+      const pct = Number(b.feeDiffPct), pctOk = b.feeDiffPct !== '' && !isNaN(pct);
+      const ap = Math.abs(pct);
+      const color = !pctOk ? 'var(--ink-soft)' : ap < 5 ? '#5F9478' : ap < 15 ? '#C99A3A' : '#C9705E';
+      const sign = v => (Number(v) > 0 ? '+' : '');
+      const adj = [];
+      if (Number(b.publicFee)) adj.push(`公共設施 ${elecFmtNum_(b.publicFee)} 元`);
+      if (Number(b.savingReward)) adj.push(`節電獎勵 ${elecFmtNum_(b.savingReward)} 元`);
+      if (Number(b.prevBalance)) adj.push(`上期預繳 ${elecFmtNum_(b.prevBalance)} 元`);
+      const label = escapeHtml(String(b.periodLabel)).replace(/\s*[~～]\s*/, ' ～ ');
+      return `
+      <div style="padding:12px 0;border-bottom:1px solid var(--line);text-align:left;">
+        <div style="font-size:13.5px;font-weight:700;color:var(--ink);margin-bottom:8px;">${label}</div>
+        <div style="display:flex;gap:10px;">
+          ${stat('計費度數', elecFmtNum_(b.billedKwh, 0), '度')}
+          ${stat('流動電費', elecFmtNum_(b.flowFee), '元')}
+          ${stat('應繳總額', elecFmtNum_(b.totalDue), '元')}
         </div>
-      </div>
-    `).join('');
+        ${adj.length ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;">${adj.join('　·　')}</div>` : ''}
+        ${b.note ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">📝 ${escapeHtml(String(b.note))}</div>` : ''}
+        ${hasEst ? `
+        <div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--input-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div style="font-size:12px;color:var(--ink-soft);">系統估算　${elecFmtNum_(b.estKwh)} 度 ／ ${elecFmtNum_(b.estFlowFee, 0)} 元</div>
+          <div style="font-size:12px;font-weight:700;color:${color};white-space:nowrap;">${pctOk ? `${sign(b.feeDiff)}${elecFmtNum_(b.feeDiff)} 元（${sign(pct)}${elecFmtNum_(pct)}%）` : ''}</div>
+        </div>` : ''}
+      </div>`;
+    }).join('');
   } catch (err) {
-    area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(err.message)}</div>`;
+    area.className = 'empty-state';
+    area.innerHTML = `讀取失敗：${escapeHtml(err.message)}`;
   }
 }
 async function submitElecBill() {
