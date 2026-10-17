@@ -2350,7 +2350,7 @@ const MOODS = [
 ];
 const FIELD_TYPES = [
   { v: 'text', label: '文字' }, { v: 'number', label: '數字' },
-  { v: 'select', label: '選單' }, { v: 'mood', label: '心情' }
+  { v: 'select', label: '選單' }, { v: 'date', label: '日期' }, { v: 'mood', label: '心情' }
 ];
 const COLOR_PRESETS = ['#FFB4A2','#F5A3C7','#C9A6E8','#A8DDB5','#D3C0FF','#FFE29A','#A9DDEE','#FFD3E0','#FFCF9E','#B9E4C9'];
 
@@ -2533,13 +2533,24 @@ function showAlert(message) {
     };
   });
 }
-function showConfirm(message) {
+function showConfirm(message, opts) {
+  opts = opts || {};
   return new Promise(resolve => {
     const overlay = document.getElementById('appModalOverlay');
-    document.getElementById('appModalMessage').textContent = message;
+    const msgEl = document.getElementById('appModalMessage');
+    msgEl.textContent = '';
+    if (opts.title) {
+      const t = document.createElement('div');
+      t.textContent = opts.title;
+      t.style.cssText = 'font-weight:800;font-size:16px;margin-bottom:8px;color:var(--ink);';
+      msgEl.appendChild(t);
+    }
+    const body = document.createElement('div');
+    body.textContent = message;
+    msgEl.appendChild(body);
     document.getElementById('appModalButtons').innerHTML = `
-      <button class="app-modal-btn-secondary" id="appModalCancelBtn">取消</button>
-      <button class="app-modal-btn-primary" id="appModalOkBtn">確定</button>
+      <button class="app-modal-btn-secondary" id="appModalCancelBtn">${escapeHtml(opts.cancelText || '取消')}</button>
+      <button class="app-modal-btn-primary" id="appModalOkBtn">${escapeHtml(opts.okText || '確定')}</button>
     `;
     overlay.classList.add('show');
     document.getElementById('appModalOkBtn').onclick = () => { overlay.classList.remove('show'); resolve(true); };
@@ -2969,6 +2980,15 @@ function renderCatRow() {
   });
   renderExtraFields();
 }
+// 依欄位型別與名稱判斷版面寬度：'date'／'number' 短欄位、'wide' 長文字（名稱、場地、地址、座位、備註…）、'text' 一般文字
+function extraFieldKind_(f) {
+  const label = String(f.label || ''), key = String(f.key || '');
+  if (f.type === 'date') return 'date';
+  if (f.type === 'number') return 'number';
+  if (/日期|date/i.test(label + ' ' + key) && !/更新|備註/.test(label)) return 'date';
+  if (/名稱|劇名|活動|歌手|團體|藝人|演員|表演|場地|地址|地點|平台|座位|備註|心得|venue|address|title|name|artist|cast|seat|note/i.test(label + ' ' + key)) return 'wide';
+  return 'text';
+}
 function renderExtraFields() {
   renderTicketPriceForm();
   try {
@@ -3002,21 +3022,30 @@ function renderExtraFields() {
       const sel = document.createElement('select');
       sel.className = 'choice-chip';
       sel.style.padding = '9px 10px';
+      sel.style.cssText += ';width:100%;max-width:100%;box-sizing:border-box;min-width:0;text-overflow:ellipsis;';
       sel.innerHTML = `<option value="">${escapeHtml(f.label)}</option>` +
         (f.options || []).map(o => `<option value="${escapeHtml(o)}" ${currentFieldValues[f.key] === o ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('');
       sel.onchange = () => { currentFieldValues[f.key] = sel.value; };
+      wrap.style.cssText = 'flex:1 1 150px;min-width:0;';
       wrap.appendChild(sel);
     } else {
       const input = document.createElement('input');
-      input.type = f.type === 'number' ? 'number' : 'text';
+      const kind = extraFieldKind_(f);
+      const curVal = currentFieldValues[f.key];
+      // 日期欄位：值維持 YYYY-MM-DD 純日期字串（不經過 Date 物件，不會有時區位移）；空白就是空白，不自動帶今天。
+      // 舊資料若不是 YYYY-MM-DD（例如手打的文字），日期選擇器會顯示空白而吃掉原值，所以這種情況退回文字框保留原文。
+      const legacyNonIso = kind === 'date' && curVal && !/^\d{4}-\d{2}-\d{2}$/.test(String(curVal));
+      input.type = (kind === 'date' && !legacyNonIso) ? 'date' : (kind === 'number' ? 'number' : 'text');
       input.placeholder = f.label;
-      input.value = currentFieldValues[f.key] || '';
-      input.style.cssText = 'background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;';
+      input.value = (curVal === undefined || curVal === null) ? '' : curVal;
+      input.style.cssText = 'background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:100%;max-width:100%;box-sizing:border-box;min-width:0;';
+      if (input.type === 'date') input.onclick = () => { try { openNativeDatePicker(input); } catch (e) {} };
       input.oninput = () => { currentFieldValues[f.key] = input.value; };
       const lab = document.createElement('div');
       lab.textContent = f.label;
       lab.style.cssText = 'font-size:11px;color:var(--ink-soft);margin:0 0 3px 2px;';
-      wrap.style.cssText = 'flex:1 1 130px;min-width:0;';
+      // 長文字（名稱、場地、地址、備註…）獨占整行；日期／數字／金額等短欄位可並排
+      wrap.style.cssText = kind === 'wide' ? 'flex:1 1 100%;min-width:0;' : (kind === 'text' ? 'flex:1 1 220px;min-width:0;' : 'flex:1 1 150px;min-width:0;');
       wrap.appendChild(lab);
       wrap.appendChild(input);
     }
@@ -4926,6 +4955,23 @@ async function loadElectricPage() {
   initRecordDatePicker('elecReading');
   document.getElementById('elecReadingResult').innerHTML = '';
   await loadElecHome();
+  elecAutoSyncLegacy_(); // 背景把舊表新增的讀數補進來，有新增才重新整理畫面
+}
+// 開啟電力頁時自動同步舊表（1AGr…）新增的讀數：只新增、以「日期＋讀數」去重；60 秒內不重複觸發，失敗時明確提示、不影響原有資料
+let elecAutoSyncAt = 0;
+async function elecAutoSyncLegacy_() {
+  if (Date.now() - elecAutoSyncAt < 60000) return;
+  elecAutoSyncAt = Date.now();
+  try {
+    const r = await postJSON({ action: 'syncElecLegacy' }, 90000);
+    if (!r || r.error || r.ok === false) throw new Error((r && (r.error || r.message)) || '同步沒有回應');
+    if (r.imported > 0) { showToast(`已從舊表同步 ${r.imported} 筆新讀數 ✅`); await loadElecHome(); }
+    if (r.anomalies > 0) {
+      document.getElementById('elecLoadError').innerHTML = `<div class="tool-desc" style="color:#C9705E;">⚠️ 舊表有 ${r.anomalies} 列無法匯入（例如日期沒有年份或讀數不是數字），請到「設定 → 檢查同步狀態」查看。</div>`;
+    }
+  } catch (err) {
+    document.getElementById('elecLoadError').innerHTML = `<div class="tool-desc" style="color:#C9705E;">⚠️ 舊表自動同步失敗：${escapeHtml(elecErrMsg_(err))}（畫面可能不是最新）</div>`;
+  }
 }
 // 電力首頁：最新讀數／本期用電／本期估算／跟上期比較——全部來自同一套後端計算服務（getElecSummary_），
 // 跟 LINE 查詢用的是同一份計算邏輯，數字保證一致，不會 App 跟 LINE 各算各的。
@@ -6520,14 +6566,15 @@ function pickTicketPriceKeys_(src) {
   TICKET_PRICE_KEYS.forEach(k => { if (src && src[k] !== undefined) out[k] = src[k]; });
   return out;
 }
-function makeCurrencySelect_(value) {
+function makeCurrencySelect_(value, allowEmpty) {
   const sel = document.createElement('select');
   sel.className = 'choice-chip';
-  sel.style.cssText = 'padding:9px 8px;flex:0 0 112px;min-width:0;';
+  sel.style.cssText = 'padding:9px 8px;flex:0 0 auto;min-width:118px;max-width:46%;box-sizing:border-box;';
   const codes = TICKET_CURRENCIES.map(c => c[0]);
   const list = TICKET_CURRENCIES.slice();
   if (value && codes.indexOf(value) === -1) list.push([value, '']);
-  sel.innerHTML = list.map(c => `<option value="${escapeHtml(c[0])}" ${c[0] === value ? 'selected' : ''}>${escapeHtml(c[0] + (c[1] ? ' ' + c[1] : ''))}</option>`).join('');
+  sel.innerHTML = (allowEmpty ? `<option value="" ${value ? '' : 'selected'}>請選擇貨幣</option>` : '') +
+    list.map(c => `<option value="${escapeHtml(c[0])}" ${c[0] === value ? 'selected' : ''}>${escapeHtml(c[0] + (c[1] ? ' ' + c[1] : ''))}</option>`).join('');
   return sel;
 }
 function makeAmountInput_(value, currency, placeholder) {
@@ -6541,9 +6588,22 @@ function makeAmountInput_(value, currency, placeholder) {
   input.style.cssText = 'flex:1;min-width:0;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;';
   return input;
 }
-// 一組「貨幣選擇器＋金額」。amountKey／currencyKey 只改自己這一組，不碰另一組。
-function buildMoneyRow_(title, hint, amountKey, currencyKey, onCurrencyChange) {
+// 價格表單的互動狀態（只活在畫面上，不會存進票根資料）。currentFieldValues 換成新物件（換類別、開新表單、編輯另一筆）時自動重置。
+let tpState = { obj: null, paidTouched: false, autoAllowed: true, confirming: false, justCleared: false };
+function tpInitState_() {
   const v = currentFieldValues;
+  if (tpState.obj === v) return;
+  const hasOrig = hasMoneyAmount(v.origAmount), hasPaid = hasMoneyAmount(v.paidAmount);
+  tpState = {
+    obj: v,
+    // 載入既有資料時，已有的實付金額視為「使用者確認過」，不會被自動帶入覆蓋
+    paidTouched: hasPaid || !!v.paidCurrency,
+    // 編輯舊票根時，只有兩個價格都是空的才允許自動帶入；新增票根一律允許
+    autoAllowed: !editingEntryId || (!hasOrig && !hasPaid),
+    confirming: false, justCleared: false
+  };
+}
+function buildPriceRowShell_(title, hint) {
   const wrap = document.createElement('div');
   wrap.className = 'tp-form-group';
   const lab = document.createElement('div');
@@ -6551,29 +6611,98 @@ function buildMoneyRow_(title, hint, amountKey, currencyKey, onCurrencyChange) {
   lab.textContent = title;
   wrap.appendChild(lab);
   if (hint) {
-    const h = document.createElement('div');
-    h.className = 'tp-form-hint';
-    h.textContent = hint;
-    wrap.appendChild(h);
+    const hd = document.createElement('div');
+    hd.className = 'tp-form-hint';
+    hd.textContent = hint;
+    wrap.appendChild(hd);
   }
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:8px;align-items:center;';
-  const cur = String(v[currencyKey] || 'TWD').toUpperCase();
-  const sel = makeCurrencySelect_(cur);
-  const input = makeAmountInput_(v[amountKey], cur, '金額（可留空）');
-  sel.onchange = () => {
-    v[currencyKey] = sel.value;
-    input.step = ZERO_DECIMAL_CURRENCIES[sel.value] ? '1' : '0.01';
-    if (onCurrencyChange) onCurrencyChange();
-  };
-  input.oninput = () => {
-    v[amountKey] = input.value === '' ? null : Number(input.value);
-    v[currencyKey] = sel.value;
-  };
-  row.appendChild(sel);
-  row.appendChild(input);
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:nowrap;min-width:0;';
   wrap.appendChild(row);
-  return wrap;
+  return { wrap, row };
+}
+function buildPriceRows_(box) {
+  const v = currentFieldValues;
+  tpInitState_();
+  const st = tpState;
+  let paidInput = null, paidSel = null;
+
+  // ----- 原始票價 -----
+  const o = buildPriceRowShell_('原始票價', '購票時標示的原價與貨幣');
+  const oCur = String(v.origCurrency || 'TWD').toUpperCase();
+  const oSel = makeCurrencySelect_(oCur, false);
+  const oInput = makeAmountInput_(v.origAmount, oCur, '金額（可留空）');
+  oSel.onchange = async () => {
+    const prev = String(v.origCurrency || 'TWD').toUpperCase();
+    const next = oSel.value;
+    if (next === prev) return;
+    if (st.confirming) { oSel.value = prev; return; } // 對話框開著時的重複觸發：忽略，維持原狀
+    // 情境 B：實付金額還沒填 → 直接套用新幣別，不顯示對話框、不建立實付資料
+    if (!hasMoneyAmount(v.paidAmount)) {
+      v.origCurrency = next;
+      oInput.step = ZERO_DECIMAL_CURRENCIES[next] ? '1' : '0.01';
+      return;
+    }
+    // 情境 A：實付金額已有資料 → 清除前先確認，確認前不改動任何欄位
+    st.confirming = true;
+    oSel.disabled = true;
+    let ok = false;
+    try {
+      ok = await showConfirm('變更原始票價幣別後，最終實際支付金額將被清除，以避免保留不適用的付款資料。此操作會清除目前已填寫的實際支付金額與支付貨幣，是否繼續？',
+        { title: '確認變更原始票價幣別', okText: '確認變更並清除', cancelText: '取消變更' });
+    } finally { st.confirming = false; oSel.disabled = false; }
+    if (!ok) { oSel.value = prev; return; } // 取消：幣別恢復、金額與實付資料完整保留
+    v.origCurrency = next;                  // 保留原始票價的金額數字，不換算
+    v.paidAmount = null; v.paidCurrency = '';
+    delete v.paidTwdEquiv; delete v.paidTwdSource;
+    st.paidTouched = true;                  // 清除後維持空白，直到使用者自己重新輸入
+    st.justCleared = true;
+    renderTicketPriceForm();
+  };
+  oInput.oninput = () => {
+    v.origAmount = oInput.value === '' ? null : Number(oInput.value);
+    v.origCurrency = oSel.value;
+    if (oSel.value !== 'TWD' || !st.autoAllowed || st.paidTouched || !paidInput) return;
+    // 預設帶入：兩個價格都還沒被手動改過時，實付先跟著原始票價（TWD）
+    if (v.origAmount === null) { v.paidAmount = null; v.paidCurrency = ''; paidInput.value = ''; paidSel.value = ''; return; }
+    v.paidAmount = v.origAmount; v.paidCurrency = 'TWD';
+    paidInput.value = String(v.origAmount); paidSel.value = 'TWD';
+  };
+  o.row.appendChild(oSel); o.row.appendChild(oInput);
+  box.appendChild(o.wrap);
+
+  // ----- 最終實際支付金額 -----
+  const pv = buildPriceRowShell_('最終實際支付金額', '信用卡／帳單實際扣款的金額；還沒收到帳單就先留空');
+  const pCur = String(v.paidCurrency || '').toUpperCase();
+  paidSel = makeCurrencySelect_(pCur, true);
+  paidInput = makeAmountInput_(v.paidAmount, pCur || 'TWD', '金額（可留空）');
+  paidSel.onchange = () => {
+    v.paidCurrency = paidSel.value;
+    st.paidTouched = true;
+    paidInput.step = ZERO_DECIMAL_CURRENCIES[paidSel.value] ? '1' : '0.01';
+    renderTicketPriceForm();
+  };
+  paidInput.oninput = () => {
+    st.paidTouched = true;
+    v.paidAmount = paidInput.value === '' ? null : Number(paidInput.value);
+    if (paidInput.value !== '') st.justCleared = false;
+    v.paidCurrency = paidSel.value;
+    if (paidInput.value !== '' && !paidSel.value) warn.style.display = 'block'; else warn.style.display = 'none';
+  };
+  pv.row.appendChild(paidSel); pv.row.appendChild(paidInput);
+  const warn = document.createElement('div');
+  warn.className = 'tp-form-hint';
+  warn.style.cssText = 'display:none;color:#C9705E;margin:4px 0 0;';
+  warn.textContent = '請先選擇支付貨幣';
+  pv.wrap.appendChild(warn);
+  if (st.justCleared && !hasMoneyAmount(v.paidAmount)) {
+    const empty = document.createElement('div');
+    empty.className = 'tp-form-hint';
+    empty.style.cssText = 'margin:4px 0 0;color:#C9705E;';
+    empty.textContent = '尚未填寫實際支付金額';
+    pv.wrap.appendChild(empty);
+  }
+  box.appendChild(pv.wrap);
 }
 function renderTicketPriceForm() {
   const box = document.getElementById('ticketPriceBox');
@@ -6597,8 +6726,7 @@ function renderTicketPriceForm() {
     box.appendChild(note);
   }
 
-  box.appendChild(buildMoneyRow_('原始票價', '購票時標示的原價與貨幣', 'origAmount', 'origCurrency', null));
-  box.appendChild(buildMoneyRow_('最終實際支付金額', '信用卡／帳單實際扣款的金額；還沒收到帳單就先留空', 'paidAmount', 'paidCurrency', renderTicketPriceForm));
+  buildPriceRows_(box);
 
   if (String(v.paidCurrency || 'TWD').toUpperCase() !== 'TWD') {
     const g = document.createElement('div');
