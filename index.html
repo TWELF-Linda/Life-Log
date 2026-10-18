@@ -6915,12 +6915,17 @@ function ticketBodyHtml(t) {
   if (venue) loc += `<div class="ticket-venue">📍 ${escapeHtml(venue)}</div>`;
   if (address) loc += `<div class="ticket-addr">${venue ? '' : '📍 '}${escapeHtml(address)}</div>`;
   if (!venue && !address) loc = `<div class="ticket-venue ticket-venue-empty">📍 尚未填寫</div>`;
+  const catDef = catByName(t.category);
+  const hasSeatField = !!(catDef && (catDef.fields || []).some(f => f.key === 'seat'));
+  const seatLine = seat
+    ? `<div class="ticket-seat">💺 ${escapeHtml(seat)}</div>`
+    : (hasSeatField ? `<div class="ticket-seat ticket-seat-empty" style="opacity:.55;">💺 座位尚未填寫</div>` : '');
   return `
     <div class="tb-main">
       <div class="ticket-date">${ticketDateLabel(t.date)}${t.time ? ' ' + escapeHtml(t.time) : ''}</div>
       ${performer ? `<div class="ticket-artist">${escapeHtml(performer)}</div>` : ''}
       ${loc}
-      ${seat ? `<div class="ticket-seat">${escapeHtml(seat)}</div>` : ''}
+      ${seatLine}
     </div>
     <div class="tb-price">${ticketPriceBlockHtml(t)}</div>`;
 }
