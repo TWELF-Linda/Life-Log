@@ -906,6 +906,25 @@
     .ticket-card .ti-image{width:76px;}
     .ticket-card .tb-price{max-width:52%;}
   }
+  /* ---- 票根牆：月份分組（黏頂）、海報放大、搜尋、匯出、儲存後高亮 ---- */
+  .ticket-month-group{position:relative;}
+  .ticket-month-bar{position:sticky;top:0;z-index:6;display:flex;align-items:baseline;gap:8px;padding:8px 4px 6px;margin:0 -2px 8px;
+    background:var(--bg);border-bottom:1px dashed var(--line);font-size:13px;font-weight:800;color:var(--accent-dark);}
+  .ticket-month-bar .tmb-count{font-size:11px;font-weight:600;color:var(--ink-soft);}
+  .ticket-card .ti-image.zoomable{cursor:zoom-in;}
+  .ticket-card .ti-count{position:absolute;right:4px;bottom:4px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;line-height:1;padding:3px 6px;border-radius:8px;pointer-events:none;}
+  .ticket-card .tp-val.tp-strike{text-decoration:line-through;}
+  .ticket-search{position:relative;margin:0 0 12px;}
+  .ticket-search input{width:100%;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:10px 38px 10px 14px;font-size:14px;font-family:inherit;color:var(--ink);}
+  .ticket-search .ts-clear{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:none;background:none;color:var(--ink-soft);font-size:15px;cursor:pointer;display:none;}
+  .ticket-export-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px;font-size:11.5px;color:var(--ink-soft);}
+  .ticket-export-row .gen-btn{padding:6px 12px;font-size:12px;}
+  .ticket-export-row .te-warn{color:var(--accent-dark);font-weight:700;}
+  .ticket-wall-list{padding-bottom:2px;}
+  #page-tickets{padding-bottom:70px;}
+  @keyframes flashNew{0%,100%{box-shadow:0 4px 12px rgba(180,150,120,0.16);}
+    15%,60%{box-shadow:0 0 0 3px var(--accent),0 0 20px rgba(232,163,61,.55);}}
+  .flash-new{animation:flashNew 2s ease-out 1;}
   .tstat-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 4px 12px rgba(180,150,120,0.12);}
   .tstat-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;}
   .tstat-title{font-size:12.5px;font-weight:700;color:var(--ink-soft);}
@@ -1598,6 +1617,11 @@
           <input type="date" id="entryDateInput" oninput="onEntryDtInput_('date')" style="flex:1;min-width:130px;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:7px 10px;font-size:13px;font-family:inherit;">
           <input type="time" id="entryTimeInput" oninput="onEntryDtInput_('time')" style="flex:0 0 auto;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:7px 10px;font-size:13px;font-family:inherit;">
           <button type="button" class="gen-btn" id="entryDtResetBtn" onclick="resetEntryDt_()" style="display:none;padding:6px 10px;font-size:12px;">重設為現在</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;">
+            <button type="button" class="gen-btn" onclick="setEntryDateQuick_('today')" style="padding:5px 10px;font-size:12px;">今天</button>
+            <button type="button" class="gen-btn" onclick="setEntryDateQuick_('yesterday')" style="padding:5px 10px;font-size:12px;">昨天</button>
+            <button type="button" class="gen-btn" id="entryDtPlusOneBtn" onclick="setEntryDateQuick_('plus1')" style="display:none;padding:5px 10px;font-size:12px;">原票根 +1 天</button>
+          </div>
         </div>
         <div class="add-row">
           <button class="photo-btn" onclick="document.getElementById('fileInput').click()">🖼️ 相片</button>
@@ -1878,8 +1902,13 @@
       <div class="cute-font" style="font-size:15px;font-weight:700;">🎟️ 票根牆</div>
       <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">收藏你看過的每一場演出</div>
     </div>
+    <div class="ticket-search">
+      <input type="search" id="ticketSearchInput" placeholder="🔍 搜尋演出、藝人、場地、座位…" autocomplete="off" oninput="onTicketSearchInput_()">
+      <button type="button" class="ts-clear" id="ticketSearchClear" aria-label="清除搜尋" onclick="clearTicketSearch_()">✕</button>
+    </div>
     <div class="cat-row" id="ticketFilterRow" style="margin-bottom:14px;"></div>
     <div class="cat-row" id="ticketYearRow" style="margin-bottom:14px;"></div>
+    <div class="ticket-export-row" id="ticketExportRow"></div>
     <div id="ticketStatsArea"></div>
     <div id="ticketWallArea"></div>
     <div class="card review-year-footer" id="reviewYearFooter-tickets"></div>
@@ -2476,11 +2505,32 @@ function syncEntryDtInputs_() {
   if (!di || !ti) return;
   if (!entryDateTouched_) di.value = fmtDate(currentDate);
   if (!entryTimeTouched_) ti.value = entryTimeBase_ || nowHHmm_();
+  const pb = document.getElementById('entryDtPlusOneBtn');
+  if (pb) {
+    const show = !!(copyingFromId && copySourceDate_);
+    pb.style.display = show ? 'inline-block' : 'none';
+    if (show) pb.textContent = '原票根 +1 天（' + shiftDateStr_(copySourceDate_, 1).slice(5).replace('-', '/') + '）';
+  }
   const rb = document.getElementById('entryDtResetBtn');
   if (rb) rb.style.display = (entryDateTouched_ || entryTimeTouched_) ? 'inline-block' : 'none';
 }
 function onEntryDtInput_(which) {
   if (which === 'date') entryDateTouched_ = true; else entryTimeTouched_ = true;
+  syncEntryDtInputs_();
+}
+let copySourceDate_ = null; // 複製票根時，原票根的日期（給「原票根 +1 天」用）
+function shiftDateStr_(ds, n) {
+  const p = String(ds || '').split('-').map(Number);
+  if (p.length !== 3 || !p[0]) return fmtDate(new Date());
+  return fmtDate(new Date(p[0], p[1] - 1, p[2] + n));
+}
+function setEntryDateQuick_(kind) {
+  let ds;
+  if (kind === 'yesterday') ds = shiftDateStr_(fmtDate(new Date()), -1);
+  else if (kind === 'plus1' && copySourceDate_) ds = shiftDateStr_(copySourceDate_, 1);
+  else ds = fmtDate(new Date());
+  entryDateTouched_ = true;
+  const di = document.getElementById('entryDateInput'); if (di) di.value = ds;
   syncEntryDtInputs_();
 }
 function resetEntryDt_() { entryDateTouched_ = false; entryTimeTouched_ = false; syncEntryDtInputs_(); }
@@ -4671,6 +4721,7 @@ async function submitEntry() {
   const isEdit = !!editingEntryId;
   const isCopy = !isEdit && !!copyingFromId;
   const copySourceId = isCopy ? copyingFromId : null;
+  const editIdForFlash_ = isEdit ? editingEntryId : null;
   btn.disabled = true; btn.textContent = isEdit ? '更新中…' : '記錄中…';
   const dt = getEntryDtValues_();
   const cat = catByName(selectedCategory);
@@ -4708,9 +4759,10 @@ async function submitEntry() {
     } else {
       showToast(isEdit ? pick(UPDATE_MSGS) : pick(SAVE_MSGS));
     }
-    if (isEdit && wallReturn_) { backToTicketWall_(); return; }
+    if (isEdit && wallReturn_) { pendingWallFlashId_ = editIdForFlash_; backToTicketWall_(); return; }
     loadTodayOverview();
     await loadEntries();
+    highlightSavedEntry_(isEdit ? editIdForFlash_ : (result && result.id));
     if (!isEdit && !isCopy && isTicketCat && result.photoUrl && result.id) { // 複製的票根沿用原票根的辨識資訊，不再重跑一次 AI 辨識
       btn.textContent = 'AI 辨識票根中…';
       try {
@@ -4740,6 +4792,18 @@ async function submitEntry() {
   }
 }
 let loadedEntries = [];
+// 儲存後的回饋：捲到那張卡片並短暫高亮
+let pendingWallFlashId_ = null;
+function flashEl_(el) {
+  if (!el) return;
+  try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+  el.classList.remove('flash-new'); void el.offsetWidth; el.classList.add('flash-new');
+  setTimeout(() => el.classList.remove('flash-new'), 2300);
+}
+function highlightSavedEntry_(id) {
+  if (!id) return;
+  setTimeout(() => flashEl_(document.querySelector('#entriesList [data-entry-id="' + String(id).replace(/"/g, '') + '"]')), 120);
+}
 function editEntry(id) {
   // Phase05：搜尋結果裡的生活紀錄／運動也是用同一顆 ✎ 編輯鈕，但那些資料不在 loadedEntries
   // （當天日誌用的那份）裡，所以先找不到的話，再去搜尋結果的快取找一次。
@@ -4761,6 +4825,7 @@ function editEntry(id) {
   expandQuickAddCard();
   editingEntryId = id;
   copyingFromId = null;
+  copySourceDate_ = null;
   entryDateTouched_ = false; entryTimeTouched_ = false;
   entryTimeBase_ = entry.time || null;
   syncEntryDtInputs_();
@@ -4790,6 +4855,7 @@ function editEntry(id) {
 }
 function cancelEditEntry() {
   editingEntryId = null;
+  copySourceDate_ = null;
   clearEntryDtState_();
   copyingFromId = null; // 取消複製：草稿只存在畫面上，這裡清掉就不會留下任何半成品資料
   document.getElementById('submitBtn').textContent = '記下這一刻';
@@ -4846,6 +4912,8 @@ async function copyTicketEntry_(entry) {
   editingEntryId = null;          // 複製永遠是「新增」，不是編輯原票根
   copyingFromId = entry.id;
   clearEntryDtState_();
+  copySourceDate_ = entry.date || null;
+  syncEntryDtInputs_();
   selectedCategory = entry.category;
   const draft = buildTicketCopyFields_(entry, cat);
   currentFieldValues = draft.fields;   // 全新的物件 → 價格表單狀態會重新初始化，且不會被當成「編輯中」
@@ -7146,8 +7214,17 @@ function ticketPriceBlockHtml(t) {
     }
     return `<div class="tp-row"><span class="tp-label">票價</span><span class="tp-val tp-empty">未填寫</span></div>`;
   }
-  let html = `<div class="tp-row orig"><span class="tp-label">原價</span><span class="tp-val${p.orig ? '' : ' tp-empty'}">${escapeHtml(p.orig ? formatMoney(p.orig.amount, p.orig.currency) : '未填寫')}</span></div>`;
-  html += `<div class="tp-row"><span class="tp-label">實付</span><span class="tp-val${p.paid ? '' : ' tp-empty'}">${escapeHtml(p.paid ? formatMoney(p.paid.amount, p.paid.currency) : '待確認')}</span></div>`;
+  const samePrice = !!(p.orig && p.paid && p.orig.currency === p.paid.currency &&
+    Math.round(p.orig.amount * 100) === Math.round(p.paid.amount * 100));
+  let html;
+  if (samePrice) {
+    // 原價與實付相同：只顯示一行，卡片比較清爽
+    html = `<div class="tp-row" title="原價與實付相同"><span class="tp-val">${escapeHtml(formatMoney(p.paid.amount, p.paid.currency))}</span></div>`;
+  } else {
+    const strike = (p.orig && p.paid) ? ' tp-strike' : '';
+    html = `<div class="tp-row orig"><span class="tp-label">原價</span><span class="tp-val${p.orig ? '' : ' tp-empty'}${strike}">${escapeHtml(p.orig ? formatMoney(p.orig.amount, p.orig.currency) : '未填寫')}</span></div>`;
+    html += `<div class="tp-row"><span class="tp-label">實付</span><span class="tp-val${p.paid ? '' : ' tp-empty'}">${escapeHtml(p.paid ? formatMoney(p.paid.amount, p.paid.currency) : '待確認')}</span></div>`;
+  }
   if (p.paid && p.paid.currency !== 'TWD' && p.twdEquiv !== null) {
     html += `<div class="tp-row orig"><span class="tp-label">帳單</span><span class="tp-val">${escapeHtml(formatMoney(p.twdEquiv, 'TWD'))}</span></div>`;
   }
@@ -7175,10 +7252,93 @@ function ticketBodyHtml(t) {
 }
 // ---------- 票根牆：統計區與年份篩選 ----------
 let ticketWallYear = 'all';
+let ticketWallQuery_ = '';
+let ticketSearchTimer_ = null;
+function ticketSearchText_(t) {
+  if (t._sx) return t._sx;
+  const info = ticketCardInfo(t), parts = [info.title, info.performer, info.venue, info.address, info.seat, t.category, t.date, String(t.date || '').replace(/-/g, '/'), ticketDateLabel(t.date), t.text];
+  [t.fields, t.ticketMeta].forEach(o => {
+    if (o && typeof o === 'object') Object.keys(o).forEach(k => { const v = o[k]; if (typeof v === 'string' || typeof v === 'number') parts.push(String(v)); });
+  });
+  t._sx = parts.filter(Boolean).join(' ').toLowerCase();
+  return t._sx;
+}
 function ticketWallFilteredList_() {
   let list = ticketWallFilter === 'all' ? ticketWallAll : ticketWallAll.filter(t => t.category === ticketWallFilter);
   if (ticketWallYear !== 'all') list = list.filter(t => (t.date || '').substring(0, 4) === ticketWallYear);
-  return list;
+  const tokens = ticketWallQuery_.toLowerCase().split(/\s+/).filter(Boolean);
+  if (tokens.length) list = list.filter(t => { const s = ticketSearchText_(t); return tokens.every(k => s.indexOf(k) !== -1); });
+  return list.slice().sort((a, b) => (b.date + ' ' + (b.time || '')).localeCompare(a.date + ' ' + (a.time || '')));
+}
+function onTicketSearchInput_() {
+  const v = document.getElementById('ticketSearchInput').value;
+  document.getElementById('ticketSearchClear').style.display = v ? 'block' : 'none';
+  clearTimeout(ticketSearchTimer_);
+  ticketSearchTimer_ = setTimeout(() => { ticketWallQuery_ = v.trim(); renderTicketWall(); }, 150);
+}
+function clearTicketSearch_() {
+  const i = document.getElementById('ticketSearchInput'); if (i) i.value = '';
+  const b = document.getElementById('ticketSearchClear'); if (b) b.style.display = 'none';
+  clearTimeout(ticketSearchTimer_);
+  ticketWallQuery_ = '';
+  renderTicketWall();
+}
+// ---------- 票根海報放大（可左右滑動換圖，沿用照片預覽） ----------
+function ticketPosterUrls_(t) {
+  const a = (t.photoUrls && t.photoUrls.length) ? t.photoUrls : (t.photoUrl ? [t.photoUrl] : []);
+  return a.filter(Boolean);
+}
+function openTicketPoster_(t) {
+  const urls = ticketPosterUrls_(t);
+  if (!urls.length) return;
+  const info = ticketCardInfo(t);
+  const meta = catIcon(t.category) + ' ' + info.title;
+  const text = ticketDateLabel(t.date) + (t.time ? ' ' + t.time : '') + (info.venue ? '　' + info.venue : '');
+  openPhotoPreviewSet(urls.map(u => ({ url: u, meta: meta, text: text, jumpDate: t.date, entryId: t.id })), 0);
+}
+// ---------- CSV 匯出與備份提醒 ----------
+const TICKET_EXPORT_KEY = 'lifelog_ticket_export_at';
+function csvCell_(v) {
+  let s = (v === null || v === undefined) ? '' : String(v);
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; // 避免在試算表被當成公式執行
+  if (/[",\r\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+  return s;
+}
+function exportTicketsCsv_(all) {
+  const base = all ? ticketWallAll : ticketWallFilteredList_();
+  if (!base.length) { showToast('目前沒有可匯出的票根'); return; }
+  const list = base.slice().sort((a, b) => (a.date + ' ' + (a.time || '')).localeCompare(b.date + ' ' + (b.time || '')));
+  const head = ['日期', '時間', '類別', '名稱', '表演者', '場地', '地址', '座位', '原價幣別', '原價', '實付幣別', '實付', '帳單(TWD)', '舊票價文字', '心得'];
+  const rows = [head].concat(list.map(t => {
+    const i = ticketCardInfo(t), p = ticketPriceOf(t);
+    return [t.date, t.time || '', t.category, i.title, i.performer, i.venue, i.address, i.seat,
+      p.orig ? p.orig.currency : '', p.orig ? p.orig.amount : '', p.paid ? p.paid.currency : '', p.paid ? p.paid.amount : '',
+      p.twdEquiv !== null && p.paid && p.paid.currency !== 'TWD' ? p.twdEquiv : '', p.legacy || '', t.text || ''];
+  }));
+  const csv = '\ufeff' + rows.map(r => r.map(csvCell_).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'tickets_' + fmtDate(new Date()).replace(/-/g, '') + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  try { localStorage.setItem(TICKET_EXPORT_KEY, String(Date.now())); } catch (e) {}
+  showToast('已匯出 ' + list.length + ' 筆票根 📄');
+  updateTicketToolbar_(ticketWallFilteredList_().length);
+}
+function updateTicketToolbar_(shownCount) {
+  const row = document.getElementById('ticketExportRow');
+  if (!row) return;
+  if (!ticketWallAll.length) { row.innerHTML = ''; return; }
+  let last = 0; try { last = Number(localStorage.getItem(TICKET_EXPORT_KEY)) || 0; } catch (e) {}
+  const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+  const filtered = shownCount !== ticketWallAll.length;
+  let note;
+  if (!last) note = '<span class="te-warn">還沒備份過，建議匯出一份</span>';
+  else if (days >= 30) note = `<span class="te-warn">上次備份在 ${days} 天前，建議再匯出一次</span>`;
+  else note = '上次備份：' + (days === 0 ? '今天' : days + ' 天前');
+  row.innerHTML = `<button class="gen-btn" onclick="exportTicketsCsv_(false)">⬇️ 匯出 CSV（${shownCount} 筆）</button>` +
+    (filtered ? `<button class="gen-btn" onclick="exportTicketsCsv_(true)">匯出全部 ${ticketWallAll.length} 筆</button>` : '') + `<span>${note}</span>`;
 }
 function renderTicketYearRow() {
   const row = document.getElementById('ticketYearRow');
@@ -7290,15 +7450,20 @@ function renderTicketWall() {
   const area = document.getElementById('ticketWallArea');
   const tickets = ticketWallFilteredList_();
   renderTicketStats(tickets);
+  updateTicketToolbar_(tickets.length);
   if (!tickets.length) {
-    area.innerHTML = ticketWallAll.length
-      ? '<div class="empty-state">這個類別還沒有紀錄</div>'
-      : `<div class="empty-state ticket-empty">
+    if (!ticketWallAll.length) {
+      area.innerHTML = `<div class="empty-state ticket-empty">
           <div class="te-icon">🎟️</div>
           <div class="te-title">還沒有收藏票根</div>
           <div class="te-desc">把看過的演唱會、音樂劇與展覽留下來吧。</div>
           <button class="gen-btn" onclick="switchTab('page-log')">＋ 新增票根</button>
         </div>`;
+    } else if (ticketWallQuery_) {
+      area.innerHTML = `<div class="empty-state">找不到符合「${escapeHtml(ticketWallQuery_)}」的票根<br><button class="gen-btn" style="margin-top:10px;" onclick="clearTicketSearch_()">清除搜尋</button></div>`;
+    } else {
+      area.innerHTML = '<div class="empty-state">這個類別還沒有紀錄</div>';
+    }
     return;
   }
   const byYear = {};
@@ -7323,36 +7488,53 @@ function renderTicketWall() {
     wrapArea.id = 'wrapArea-' + year;
     area.appendChild(wrapArea);
 
-    const list = document.createElement('div');
-    list.className = 'ticket-wall-list';
-    byYear[year].forEach(t => {
-      const { title } = ticketCardInfo(t);
-      const imgUrl = t.photoUrl || (t.photoUrls && t.photoUrls[0]) || '';
-      const titleColor = catColor(t.category);
-      const card = document.createElement('div');
-      card.className = 'ticket-card';
-      card.dataset.entryId = t.id;
-      // 點擊卡片：沿用既有「跳到當天紀錄」功能，那裡本來就有完整的票根詳細內容、編輯與刪除。
-      card.onclick = () => openTicketFromWall_(t);
-      card.innerHTML = `
-        <div class="ti-image">
-          ${imgUrl ? `<img src="${imgUrl}" loading="lazy" alt="">` : `<div class="ti-placeholder">${catIcon(t.category)}</div>`}
-        </div>
-        <div class="ticket-info">
-          <div class="ticket-title-bar" style="background:${titleColor};"><span class="tt-text">${escapeHtml(title)}</span><button class="tc-copy-btn" title="複製票根" aria-label="複製票根" onclick="event.stopPropagation();copyTicketFromWall_('${t.id}')">⧉</button></div>
-          <div class="ticket-body">${ticketBodyHtml(t)}</div>
-        </div>`;
-      list.appendChild(card);
-      if (imgUrl) applyPosterTitleColor_(card, imgUrl); // 標題列改用海報主色；抓不到顏色就維持類別顏色
+    // 依月份分組：每個月一個群組，月份標題列在群組內黏在畫面頂端
+    const byMonth = {};
+    byYear[year].forEach(t => { const m = t.date.substring(5, 7); (byMonth[m] = byMonth[m] || []).push(t); });
+    Object.keys(byMonth).sort().reverse().forEach(m => {
+      const group = document.createElement('div');
+      group.className = 'ticket-month-group';
+      group.innerHTML = `<div class="ticket-month-bar"><span>${year} 年 ${Number(m)} 月</span><span class="tmb-count">${byMonth[m].length} 筆</span></div>`;
+      const list = document.createElement('div');
+      list.className = 'ticket-wall-list';
+      byMonth[m].forEach(t => list.appendChild(buildTicketWallCard_(t)));
+      group.appendChild(list);
+      area.appendChild(group);
     });
-    area.appendChild(list);
   });
+  if (pendingWallFlashId_) { // 編輯完回到票根牆：捲到那張卡片並高亮
+    const id = pendingWallFlashId_; pendingWallFlashId_ = null;
+    setTimeout(() => flashEl_(area.querySelector('.ticket-card[data-entry-id="' + String(id).replace(/"/g, '') + '"]')), 150);
+  }
+}
+function buildTicketWallCard_(t) {
+  const { title } = ticketCardInfo(t);
+  const imgUrl = t.photoUrl || (t.photoUrls && t.photoUrls[0]) || '';
+  const nPhotos = ticketPosterUrls_(t).length;
+  const card = document.createElement('div');
+  card.className = 'ticket-card';
+  card.dataset.entryId = t.id;
+  // 點擊卡片：沿用既有「跳到當天紀錄」功能，那裡本來就有完整的票根詳細內容、編輯與刪除。
+  card.onclick = () => openTicketFromWall_(t);
+  card.innerHTML = `
+    <div class="ti-image${imgUrl ? ' zoomable' : ''}">
+      ${imgUrl ? `<img src="${imgUrl}" loading="lazy" alt="">` : `<div class="ti-placeholder">${catIcon(t.category)}</div>`}
+      ${nPhotos > 1 ? `<span class="ti-count">1/${nPhotos}</span>` : ''}
+    </div>
+    <div class="ticket-info">
+      <div class="ticket-title-bar" style="${ticketTitleStyle_(catColor(t.category))}"><span class="tt-text">${escapeHtml(title)}</span><button class="tc-copy-btn" title="複製票根" aria-label="複製票根" onclick="event.stopPropagation();copyTicketFromWall_('${t.id}')">⧉</button></div>
+      <div class="ticket-body">${ticketBodyHtml(t)}</div>
+    </div>`;
+  const zb = card.querySelector('.ti-image.zoomable');
+  if (zb) zb.onclick = ev => { ev.stopPropagation(); openTicketPoster_(t); }; // 點海報放大，不跳轉
+  if (imgUrl) applyPosterTitleColor_(card, imgUrl); // 標題列改用海報主色；抓不到顏色就維持類別顏色
+  return card;
 }
 // ---------- 票根牆：標題列依海報主色調著色 ----------
 // 把海報縮成 32×32，挑「飽和且不過亮／過暗」的像素，依色相分 12 組，取權重最大的一組平均色。
 // 再把亮度限制在適合當標題底色的範圍，文字自動選白或深色（取對比較高者）。
 // 讀不到像素（圖片來源不允許跨網域讀取）或灰階海報時，維持原本的類別顏色。
-const POSTER_COLOR_KEY = 'lifelog_poster_color_v1';
+const POSTER_COLOR_KEY = 'lifelog_poster_color_v2'; // v2：標題列文字對比 ≥ 4.5（舊快取作廢重算）
 let posterColorCache_ = null;
 function posterColorCacheLoad_() {
   if (posterColorCache_) return posterColorCache_;
@@ -7413,11 +7595,40 @@ function computePosterColor_(img) {
   let [h, s, l] = rgbToHsl_(rgb[0], rgb[1], rgb[2]);
   l = Math.min(0.68, Math.max(0.3, l));
   if (best) s = Math.min(0.8, Math.max(0.3, s)); else s = Math.min(s, 0.15);
-  const bg = hslToRgb_(h, s, l);
-  const L = relLuminance_(bg);
-  const cWhite = 1.05 / (L + 0.05), cDark = (L + 0.05) / (relLuminance_([43, 43, 43]) + 0.05);
-  const darkText = cDark > cWhite;
-  return { bg: `rgb(${bg[0]},${bg[1]},${bg[2]})`, fg: darkText ? '#2b2b2b' : '#fff', shadow: darkText ? 'none' : '0 1px 2px rgba(0,0,0,0.22)' };
+  return titleBarColors_(hslToRgb_(h, s, l));
+}
+// 依底色亮度選白字或深字；對比不到 4.5 時，把底色往有利的方向微調（白字→加深、深字→提亮）直到達標
+function titleBarColors_(rgb) {
+  const Ld = relLuminance_([43, 43, 43]);
+  const contrast = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+  let [h, s, l] = rgbToHsl_(rgb[0], rgb[1], rgb[2]);
+  let bg = rgb.map(v => Math.round(v));
+  for (let i = 0; i < 16; i++) {
+    const L = relLuminance_(bg), cw = contrast(L, 1), cd = contrast(L, Ld);
+    const useDark = cd > cw;
+    if (Math.max(cw, cd) >= 4.5 || i === 15) {
+      return { bg: `rgb(${bg[0]},${bg[1]},${bg[2]})`, fg: useDark ? '#2b2b2b' : '#fff', shadow: useDark ? 'none' : '0 1px 2px rgba(0,0,0,0.22)' };
+    }
+    l = useDark ? Math.min(0.95, l + 0.04) : Math.max(0.05, l - 0.04);
+    bg = hslToRgb_(h, s, l);
+  }
+}
+function parseCssColor_(c) {
+  c = String(c || '').trim();
+  let m = c.match(/^#([0-9a-f]{3})$/i);
+  if (m) return m[1].split('').map(x => parseInt(x + x, 16));
+  m = c.match(/^#([0-9a-f]{6})$/i);
+  if (m) return [0, 2, 4].map(i => parseInt(m[1].substr(i, 2), 16));
+  m = c.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+  if (m) return [Number(m[1]), Number(m[2]), Number(m[3])];
+  return null;
+}
+// 類別顏色（海報讀不到時的底色）：同樣保證文字對比
+function ticketTitleStyle_(color) {
+  const rgb = parseCssColor_(color);
+  if (!rgb) return `background:${color};`;
+  const c = titleBarColors_(rgb);
+  return `background:${c.bg};color:${c.fg};text-shadow:${c.shadow};`;
 }
 function setTitleBarColor_(card, col) {
   const bar = card.querySelector('.ticket-title-bar');
@@ -7908,13 +8119,16 @@ function renderSearchTicketCard(t) {
   card.className = 'ticket-card';
   card.onclick = () => { closeSearchUI(); jumpToDate(t.date); };
   card.innerHTML = `
-    <div class="ti-image">
+    <div class="ti-image${imgUrl ? ' zoomable' : ''}">
       ${imgUrl ? `<img src="${imgUrl}" loading="lazy" alt="">` : `<div class="ti-placeholder">${catIcon(t.category)}</div>`}
+      ${ticketPosterUrls_(t).length > 1 ? `<span class="ti-count">1/${ticketPosterUrls_(t).length}</span>` : ''}
     </div>
     <div class="ticket-info">
-      <div class="ticket-title-bar" style="background:${titleColor};">${escapeHtml(title)}</div>
+      <div class="ticket-title-bar" style="${ticketTitleStyle_(titleColor)}">${escapeHtml(title)}</div>
       <div class="ticket-body">${ticketBodyHtml(t)}</div>
     </div>`;
+  const zb = card.querySelector('.ti-image.zoomable');
+  if (zb) zb.onclick = ev => { ev.stopPropagation(); openTicketPoster_(t); };
   return card;
 }
 // 照片搜尋結果：縮圖 + 摘要，點下去直接開對應的 Photo Lightbox
@@ -8331,6 +8545,111 @@ function getTodayAffirmationIndex(dateStr) {
   for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0;
   return hash % AFFIRMATIONS.length;
 }
+// ---------- 名言佳句：編輯／刪除（含防呆） ----------
+let quotesCache_ = [];
+let quoteEditingId_ = null;
+let quoteEditDraft_ = null; // { text, author }
+function quoteEditDirty_() {
+  if (!quoteEditingId_ || !quoteEditDraft_) return false;
+  const q = quotesCache_.find(x => x.id === quoteEditingId_);
+  return !!q && (quoteEditDraft_.text.trim() !== q.text || quoteEditDraft_.author.trim() !== (q.author || ''));
+}
+function quoteEditProblem_() {
+  const q = quotesCache_.find(x => x.id === quoteEditingId_);
+  if (!q || !quoteEditDraft_) return '找不到這一句';
+  const t = quoteEditDraft_.text.trim();
+  if (!t) return '內容不能是空的；要移除這一句請用刪除';
+  if (t.length > 300) return '內容超過 300 字';
+  if (quotesCache_.some(x => x.id !== q.id && String(x.text).trim() === t)) return '跟另一句收藏的內容重複了';
+  if (!quoteEditDirty_()) return '尚未修改';
+  return '';
+}
+function renderQuoteList_() {
+  const area = document.getElementById('quoteListArea');
+  if (!area) return;
+  const list = quotesCache_;
+  document.getElementById('quoteCount').textContent = list.length;
+  if (!list.length) { area.innerHTML = '<div class="empty-state">還沒有收藏任何名言佳句 🌱<br>寫下第一句吧</div>'; return; }
+  const fieldCss = 'width:100%;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 11px;font-size:14px;color:var(--ink);font-family:inherit;';
+  area.innerHTML = list.map(q => {
+    if (q.id === quoteEditingId_ && quoteEditDraft_) {
+      return `
+      <div class="gym-log-item" data-qid="${escapeHtml(q.id)}" style="flex-direction:column;align-items:stretch;gap:8px;border:1.5px solid var(--accent);">
+        <div style="font-size:12px;font-weight:700;color:var(--accent-dark);">✎ 編輯這一句</div>
+        <textarea id="quoteEditText" rows="3" maxlength="300" oninput="onQuoteEditInput_()" style="${fieldCss}resize:vertical;">${escapeHtml(quoteEditDraft_.text)}</textarea>
+        <input type="text" id="quoteEditAuthor" maxlength="60" placeholder="作者或出處（選填）" oninput="onQuoteEditInput_()" value="${escapeHtml(quoteEditDraft_.author)}" style="${fieldCss}">
+        <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;">
+          <span id="quoteEditMsg" style="color:var(--accent-dark);"></span>
+          <span id="quoteEditCount" style="color:var(--ink-soft);white-space:nowrap;"></span>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button type="button" class="gen-btn" onclick="cancelQuoteEdit_()" style="padding:7px 14px;font-size:13px;">取消</button>
+          <button type="button" class="submit-btn" id="quoteEditSave" onclick="saveQuoteEdit_()" style="padding:7px 16px;font-size:13px;">儲存修改</button>
+        </div>
+      </div>`;
+    }
+    return `
+      <div class="gym-log-item" data-qid="${escapeHtml(q.id)}" style="align-items:flex-start;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;">「${escapeHtml(q.text)}」</div>
+          ${q.author ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">—— ${escapeHtml(q.author)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:2px;flex:none;margin-left:6px;">
+          <button class="gl-del" aria-label="編輯" title="編輯" style="color:var(--accent-dark);padding:4px 8px;" onclick="startQuoteEdit_('${escapeHtml(q.id)}')">✎</button>
+          <button class="gl-del" aria-label="刪除" title="刪除" style="padding:4px 8px;" onclick="deleteQuoteItem('${escapeHtml(q.id)}')">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+  if (quoteEditingId_) onQuoteEditInput_(true);
+}
+function onQuoteEditInput_(fromRender) {
+  const ta = document.getElementById('quoteEditText'), au = document.getElementById('quoteEditAuthor');
+  if (!ta || !au) return;
+  if (!fromRender) quoteEditDraft_ = { text: ta.value, author: au.value };
+  const problem = quoteEditProblem_();
+  const msg = document.getElementById('quoteEditMsg'), save = document.getElementById('quoteEditSave');
+  if (msg) msg.textContent = problem === '尚未修改' ? '' : problem;
+  const cnt = document.getElementById('quoteEditCount');
+  if (cnt) cnt.textContent = ta.value.trim().length + ' / 300';
+  if (save) { save.disabled = !!problem; save.style.opacity = problem ? '.5' : ''; }
+}
+async function startQuoteEdit_(id) {
+  if (quoteEditingId_ === id) return;
+  if (quoteEditDirty_() && !(await showConfirm('另一句還有尚未儲存的修改，要放棄它、改編輯這一句嗎？', { title: '放棄未儲存的修改', okText: '放棄並切換', cancelText: '繼續編輯原本那句' }))) return;
+  const q = quotesCache_.find(x => x.id === id);
+  if (!q) return;
+  quoteEditingId_ = id;
+  quoteEditDraft_ = { text: q.text, author: q.author || '' };
+  renderQuoteList_();
+  const ta = document.getElementById('quoteEditText');
+  if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
+async function cancelQuoteEdit_() {
+  if (quoteEditDirty_() && !(await showConfirm('這一句的修改還沒儲存，確定要放棄嗎？', { title: '放棄修改', okText: '放棄修改', cancelText: '繼續編輯' }))) return;
+  quoteEditingId_ = null; quoteEditDraft_ = null;
+  renderQuoteList_();
+}
+async function saveQuoteEdit_() {
+  const save = document.getElementById('quoteEditSave');
+  if (!save || save.disabled) return;
+  const problem = quoteEditProblem_();
+  if (problem) { alert(problem); return; }
+  const q = quotesCache_.find(x => x.id === quoteEditingId_);
+  if (!q) return;
+  const payload = { action: 'updateQuote', id: q.id, text: quoteEditDraft_.text.trim(), author: quoteEditDraft_.author.trim(), originalText: q.text };
+  save.disabled = true; const label = save.textContent; save.textContent = '儲存中…';
+  try {
+    const result = await postJSON(payload);
+    if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message);
+    quoteEditingId_ = null; quoteEditDraft_ = null;
+    showToast('已更新 ✏️');
+    await loadQuotesPage();
+    loadTodayQuote();
+  } catch (err) {
+    alert('修改失敗：' + localizeErrorText_(err.message) + '（你的修改還在畫面上，沒有遺失）');
+    save.textContent = label; onQuoteEditInput_();
+  }
+}
 async function loadQuotesPage() {
   if (!checkConfig()) return;
   const area = document.getElementById('quoteListArea');
@@ -8340,15 +8659,9 @@ async function loadQuotesPage() {
     if (list.error) throw new Error(list.error);
     document.getElementById('quoteCount').textContent = list.length;
     if (!list.length) { area.innerHTML = '<div class="empty-state">還沒有收藏任何名言佳句 🌱<br>寫下第一句吧</div>'; return; }
-    area.innerHTML = list.map(q => `
-      <div class="gym-log-item" style="align-items:flex-start;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;">「${escapeHtml(q.text)}」</div>
-          ${q.author ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">—— ${escapeHtml(q.author)}</div>` : ''}
-        </div>
-        <button class="gl-del" onclick="deleteQuoteItem('${q.id}')">✕</button>
-      </div>
-    `).join('');
+    quotesCache_ = list;
+    if (quoteEditingId_ && !list.some(q => q.id === quoteEditingId_)) { quoteEditingId_ = null; quoteEditDraft_ = null; }
+    renderQuoteList_();
   } catch (err) {
     area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(localizeErrorText_(err.message))}</div>`;
   }
@@ -8466,9 +8779,13 @@ async function submitQuoteBatch() {
   }
 }
 async function deleteQuoteItem(id) {
-  if (!(await showConfirm('刪除這一句名言佳句？'))) return;
+  const q = quotesCache_.find(x => x.id === id);
+  let preview = q ? q.text.replace(/\s+/g, ' ') : '';
+  if (preview.length > 40) preview = preview.slice(0, 40) + '…';
+  if (!(await showConfirm((preview ? '「' + preview + '」' : '這一句') + ' 刪除後無法復原，首頁名言的輪替順序也會跟著變動。確定要刪除嗎？', { title: '刪除這一句名言佳句？', okText: '確定刪除', cancelText: '先不要' }))) return;
   try {
-    const result = await postJSON({ action: 'deleteQuote', id });
+    if (quoteEditingId_ === id) { quoteEditingId_ = null; quoteEditDraft_ = null; }
+    const result = await postJSON({ action: 'deleteQuote', id, expectedText: q ? q.text : undefined });
     if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message);
     showToast('已刪除 🗑️');
     loadQuotesPage();
