@@ -925,6 +925,21 @@
   @keyframes flashNew{0%,100%{box-shadow:0 4px 12px rgba(180,150,120,0.16);}
     15%,60%{box-shadow:0 0 0 3px var(--accent),0 0 20px rgba(232,163,61,.55);}}
   .flash-new{animation:flashNew 2s ease-out 1;}
+  /* ---- 名言佳句頁 ---- */
+  .q-search{width:100%;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:9px 12px;font-size:14px;font-family:inherit;color:var(--ink);margin:0 0 10px;}
+  .q-toolbar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px;}
+  .q-chip{background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;font-family:inherit;}
+  .q-chip.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700;}
+  .q-select{flex:1;min-width:140px;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:7px 10px;font-size:13px;font-family:inherit;color:var(--ink);}
+  .q-rotation{background:var(--input-bg);border-radius:12px;padding:8px 10px;margin:0 0 12px;font-size:12.5px;color:var(--ink-soft);line-height:1.7;}
+  .q-group-head{display:flex;align-items:baseline;gap:6px;padding:9px 2px 7px;margin-top:6px;border-bottom:1px dashed var(--line);font-size:13px;font-weight:800;color:var(--accent-dark);cursor:pointer;}
+  .q-group-head small{font-weight:600;color:var(--ink-soft);font-size:11.5px;}
+  .q-actions{display:flex;gap:6px;flex-wrap:wrap;}
+  .q-actions button{background:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11.5px;color:var(--ink-soft);cursor:pointer;font-family:inherit;}
+  .q-actions button.on{border-color:var(--accent);color:var(--accent-dark);background:rgba(232,163,61,.12);font-weight:700;}
+  .q-actions button.danger{color:#c0594a;}
+  .q-item.q-hidden .q-text{opacity:.6;}
+  .q-badge{display:inline-block;font-size:10.5px;border-radius:8px;padding:1px 6px;margin-left:4px;background:rgba(232,163,61,.15);color:var(--accent-dark);}
   .tstat-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:14px;box-shadow:0 4px 12px rgba(180,150,120,0.12);}
   .tstat-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;}
   .tstat-title{font-size:12.5px;font-weight:700;color:var(--ink-soft);}
@@ -1300,6 +1315,7 @@
     <div class="affirmation-text" id="affirmationText">今天也是值得被自己肯定的一天。</div>
     <div class="affirmation-author" id="affirmationAuthor" style="display:none;"></div>
     <button class="affirmation-refresh" id="affirmationRefreshBtn" onclick="regenerateAffirmation()">✨ AI 客製化一句</button>
+    <button class="affirmation-refresh" id="quoteSwapBtn" style="display:none;" onclick="swapTodayQuote()">🔀 換一句</button>
   </div>
 </div>
 
@@ -1678,12 +1694,17 @@
 
   <div class="page" id="page-quotes">
     <div class="advanced-back" onclick="switchTab('page-record-hub')">← 紀錄</div>
+    <div class="card" id="quoteDrawCard">
+      <button class="submit-btn" id="quoteDrawBtn" style="width:100%;" onclick="drawRandomQuote_()">🎲 抽一句</button>
+      <div id="quoteDrawResult" style="margin-top:10px;"></div>
+    </div>
     <div class="card">
       <div class="field-label" style="margin-top:0;">📜 收藏一句名言佳句</div>
-      <textarea id="quoteTextInput" maxlength="300" placeholder="寫下打動你的一句話……"></textarea>
-      <input type="text" id="quoteAuthorInput" maxlength="60" placeholder="作者或出處（選填）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-top:8px;">
+      <textarea id="quoteTextInput" placeholder="寫下打動你的一句話……" oninput="onQuoteTextInput_()"></textarea>
+      <div id="quoteTextCount" style="text-align:right;font-size:12px;color:var(--ink-soft);margin-top:2px;">0 / 300</div>
+      <input type="text" id="quoteAuthorInput" maxlength="160" placeholder="作者或出處（選填；可寫成「作者<<書名>>」）" style="width:100%;box-sizing:border-box;background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;margin-top:8px;">
       <button class="submit-btn" id="quoteSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitQuote()">收藏這一句</button>
-      <div class="tool-desc" style="margin-top:8px;">首頁的句子會自然輪替：雙數日顯示你收藏的名言（依收藏順序逐句輪流），單數日顯示每日鼓勵語。</div>
+      <div class="tool-desc" style="margin-top:8px;">首頁的句子會自然輪替：雙數日顯示你收藏的名言（每一輪都會隨機排序、一輪內不重複，也可以在首頁按「換一句」），單數日顯示每日鼓勵語。出處可寫成「作者<<書名>>」，會自動拆成作者與書名。</div>
     </div>
     <div class="card">
       <div class="field-label" style="margin-top:0;cursor:pointer;" onclick="toggleQuoteBatch()">📥 批次匯入名言 <span id="quoteBatchArrow" style="font-size:12px;color:var(--ink-soft);">▼ 展開</span></div>
@@ -1696,12 +1717,21 @@
           </label>
         </div>
         <div id="quoteBatchPreview" style="margin-top:8px;"></div>
-        <button class="submit-btn" id="quoteBatchBtn" style="width:100%;margin-top:10px;display:none;" onclick="submitQuoteBatch()">匯入</button>
+        <button class="submit-btn" id="quoteBatchBtn" style="width:100%;margin-top:10px;display:none;" onclick="checkQuoteBatch_()">檢查並預覽</button>
       </div>
     </div>
     <div class="card">
       <div class="field-label" style="margin-top:0;">📚 我的名言佳句（<span id="quoteCount">0</span>）</div>
+      <input type="search" id="quoteSearchInput" class="q-search" placeholder="🔍 搜尋句子、作者、書名…" autocomplete="off" oninput="onQuoteSearchInput_()">
+      <div class="q-toolbar-row" id="quoteFilterRow"></div>
+      <div class="q-toolbar-row" id="quoteBookRow"></div>
+      <div class="q-rotation" id="quoteRotationRow"></div>
+      <div class="ticket-export-row" id="quoteExportRow"></div>
       <div id="quoteListArea"><div class="empty-state">載入中…</div></div>
+    </div>
+    <div class="card">
+      <div class="field-label" style="margin-top:0;cursor:pointer;" onclick="toggleQuoteTrash_()">🗑 最近刪除 <span id="quoteTrashCount" style="font-size:12px;color:var(--ink-soft);"></span> <span id="quoteTrashArrow" style="font-size:12px;color:var(--ink-soft);">▼ 展開</span></div>
+      <div id="quoteTrashBox" style="display:none;"></div>
     </div>
   </div>
 
@@ -8545,14 +8575,27 @@ function getTodayAffirmationIndex(dateStr) {
   for (let i = 0; i < dateStr.length; i++) hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0;
   return hash % AFFIRMATIONS.length;
 }
-// ---------- 名言佳句：編輯／刪除（含防呆） ----------
+// ---------- 名言佳句頁：搜尋／篩選／分組／最愛／隱藏／編輯／最近刪除 ----------
 let quotesCache_ = [];
 let quoteEditingId_ = null;
-let quoteEditDraft_ = null; // { text, author }
+let quoteEditDraft_ = null; // { text, author, book }
+let quoteQuery_ = '', quoteFilter_ = 'all', quoteBook_ = '', quoteGroup_ = true;
+let quoteRotation_ = 'all', quoteDeletedCount_ = 0, quoteTrashOpen_ = false, quoteSearchTimer_ = null;
+let quoteCollapsed_ = {};
+try { quoteCollapsed_ = JSON.parse(localStorage.getItem('lifelog_quote_collapsed') || '{}') || {}; } catch (e) {}
+const QUOTE_NO_BOOK_ = '（未分類）';
+function quoteSourceLabel_(q) {
+  const a = (q && q.author) || '', b = (q && q.book) ? '《' + q.book + '》' : '';
+  return a && b ? a + ' ' + b : (a || b);
+}
+function splitQuoteSourceClient_(raw) {
+  const m = String(raw || '').trim().match(/^(.*?)\s*<<\s*(.+?)\s*>>\s*(.*)$/);
+  return m ? { author: (m[1] || m[3] || '').trim(), book: m[2].trim() } : { author: String(raw || '').trim(), book: '' };
+}
 function quoteEditDirty_() {
   if (!quoteEditingId_ || !quoteEditDraft_) return false;
   const q = quotesCache_.find(x => x.id === quoteEditingId_);
-  return !!q && (quoteEditDraft_.text.trim() !== q.text || quoteEditDraft_.author.trim() !== (q.author || ''));
+  return !!q && (quoteEditDraft_.text.trim() !== q.text || quoteEditDraft_.author.trim() !== (q.author || '') || quoteEditDraft_.book.trim() !== (q.book || ''));
 }
 function quoteEditProblem_() {
   const q = quotesCache_.find(x => x.id === quoteEditingId_);
@@ -8564,20 +8607,57 @@ function quoteEditProblem_() {
   if (!quoteEditDirty_()) return '尚未修改';
   return '';
 }
-function renderQuoteList_() {
-  const area = document.getElementById('quoteListArea');
-  if (!area) return;
-  const list = quotesCache_;
-  document.getElementById('quoteCount').textContent = list.length;
-  if (!list.length) { area.innerHTML = '<div class="empty-state">還沒有收藏任何名言佳句 🌱<br>寫下第一句吧</div>'; return; }
-  const fieldCss = 'width:100%;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 11px;font-size:14px;color:var(--ink);font-family:inherit;';
-  area.innerHTML = list.map(q => {
-    if (q.id === quoteEditingId_ && quoteEditDraft_) {
-      return `
+function quoteVisibleList_() {
+  const tokens = quoteQuery_.toLowerCase().split(/\s+/).filter(Boolean);
+  return quotesCache_.filter(q => {
+    if (q.id === quoteEditingId_) return true; // 編輯中的那句不會因為篩選而消失
+    if (quoteFilter_ === 'fav' && !q.favorite) return false;
+    if (quoteFilter_ === 'hidden' && !q.hidden) return false;
+    if (quoteBook_ && (q.book || QUOTE_NO_BOOK_) !== quoteBook_) return false;
+    if (!tokens.length) return true;
+    const s = (q.text + ' ' + (q.author || '') + ' ' + (q.book || '')).toLowerCase();
+    return tokens.every(k => s.indexOf(k) !== -1);
+  });
+}
+function renderQuoteToolbar_() {
+  const total = quotesCache_.length;
+  const nFav = quotesCache_.filter(q => q.favorite).length, nHid = quotesCache_.filter(q => q.hidden).length;
+  const fr = document.getElementById('quoteFilterRow');
+  if (fr) fr.innerHTML = [['all', '全部 ' + total], ['fav', '⭐ 最愛 ' + nFav], ['hidden', '🙈 首頁不顯示 ' + nHid]]
+    .map(([k, label]) => `<button type="button" class="q-chip${quoteFilter_ === k ? ' active' : ''}" onclick="setQuoteFilter_('${k}')">${label}</button>`).join('');
+  const counts = {};
+  quotesCache_.forEach(q => { const b = q.book || QUOTE_NO_BOOK_; counts[b] = (counts[b] || 0) + 1; });
+  const books = Object.keys(counts).filter(b => b !== QUOTE_NO_BOOK_).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+  const br = document.getElementById('quoteBookRow');
+  if (br) {
+    if (!books.length) { br.innerHTML = ''; }
+    else {
+      if (quoteBook_ && !counts[quoteBook_]) quoteBook_ = '';
+      const opts = ['<option value="">所有書籍</option>'].concat(books.concat(counts[QUOTE_NO_BOOK_] ? [QUOTE_NO_BOOK_] : [])
+        .map(b => `<option value="${escapeHtml(b)}"${quoteBook_ === b ? ' selected' : ''}>${b === QUOTE_NO_BOOK_ ? '' : '《'}${escapeHtml(b)}${b === QUOTE_NO_BOOK_ ? '' : '》'}（${counts[b]}）</option>`));
+      br.innerHTML = `<select class="q-select" aria-label="依書名篩選" onchange="setQuoteBook_(this.value)">${opts.join('')}</select>
+        <label style="font-size:12.5px;color:var(--ink-soft);display:flex;align-items:center;gap:4px;white-space:nowrap;"><input type="checkbox" ${quoteGroup_ ? 'checked' : ''} onchange="setQuoteGroup_(this.checked)"> 依書名分組</label>`;
+    }
+  }
+  const rr = document.getElementById('quoteRotationRow');
+  if (rr) {
+    const nonHidden = quotesCache_.filter(q => !q.hidden);
+    const pool = quoteRotation_ === 'fav' ? nonHidden.filter(q => q.favorite) : nonHidden;
+    rr.innerHTML = `<div>🏠 首頁輪替範圍：
+      <label style="margin:0 8px;"><input type="radio" name="quoteRot" ${quoteRotation_ === 'all' ? 'checked' : ''} onchange="setQuoteRotationMode_('all')"> 全部</label>
+      <label><input type="radio" name="quoteRot" ${quoteRotation_ === 'fav' ? 'checked' : ''} onchange="setQuoteRotationMode_('fav')"> 只有最愛</label></div>
+      <div>目前輪替池 <b>${pool.length}</b> 句${quoteRotation_ === 'fav' && !pool.length ? '（還沒有最愛，首頁雙數日會改顯示鼓勵語）' : ''}</div>`;
+  }
+}
+function renderQuoteItem_(q, showBook) {
+  if (q.id === quoteEditingId_ && quoteEditDraft_) {
+    const fieldCss = 'width:100%;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:9px 11px;font-size:14px;color:var(--ink);font-family:inherit;';
+    return `
       <div class="gym-log-item" data-qid="${escapeHtml(q.id)}" style="flex-direction:column;align-items:stretch;gap:8px;border:1.5px solid var(--accent);">
         <div style="font-size:12px;font-weight:700;color:var(--accent-dark);">✎ 編輯這一句</div>
         <textarea id="quoteEditText" rows="3" maxlength="300" oninput="onQuoteEditInput_()" style="${fieldCss}resize:vertical;">${escapeHtml(quoteEditDraft_.text)}</textarea>
-        <input type="text" id="quoteEditAuthor" maxlength="60" placeholder="作者或出處（選填）" oninput="onQuoteEditInput_()" value="${escapeHtml(quoteEditDraft_.author)}" style="${fieldCss}">
+        <input type="text" id="quoteEditAuthor" maxlength="60" placeholder="作者（選填）" oninput="onQuoteEditInput_()" value="${escapeHtml(quoteEditDraft_.author)}" style="${fieldCss}">
+        <input type="text" id="quoteEditBook" maxlength="100" placeholder="書名（選填）" oninput="onQuoteEditInput_()" value="${escapeHtml(quoteEditDraft_.book)}" style="${fieldCss}">
         <div style="display:flex;justify-content:space-between;gap:8px;font-size:12px;">
           <span id="quoteEditMsg" style="color:var(--accent-dark);"></span>
           <span id="quoteEditCount" style="color:var(--ink-soft);white-space:nowrap;"></span>
@@ -8587,30 +8667,105 @@ function renderQuoteList_() {
           <button type="button" class="submit-btn" id="quoteEditSave" onclick="saveQuoteEdit_()" style="padding:7px 16px;font-size:13px;">儲存修改</button>
         </div>
       </div>`;
-    }
-    return `
-      <div class="gym-log-item" data-qid="${escapeHtml(q.id)}" style="align-items:flex-start;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;">「${escapeHtml(q.text)}」</div>
-          ${q.author ? `<div style="font-size:12px;color:var(--ink-soft);margin-top:2px;">—— ${escapeHtml(q.author)}</div>` : ''}
-        </div>
-        <div style="display:flex;gap:2px;flex:none;margin-left:6px;">
-          <button class="gl-del" aria-label="編輯" title="編輯" style="color:var(--accent-dark);padding:4px 8px;" onclick="startQuoteEdit_('${escapeHtml(q.id)}')">✎</button>
-          <button class="gl-del" aria-label="刪除" title="刪除" style="padding:4px 8px;" onclick="deleteQuoteItem('${escapeHtml(q.id)}')">✕</button>
+  }
+  const src = showBook ? quoteSourceLabel_(q) : (q.author || '');
+  const id = escapeHtml(q.id);
+  return `
+      <div class="gym-log-item q-item${q.hidden ? ' q-hidden' : ''}" data-qid="${id}" style="flex-direction:column;align-items:stretch;gap:6px;">
+        <div class="q-text" style="font-size:13.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;">「${escapeHtml(q.text)}」</div>
+        ${(src || q.favorite || q.hidden) ? `<div style="font-size:12px;color:var(--ink-soft);">${src ? '—— ' + escapeHtml(src) : ''}${q.favorite ? '<span class="q-badge">⭐ 最愛</span>' : ''}${q.hidden ? '<span class="q-badge">🙈 首頁不顯示</span>' : ''}</div>` : ''}
+        <div class="q-actions">
+          <button type="button" class="${q.favorite ? 'on' : ''}" onclick="toggleQuoteFlag_('${id}','favorite')">${q.favorite ? '⭐ 最愛' : '☆ 設為最愛'}</button>
+          <button type="button" class="${q.hidden ? 'on' : ''}" onclick="toggleQuoteFlag_('${id}','hidden')">${q.hidden ? '👁 恢復首頁顯示' : '🙈 首頁不顯示'}</button>
+          <button type="button" onclick="copyQuote_('${id}')">📋 複製</button>
+          <button type="button" onclick="shareQuoteCard_('${id}')">🖼 分享成圖</button>
+          <button type="button" onclick="startQuoteEdit_('${id}')">✎ 編輯</button>
+          <button type="button" class="danger" onclick="deleteQuoteItem('${id}')">🗑 刪除</button>
         </div>
       </div>`;
+}
+function renderQuoteList_() {
+  const area = document.getElementById('quoteListArea');
+  if (!area) return;
+  const total = quotesCache_.length;
+  renderQuoteToolbar_();
+  updateQuoteExportRow_();
+  renderQuoteDraw_();
+  const list = quoteVisibleList_();
+  document.getElementById('quoteCount').textContent = list.length === total ? total : list.length + ' / ' + total;
+  if (!total) { area.innerHTML = '<div class="empty-state">還沒有收藏任何名言佳句 🌱<br>寫下第一句吧</div>'; return; }
+  if (!list.length) { area.innerHTML = '<div class="empty-state">沒有符合的句子<br><button class="gen-btn" style="margin-top:10px;" onclick="clearQuoteFilters_()">清除搜尋與篩選</button></div>'; return; }
+  const filtering = !!(quoteQuery_ || quoteFilter_ !== 'all' || quoteBook_);
+  const hasBook = quotesCache_.some(q => q.book);
+  if (!(quoteGroup_ && hasBook)) { area.innerHTML = list.map(q => renderQuoteItem_(q, true)).join(''); return; }
+  const groups = {}, order = [];
+  list.forEach(q => { const k = q.book || QUOTE_NO_BOOK_; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(q); });
+  order.sort((a, b) => (a === QUOTE_NO_BOOK_) - (b === QUOTE_NO_BOOK_)); // 未分類放最後；其餘維持「最近有新增的書在前」
+  area.innerHTML = order.map(k => {
+    const items = groups[k].slice().reverse(); // 書內依收藏順序（讀書順序）
+    const authors = {}; items.forEach(q => { if (q.author) authors[q.author] = (authors[q.author] || 0) + 1; });
+    const author = Object.keys(authors).sort((a, b) => authors[b] - authors[a])[0] || '';
+    const collapsed = !filtering && !!quoteCollapsed_[k] && !items.some(q => q.id === quoteEditingId_);
+    const title = k === QUOTE_NO_BOOK_ ? escapeHtml(k) : '《' + escapeHtml(k) + '》';
+    return `<div class="q-group"><div class="q-group-head" data-k="${escapeHtml(k)}" onclick="toggleQuoteGroup_(this.dataset.k)"><span>${collapsed ? '▶' : '▼'}</span><span>${title}</span><small>${author ? escapeHtml(author) + '・' : ''}${items.length} 句</small></div>${collapsed ? '' : items.map(q => renderQuoteItem_(q, false)).join('')}</div>`;
   }).join('');
-  if (quoteEditingId_) onQuoteEditInput_(true);
+}
+function toggleQuoteGroup_(k) {
+  if (quoteCollapsed_[k]) delete quoteCollapsed_[k]; else quoteCollapsed_[k] = 1;
+  try { localStorage.setItem('lifelog_quote_collapsed', JSON.stringify(quoteCollapsed_)); } catch (e) {}
+  renderQuoteList_();
+}
+function onQuoteSearchInput_() {
+  const v = document.getElementById('quoteSearchInput').value;
+  clearTimeout(quoteSearchTimer_);
+  quoteSearchTimer_ = setTimeout(() => { quoteQuery_ = v.trim(); renderQuoteList_(); }, 150);
+}
+function setQuoteFilter_(k) { quoteFilter_ = k; renderQuoteList_(); }
+function setQuoteBook_(b) { quoteBook_ = b; renderQuoteList_(); }
+function setQuoteGroup_(on) { quoteGroup_ = !!on; renderQuoteList_(); }
+function clearQuoteFilters_() {
+  quoteQuery_ = ''; quoteFilter_ = 'all'; quoteBook_ = '';
+  const i = document.getElementById('quoteSearchInput'); if (i) i.value = '';
+  renderQuoteList_();
+}
+// 最愛／首頁不顯示：先更新畫面，後端失敗就還原並告知
+async function toggleQuoteFlag_(id, field) {
+  const q = quotesCache_.find(x => x.id === id);
+  if (!q) return;
+  const next = !q[field];
+  q[field] = next; renderQuoteList_();
+  try {
+    const result = await postJSON({ action: 'setQuoteFlag', id, field, value: next });
+    if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認');
+    showToast(field === 'favorite' ? (next ? '已設為最愛 ⭐' : '已取消最愛') : (next ? '首頁不會再顯示這一句' : '首頁會恢復顯示這一句'));
+    loadTodayQuote();
+  } catch (err) {
+    q[field] = !next; renderQuoteList_();
+    alert('設定失敗，已還原：' + localizeErrorText_(err.message));
+  }
+}
+async function setQuoteRotationMode_(mode) {
+  const before = quoteRotation_;
+  quoteRotation_ = mode; renderQuoteToolbar_();
+  try {
+    const result = await postJSON({ action: 'setQuoteRotation', mode });
+    if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認');
+    showToast(mode === 'fav' ? '首頁只輪替最愛 ⭐' : '首頁輪替全部句子 📜');
+    loadTodayQuote();
+  } catch (err) {
+    quoteRotation_ = before; renderQuoteToolbar_();
+    alert('設定失敗，已還原：' + localizeErrorText_(err.message));
+  }
 }
 function onQuoteEditInput_(fromRender) {
-  const ta = document.getElementById('quoteEditText'), au = document.getElementById('quoteEditAuthor');
-  if (!ta || !au) return;
-  if (!fromRender) quoteEditDraft_ = { text: ta.value, author: au.value };
+  const ta = document.getElementById('quoteEditText'), au = document.getElementById('quoteEditAuthor'), bk = document.getElementById('quoteEditBook');
+  if (!ta || !au || !bk) return;
+  if (!fromRender) quoteEditDraft_ = { text: ta.value, author: au.value, book: bk.value };
   const problem = quoteEditProblem_();
   const msg = document.getElementById('quoteEditMsg'), save = document.getElementById('quoteEditSave');
   if (msg) msg.textContent = problem === '尚未修改' ? '' : problem;
   const cnt = document.getElementById('quoteEditCount');
-  if (cnt) cnt.textContent = ta.value.trim().length + ' / 300';
+  if (cnt) { const n = ta.value.trim().length; cnt.textContent = n + ' / 300'; cnt.style.color = n > 300 ? '#c0594a' : (n >= 270 ? '#c98a1b' : 'var(--ink-soft)'); }
   if (save) { save.disabled = !!problem; save.style.opacity = problem ? '.5' : ''; }
 }
 async function startQuoteEdit_(id) {
@@ -8619,7 +8774,7 @@ async function startQuoteEdit_(id) {
   const q = quotesCache_.find(x => x.id === id);
   if (!q) return;
   quoteEditingId_ = id;
-  quoteEditDraft_ = { text: q.text, author: q.author || '' };
+  quoteEditDraft_ = { text: q.text, author: q.author || '', book: q.book || '' };
   renderQuoteList_();
   const ta = document.getElementById('quoteEditText');
   if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
@@ -8636,7 +8791,7 @@ async function saveQuoteEdit_() {
   if (problem) { alert(problem); return; }
   const q = quotesCache_.find(x => x.id === quoteEditingId_);
   if (!q) return;
-  const payload = { action: 'updateQuote', id: q.id, text: quoteEditDraft_.text.trim(), author: quoteEditDraft_.author.trim(), originalText: q.text };
+  const payload = { action: 'updateQuote', id: q.id, text: quoteEditDraft_.text.trim(), author: quoteEditDraft_.author.trim(), book: quoteEditDraft_.book.trim(), originalText: q.text };
   save.disabled = true; const label = save.textContent; save.textContent = '儲存中…';
   try {
     const result = await postJSON(payload);
@@ -8654,17 +8809,294 @@ async function loadQuotesPage() {
   if (!checkConfig()) return;
   const area = document.getElementById('quoteListArea');
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getQuotes`, { cache: 'no-store' });
-    const list = await res.json();
-    if (list.error) throw new Error(list.error);
-    document.getElementById('quoteCount').textContent = list.length;
-    if (!list.length) { area.innerHTML = '<div class="empty-state">還沒有收藏任何名言佳句 🌱<br>寫下第一句吧</div>'; return; }
-    quotesCache_ = list;
-    if (quoteEditingId_ && !list.some(q => q.id === quoteEditingId_)) { quoteEditingId_ = null; quoteEditDraft_ = null; }
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getQuotesPage`, { cache: 'no-store' });
+    const r = await res.json();
+    if (r.error) throw new Error(r.error);
+    if (!Array.isArray(r.quotes)) throw new Error('後端版本太舊：請先更新並重新部署 Code.gs');
+    quotesCache_ = r.quotes;
+    quoteRotation_ = r.rotation === 'fav' ? 'fav' : 'all';
+    quoteDeletedCount_ = r.deletedCount || 0;
+    const tc = document.getElementById('quoteTrashCount'); if (tc) tc.textContent = quoteDeletedCount_ ? '（' + quoteDeletedCount_ + '）' : '';
+    if (quoteEditingId_ && !quotesCache_.some(q => q.id === quoteEditingId_)) { quoteEditingId_ = null; quoteEditDraft_ = null; }
     renderQuoteList_();
   } catch (err) {
     area.innerHTML = `<div class="empty-state">讀取失敗：${escapeHtml(localizeErrorText_(err.message))}</div>`;
   }
+}
+// ---------- 複製、分享成圖 ----------
+function quoteCopyText_(q) {
+  const s = quoteSourceLabel_(q);
+  return '「' + q.text + '」' + (s ? '\n—— ' + s : '');
+}
+async function copyTextToClipboard_(text) {
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; } } catch (e) {}
+  try { // 舊瀏覽器／非 https 的備援
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy'); ta.remove(); return ok;
+  } catch (e) { return false; }
+}
+async function copyQuote_(id) {
+  const q = quotesCache_.find(x => x.id === id);
+  if (!q) return;
+  showToast((await copyTextToClipboard_(quoteCopyText_(q))) ? '已複製 📋' : '複製失敗，請長按文字手動複製');
+}
+const QUOTE_CARD_THEMES_ = {
+  warm: { name: '暖米', bg: ['#FFF8EE', '#F6E3C8'], ink: '#4A3728', accent: '#D9923B', muted: '#9A8470' },
+  dark: { name: '深色', bg: ['#2E2823', '#1A1613'], ink: '#F5E9D8', accent: '#E8A33D', muted: '#B8A58F' },
+  sage: { name: '淡綠', bg: ['#F3F7EE', '#DCE8D2'], ink: '#33412C', accent: '#6E9A57', muted: '#7C8C72' }
+};
+const QUOTE_CARD_SERIF_ = '"Chiron GoRound TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+let quoteCardState_ = { q: null, ratio: 'square', theme: 'warm' };
+// 中英混排換行：中文逐字、英數字整詞為一個單位；避免標點落在行首、開括號落在行尾
+function wrapQuoteText_(ctx, text, maxW) {
+  const NO_START = /^[，。、；：！？）」』】》〕,.!?;:)\]}'"”’…—]$/, NO_END = /[「『（(\[【《〔“‘]$/;
+  const lines = [];
+  String(text).split('\n').forEach(par => {
+    const tokens = par.match(/[A-Za-z0-9]+(?:['’\-][A-Za-z0-9]+)*|\s|[^\sA-Za-z0-9]/gu) || [];
+    let cur = '';
+    tokens.forEach(t => {
+      const test = cur + t;
+      if (cur && ctx.measureText(test).width > maxW) {
+        if (NO_START.test(t)) { cur = test; return; } // 標點懸掛，留在這一行
+        let carry = '';
+        if (NO_END.test(cur)) { carry = cur.slice(-1); cur = cur.slice(0, -1); }
+        lines.push(cur.replace(/\s+$/, ''));
+        cur = carry + t.replace(/^\s+/, '');
+      } else cur = test;
+    });
+    if (cur.trim()) lines.push(cur.replace(/\s+$/, ''));
+  });
+  return lines;
+}
+async function drawQuoteCard_(q, ratio, themeKey) {
+  const th = QUOTE_CARD_THEMES_[themeKey] || QUOTE_CARD_THEMES_.warm;
+  const W = 1080, H = ratio === 'story' ? 1920 : 1080;
+  try { // 先確保字型的這些字已載入（Google Fonts 的中文字型是分段載入的）
+    if (document.fonts && document.fonts.load) await Promise.race([document.fonts.load('600 48px "Chiron GoRound TC"', q.text + quoteSourceLabel_(q)), new Promise(r => setTimeout(r, 1500))]);
+  } catch (e) {}
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const ctx = cv.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, th.bg[0]); g.addColorStop(1, th.bg[1]);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  const padX = 120, maxW = W - padX * 2;
+  const areaTop = Math.round(H * (ratio === 'story' ? 0.30 : 0.24)), areaBottom = Math.round(H * (ratio === 'story' ? 0.68 : 0.70));
+  ctx.fillStyle = th.accent; ctx.globalAlpha = 0.28; ctx.font = '700 260px ' + QUOTE_CARD_SERIF_; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('“', padX - 20, areaTop - 20); ctx.globalAlpha = 1;
+  // 字級自動縮放：從大到小找第一個放得進區塊的
+  let size = ratio === 'story' ? 76 : 70, lines = [], lh = 1.75;
+  for (; size >= 28; size -= 2) {
+    ctx.font = '600 ' + size + 'px ' + QUOTE_CARD_SERIF_;
+    lines = wrapQuoteText_(ctx, q.text, maxW);
+    if (lines.length * size * lh <= areaBottom - areaTop) break;
+  }
+  ctx.font = '600 ' + size + 'px ' + QUOTE_CARD_SERIF_;
+  const blockH = lines.length * size * lh;
+  let y = areaTop + Math.max(0, (areaBottom - areaTop - blockH) / 2) + size * 1.1;
+  ctx.fillStyle = th.ink; ctx.textAlign = 'center';
+  lines.forEach(l => { ctx.fillText(l, W / 2, y); y += size * lh; });
+  const afterText = Math.max(y - size * 0.4, areaTop + blockH);
+  const src = quoteSourceLabel_(q);
+  if (src) {
+    ctx.fillStyle = th.accent; ctx.fillRect(W / 2 - 40, afterText + 30, 80, 4);
+    let ss = 40; ctx.font = '500 ' + ss + 'px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
+    const text = '—— ' + src;
+    while (ss > 24 && ctx.measureText(text).width > maxW) { ss -= 2; ctx.font = '500 ' + ss + 'px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif'; }
+    ctx.fillStyle = th.muted; ctx.fillText(text, W / 2, afterText + 30 + 4 + ss * 1.9);
+  }
+  return cv;
+}
+function ensureQuoteCardModal_() {
+  let m = document.getElementById('quoteCardModal');
+  if (m) return m;
+  m = document.createElement('div');
+  m.id = 'quoteCardModal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:450;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;';
+  m.onclick = ev => { if (ev.target === m) closeQuoteCard_(); };
+  m.innerHTML = `<div style="background:var(--card);border-radius:20px;width:min(94vw,440px);max-height:94vh;overflow:auto;padding:14px;box-sizing:border-box;">
+      <div style="display:flex;justify-content:center;"><canvas id="quoteCardCanvas" style="max-width:100%;max-height:50vh;border-radius:12px;box-shadow:0 4px 14px rgba(0,0,0,.18);"></canvas></div>
+      <div class="q-toolbar-row" id="quoteCardRatioRow" style="margin-top:12px;justify-content:center;"></div>
+      <div class="q-toolbar-row" id="quoteCardThemeRow" style="justify-content:center;"></div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="gen-btn" style="flex:1;" onclick="closeQuoteCard_()">關閉</button>
+        <button type="button" class="gen-btn" id="quoteCardShareBtn" style="flex:1;display:none;" onclick="shareQuoteCardImage_()">分享</button>
+        <button type="button" class="submit-btn" style="flex:1.4;" onclick="downloadQuoteCard_()">下載圖片</button>
+      </div></div>`;
+  document.body.appendChild(m);
+  return m;
+}
+function shareQuoteCard_(id) {
+  const q = quotesCache_.find(x => x.id === id);
+  if (q) openQuoteCard_(q);
+}
+async function openQuoteCard_(q) {
+  quoteCardState_.q = q;
+  const m = ensureQuoteCardModal_();
+  m.style.display = 'flex';
+  let canShareFiles = false;
+  try { canShareFiles = !!(navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'])], 'x.png', { type: 'image/png' })] })); } catch (e) {}
+  document.getElementById('quoteCardShareBtn').style.display = canShareFiles ? '' : 'none';
+  renderQuoteCardOptions_();
+  await redrawQuoteCard_();
+}
+function closeQuoteCard_() { const m = document.getElementById('quoteCardModal'); if (m) m.style.display = 'none'; }
+function renderQuoteCardOptions_() {
+  const chip = (on, label, fn) => `<button type="button" class="q-chip${on ? ' active' : ''}" onclick="${fn}">${label}</button>`;
+  document.getElementById('quoteCardRatioRow').innerHTML =
+    chip(quoteCardState_.ratio === 'square', '方形', "setQuoteCardOpt_('ratio','square')") + chip(quoteCardState_.ratio === 'story', '手機桌布', "setQuoteCardOpt_('ratio','story')");
+  document.getElementById('quoteCardThemeRow').innerHTML = Object.keys(QUOTE_CARD_THEMES_)
+    .map(k => chip(quoteCardState_.theme === k, QUOTE_CARD_THEMES_[k].name, `setQuoteCardOpt_('theme','${k}')`)).join('');
+}
+async function setQuoteCardOpt_(k, v) { quoteCardState_[k] = v; renderQuoteCardOptions_(); await redrawQuoteCard_(); }
+async function redrawQuoteCard_() {
+  const st = quoteCardState_, token = (st.token = (st.token || 0) + 1);
+  const cv = await drawQuoteCard_(st.q, st.ratio, st.theme);
+  if (token !== st.token) return; // 期間又換了選項：丟掉過期的結果
+  const out = document.getElementById('quoteCardCanvas');
+  out.width = cv.width; out.height = cv.height;
+  out.getContext('2d').drawImage(cv, 0, 0);
+}
+function quoteCardBlob_() {
+  return new Promise(res => document.getElementById('quoteCardCanvas').toBlob(b => res(b), 'image/png'));
+}
+async function downloadQuoteCard_() {
+  const blob = await quoteCardBlob_();
+  if (!blob) { alert('產生圖片失敗，請再試一次'); return; }
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = 'quote_' + fmtDate(new Date()).replace(/-/g, '') + '_' + Date.now().toString().slice(-4) + '.png';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  showToast('圖片已下載 🖼');
+}
+async function shareQuoteCardImage_() {
+  const blob = await quoteCardBlob_();
+  if (!blob) { alert('產生圖片失敗，請再試一次'); return; }
+  try { await navigator.share({ files: [new File([blob], 'quote.png', { type: 'image/png' })] }); }
+  catch (e) { if (e && e.name !== 'AbortError') alert('分享失敗，請改用「下載圖片」'); }
+}
+// ---------- 抽一句 ----------
+let quoteDrawId_ = null;
+function drawRandomQuote_() {
+  if (!quotesCache_.length) { showToast('還沒有收藏任何名言佳句'); return; }
+  let pool = quotesCache_;
+  if (pool.length > 1 && quoteDrawId_) pool = pool.filter(q => q.id !== quoteDrawId_); // 不會連抽到同一句
+  quoteDrawId_ = pool[Math.floor(Math.random() * pool.length)].id;
+  renderQuoteDraw_();
+}
+function renderQuoteDraw_() {
+  const box = document.getElementById('quoteDrawResult'), btn = document.getElementById('quoteDrawBtn');
+  if (!box) return;
+  const q = quoteDrawId_ && quotesCache_.find(x => x.id === quoteDrawId_);
+  if (!q) { quoteDrawId_ = null; box.innerHTML = ''; if (btn) btn.textContent = '🎲 抽一句'; return; }
+  if (btn) btn.textContent = '🎲 再抽一句';
+  const src = quoteSourceLabel_(q), id = escapeHtml(q.id);
+  box.innerHTML = `<div style="background:var(--input-bg);border-radius:14px;padding:12px 14px;">
+      <div style="font-size:15px;line-height:1.8;color:var(--ink);white-space:pre-wrap;">「${escapeHtml(q.text)}」</div>
+      ${src ? `<div style="font-size:12.5px;color:var(--ink-soft);margin-top:4px;">—— ${escapeHtml(src)}</div>` : ''}
+      <div class="q-actions" style="margin-top:10px;">
+        <button type="button" class="${q.favorite ? 'on' : ''}" onclick="toggleQuoteFlag_('${id}','favorite')">${q.favorite ? '⭐ 最愛' : '☆ 設為最愛'}</button>
+        <button type="button" onclick="copyQuote_('${id}')">📋 複製</button>
+        <button type="button" onclick="shareQuoteCard_('${id}')">🖼 分享成圖</button>
+        <button type="button" onclick="locateQuote_('${id}')">📍 在列表中找到</button>
+      </div></div>`;
+}
+function locateQuote_(id) {
+  const q = quotesCache_.find(x => x.id === id);
+  if (!q) return;
+  quoteQuery_ = ''; quoteFilter_ = 'all'; quoteBook_ = '';
+  const i = document.getElementById('quoteSearchInput'); if (i) i.value = '';
+  delete quoteCollapsed_[q.book || QUOTE_NO_BOOK_];
+  try { localStorage.setItem('lifelog_quote_collapsed', JSON.stringify(quoteCollapsed_)); } catch (e) {}
+  renderQuoteList_();
+  setTimeout(() => flashEl_(document.querySelector('#quoteListArea [data-qid="' + String(id).replace(/"/g, '') + '"]')), 80);
+}
+// ---------- 匯出備份（CSV）與備份提醒 ----------
+const QUOTE_EXPORT_KEY = 'lifelog_quote_export_at';
+function exportQuotesCsv_(all) {
+  const base = all ? quotesCache_ : quoteVisibleList_();
+  if (!base.length) { showToast('目前沒有可匯出的名言'); return; }
+  const list = base.slice().sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  const rows = [['句子', '作者', '書名', '最愛', '首頁不顯示', '收藏時間']].concat(list.map(q =>
+    [q.text, q.author || '', q.book || '', q.favorite ? '是' : '', q.hidden ? '是' : '', String(q.createdAt || '').slice(0, 19).replace('T', ' ')]));
+  const csv = '\ufeff' + rows.map(r => r.map(csvCell_).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a');
+  a.href = url; a.download = 'quotes_' + fmtDate(new Date()).replace(/-/g, '') + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  try { localStorage.setItem(QUOTE_EXPORT_KEY, String(Date.now())); } catch (e) {}
+  showToast('已匯出 ' + list.length + ' 句名言 📄');
+  updateQuoteExportRow_();
+}
+function updateQuoteExportRow_() {
+  const row = document.getElementById('quoteExportRow');
+  if (!row) return;
+  if (!quotesCache_.length) { row.innerHTML = ''; return; }
+  let last = 0; try { last = Number(localStorage.getItem(QUOTE_EXPORT_KEY)) || 0; } catch (e) {}
+  const days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+  const shown = quoteVisibleList_().length, filtered = shown !== quotesCache_.length;
+  let note;
+  if (!last) note = '<span class="te-warn">還沒備份過，名言只存在你的 Google 試算表，建議匯出一份</span>';
+  else if (days >= 30) note = `<span class="te-warn">上次備份在 ${days} 天前，建議再匯出一次</span>`;
+  else note = '上次備份：' + (days === 0 ? '今天' : days + ' 天前');
+  row.innerHTML = `<button class="gen-btn" onclick="exportQuotesCsv_(${filtered ? 'false' : 'true'})">⬇️ 匯出 CSV（${shown} 句）</button>` +
+    (filtered ? `<button class="gen-btn" onclick="exportQuotesCsv_(true)">匯出全部 ${quotesCache_.length} 句</button>` : '') + `<span>${note}</span>`;
+}
+// ---------- 新增句子的字數提示 ----------
+function onQuoteTextInput_() {
+  const ta = document.getElementById('quoteTextInput'), c = document.getElementById('quoteTextCount');
+  if (!ta || !c) return;
+  const n = ta.value.trim().length;
+  c.textContent = n > 300 ? n + ' / 300　超過上限了，請縮短或拆成兩句' : (n >= 270 ? n + ' / 300　快到上限了' : n + ' / 300');
+  c.style.color = n > 300 ? '#c0594a' : (n >= 270 ? '#c98a1b' : 'var(--ink-soft)');
+}
+// ---------- 最近刪除（保留 7 天，可還原） ----------
+function toggleQuoteTrash_() {
+  quoteTrashOpen_ = !quoteTrashOpen_;
+  document.getElementById('quoteTrashBox').style.display = quoteTrashOpen_ ? 'block' : 'none';
+  document.getElementById('quoteTrashArrow').textContent = quoteTrashOpen_ ? '▲ 收合' : '▼ 展開';
+  if (quoteTrashOpen_) loadQuoteTrash_();
+}
+async function loadQuoteTrash_() {
+  const box = document.getElementById('quoteTrashBox');
+  if (!box) return;
+  box.innerHTML = '<div class="empty-state" style="padding:8px 0;">載入中…</div>';
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getDeletedQuotes`, { cache: 'no-store' });
+    const r = await res.json();
+    if (r.error || !Array.isArray(r.quotes)) throw new Error(r.error || '後端版本太舊：請先更新並重新部署 Code.gs');
+    quoteDeletedCount_ = r.quotes.length;
+    const tc = document.getElementById('quoteTrashCount'); if (tc) tc.textContent = quoteDeletedCount_ ? '（' + quoteDeletedCount_ + '）' : '';
+    if (!r.quotes.length) { box.innerHTML = '<div class="empty-state" style="padding:8px 0;">沒有最近刪除的句子</div>'; return; }
+    box.innerHTML = '<div class="tool-desc" style="margin-bottom:6px;">刪除後保留 7 天，期限一到會自動清除。</div>' + r.quotes.map(q => `
+      <div class="gym-log-item" style="flex-direction:column;align-items:stretch;gap:6px;">
+        <div style="font-size:13px;line-height:1.7;color:var(--ink);white-space:pre-wrap;">「${escapeHtml(q.text)}」</div>
+        <div style="font-size:12px;color:var(--ink-soft);">${quoteSourceLabel_(q) ? '—— ' + escapeHtml(quoteSourceLabel_(q)) + '　' : ''}還剩 ${q.daysLeft} 天</div>
+        <div class="q-actions">
+          <button type="button" class="on" onclick="restoreQuoteItem_('${escapeHtml(q.id)}')">↩ 還原</button>
+          <button type="button" class="danger" onclick="purgeQuoteItem_('${escapeHtml(q.id)}')">永久刪除</button>
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    box.innerHTML = `<div class="empty-state" style="padding:8px 0;">讀取失敗：${escapeHtml(localizeErrorText_(err.message))}</div>`;
+  }
+}
+async function restoreQuoteItem_(id) {
+  try {
+    const result = await postJSON({ action: 'restoreQuote', id });
+    if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認');
+    showToast('已還原 ↩');
+    await loadQuotesPage(); loadQuoteTrash_(); loadTodayQuote();
+  } catch (err) { alert('還原失敗：' + localizeErrorText_(err.message)); }
+}
+async function purgeQuoteItem_(id) {
+  if (!(await showConfirm('永久刪除後就無法再還原了，確定嗎？', { title: '永久刪除這一句？', okText: '永久刪除', cancelText: '先不要' }))) return;
+  try {
+    const result = await postJSON({ action: 'purgeQuote', id });
+    if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認');
+    showToast('已永久刪除');
+    await loadQuotesPage(); loadQuoteTrash_();
+  } catch (err) { alert('刪除失敗：' + localizeErrorText_(err.message)); }
 }
 async function submitQuote() {
   const btn = document.getElementById('quoteSubmitBtn');
@@ -8672,6 +9104,7 @@ async function submitQuote() {
   const text = document.getElementById('quoteTextInput').value.trim();
   const author = document.getElementById('quoteAuthorInput').value.trim();
   if (!text) { alert('請先寫下一句名言佳句'); return; }
+  if (text.length > 300) { alert('這一句有 ' + text.length + ' 字，超過 300 字上限。請縮短，或拆成兩句分開收藏。'); return; }
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '收藏中…';
@@ -8680,6 +9113,7 @@ async function submitQuote() {
     if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message);
     document.getElementById('quoteTextInput').value = '';
     document.getElementById('quoteAuthorInput').value = '';
+    onQuoteTextInput_();
     showToast('收藏好了 📜');
     loadQuotesPage();
     loadTodayQuote();
@@ -8715,31 +9149,51 @@ function parseQuoteLine_(raw) {
   if (!text) return null;
   return { text, author };
 }
+let quoteBatchBad_ = [], quoteBatchChecked_ = null;
+let quoteBatchWarn_ = { bad: [], garbled: [], long: [] };
+function isGarbledQuote_(t) {
+  if (/\uFFFD/.test(t) || /[\u0000-\u0008\u000B\u000C\u000E-\u001F]/.test(t)) return true; // 取代字元、控制字元
+  if (/(?:Ã.|â€|ï¿½|Â.){2,}/.test(t)) return true; // 常見的編碼錯誤殘留（例如 UTF-8 被當成 Latin-1）
+  const letters = (t.match(/[\p{L}\p{N}]/gu) || []).length;
+  return t.length >= 8 && letters / t.length < 0.3; // 幾乎都是符號
+}
+function quoteBatchWarnHtml_(max) {
+  const w = quoteBatchWarn_;
+  const cutText = s => (s.length > 36 ? s.slice(0, 36) + '…' : s);
+  const sec = (title, arr, extra) => arr.length ? `<div style="font-size:12px;font-weight:700;color:#c0594a;margin:8px 0 2px;">${title}（共 ${arr.length} 行${arr.length > max ? '，先列 ' + max + ' 行' : ''}）</div>` +
+    arr.slice(0, max).map(x => `<div style="font-size:12.5px;line-height:1.6;color:var(--ink-soft);padding:3px 0;border-bottom:1px solid var(--line);">第 ${x.line} 行：${escapeHtml(cutText(x.text))}${extra ? extra(x) : ''}</div>`).join('') : '';
+  return sec('⚠ 超過 300 字，匯入時會略過', w.long, x => `<span style="color:#c0594a;">（${x.len} 字）</span>`) +
+    sec('⚠ 疑似亂碼，匯入時會略過', w.garbled) + sec('⚠ 讀不出句子（空白或只有符號），匯入時會略過', w.bad);
+}
 function parseQuoteBatch() {
   const raw = document.getElementById('quoteBatchInput').value;
-  const seen = {};
-  quoteBatchItems_ = [];
-  let dup = 0, tooLong = 0;
-  raw.split('\n').forEach(l => {
+  quoteBatchItems_ = []; quoteBatchBad_ = []; quoteBatchChecked_ = null; quoteBatchWarn_ = { bad: [], garbled: [], long: [] };
+  raw.split('\n').forEach((l, i) => {
+    const t = l.trim(), line = i + 1;
+    if (!t) return;
     const it = parseQuoteLine_(l);
-    if (!it) return;
-    if (it.text.length > 300) { tooLong++; return; }
-    if (seen[it.text]) { dup++; return; }
-    seen[it.text] = true;
+    if (!it || !/[\p{L}\p{N}]/u.test(it.text)) { quoteBatchWarn_.bad.push({ line, text: t }); quoteBatchBad_.push(t); return; }
+    if (isGarbledQuote_(it.text)) { quoteBatchWarn_.garbled.push({ line, text: t }); quoteBatchBad_.push(t); return; }
+    if (it.text.length > 300) quoteBatchWarn_.long.push({ line, text: it.text, len: it.text.length }); // 仍送去檢查，由後端列為「過長」
     quoteBatchItems_.push(it);
   });
   const prev = document.getElementById('quoteBatchPreview');
   const btn = document.getElementById('quoteBatchBtn');
   if (!quoteBatchItems_.length) {
-    prev.innerHTML = raw.trim() ? '<div class="empty-state" style="padding:6px 0;">沒有解析到可匯入的句子</div>' : '';
+    prev.innerHTML = raw.trim() ? '<div class="empty-state" style="padding:6px 0;">沒有解析到可匯入的句子</div>' + quoteBatchWarnHtml_(3) : '';
     btn.style.display = 'none';
     return;
   }
-  const show = quoteBatchItems_.slice(0, 8).map(q =>
-    `<div style="font-size:12.5px;line-height:1.6;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--line);">「${escapeHtml(q.text)}」${q.author ? `<span style="color:var(--ink-soft);"> —— ${escapeHtml(q.author)}</span>` : ''}</div>`).join('');
-  prev.innerHTML = `<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:4px;">解析到 <b>${quoteBatchItems_.length}</b> 句${dup ? `，貼上內容中重複 ${dup} 句` : ''}${tooLong ? `，超過 300 字 ${tooLong} 句（將略過）` : ''}${quoteBatchItems_.length > 8 ? '（預覽前 8 句）' : ''}</div>${show}`;
+  const show = quoteBatchItems_.slice(0, 5).map(q => quoteBatchRowHtml_(q)).join('');
+  prev.innerHTML = `<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:4px;">解析到 <b>${quoteBatchItems_.length}</b> 句${quoteBatchItems_.length > 5 ? '（先列前 5 句）' : ''}。按下方按鈕檢查哪些是新的、哪些重複。</div>${show}${quoteBatchWarnHtml_(3)}`;
   btn.style.display = 'block';
-  btn.textContent = `匯入 ${quoteBatchItems_.length} 句`;
+  btn.textContent = `檢查並預覽 ${quoteBatchItems_.length} 句`;
+}
+function quoteBatchRowHtml_(q) {
+  const sp = splitQuoteSourceClient_(q.author);
+  const src = quoteSourceLabel_({ author: sp.author, book: q.book || sp.book });
+  const text = q.text.length > 60 ? q.text.slice(0, 60) + '…' : q.text;
+  return `<div style="font-size:12.5px;line-height:1.6;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--line);">「${escapeHtml(text)}」${src ? `<span style="color:var(--ink-soft);"> —— ${escapeHtml(src)}</span>` : ''}</div>`;
 }
 function loadQuoteBatchFile(input) {
   const f = input.files && input.files[0];
@@ -8753,9 +9207,48 @@ function loadQuoteBatchFile(input) {
   };
   reader.readAsText(f, 'UTF-8');
 }
-async function submitQuoteBatch() {
+// 第一步：請後端比對（只讀不寫），讓使用者看到結果再決定要不要匯入
+async function checkQuoteBatch_() {
   const btn = document.getElementById('quoteBatchBtn');
   if (btn.disabled || !quoteBatchItems_.length) return;
+  if (quoteBatchItems_.length > 3000) { alert('一次最多檢查 3000 句，請分批處理'); return; }
+  btn.disabled = true; const label = btn.textContent; btn.textContent = '檢查中…';
+  try {
+    const r = await postJSON({ action: 'previewQuotesBatch', items: quoteBatchItems_ }, 60000);
+    if (!r || r.error || r.ok === false) throw new Error((r && (r.error || r.message)) || '後端沒有回應');
+    quoteBatchChecked_ = r;
+    renderQuoteBatchCheck_();
+    btn.style.display = 'none';
+  } catch (err) {
+    alert('檢查失敗：' + localizeErrorText_(err.message) + '（沒有寫入任何資料）');
+    btn.textContent = label;
+  } finally { btn.disabled = false; }
+}
+function renderQuoteBatchCheck_() {
+  const r = quoteBatchChecked_, prev = document.getElementById('quoteBatchPreview');
+  if (!r) return;
+  const dup = (r.dupLibrary || 0) + (r.dupBatch || 0), bad = quoteBatchWarn_.bad.length + quoteBatchWarn_.garbled.length + (r.empty || 0);
+  const sec = (title, rows) => rows.length ? `<div style="font-size:12px;font-weight:700;color:var(--accent-dark);margin:8px 0 2px;">${title}</div>${rows.join('')}` : '';
+  const plain = t => `<div style="font-size:12.5px;line-height:1.6;color:var(--ink-soft);padding:3px 0;border-bottom:1px solid var(--line);">「${escapeHtml(t)}」</div>`;
+  prev.innerHTML = `
+    <div style="font-size:13px;line-height:1.9;color:var(--ink);background:var(--input-bg);border-radius:12px;padding:8px 12px;">
+      ✅ 將新增 <b>${r.newCount}</b> 句<br>
+      ♻️ 重複 <b>${dup}</b> 句（已在收藏 ${r.dupLibrary || 0}、貼上內容內重複 ${r.dupBatch || 0}），會略過<br>
+      ✂️ 超過 300 字 <b>${r.tooLong || 0}</b> 句，會略過<br>
+      ⚠️ 格式有問題 <b>${bad}</b> 行（空白或只有符號 ${quoteBatchWarn_.bad.length + (r.empty || 0)}、疑似亂碼 ${quoteBatchWarn_.garbled.length}），會略過
+    </div>
+    ${sec('將新增（先列前 5 句）', (r.samples.fresh || []).map(q => quoteBatchRowHtml_({ text: q.text, author: q.author, book: q.book })))}
+    ${sec('重複的句子（例）', (r.samples.dupLibrary || []).map(plain))}
+    ${quoteBatchWarnHtml_(5)}
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button type="button" class="gen-btn" style="flex:1;" onclick="parseQuoteBatch()">返回修改</button>
+      ${r.newCount ? `<button type="button" class="submit-btn" id="quoteBatchConfirmBtn" style="flex:2;" onclick="submitQuoteBatch()">確認匯入 ${r.newCount} 句</button>` : ''}
+    </div>
+    ${r.newCount ? '' : '<div style="font-size:12.5px;color:var(--ink-soft);margin-top:8px;">沒有新的句子可以匯入。</div>'}`;
+}
+async function submitQuoteBatch() {
+  const btn = document.getElementById('quoteBatchConfirmBtn');
+  if (!btn || btn.disabled || !quoteBatchItems_.length || !quoteBatchChecked_) return;
   btn.disabled = true;
   const label = btn.textContent;
   btn.textContent = '匯入中…';
@@ -8773,22 +9266,21 @@ async function submitQuoteBatch() {
     loadTodayQuote();
   } catch (err) {
     alert('匯入失敗：' + err.message + '（若有部分已匯入，重新匯入時重複的句子會自動略過）');
-    btn.textContent = label;
-  } finally {
-    btn.disabled = false;
+    btn.textContent = label; btn.disabled = false;
   }
 }
 async function deleteQuoteItem(id) {
   const q = quotesCache_.find(x => x.id === id);
   let preview = q ? q.text.replace(/\s+/g, ' ') : '';
   if (preview.length > 40) preview = preview.slice(0, 40) + '…';
-  if (!(await showConfirm((preview ? '「' + preview + '」' : '這一句') + ' 刪除後無法復原，首頁名言的輪替順序也會跟著變動。確定要刪除嗎？', { title: '刪除這一句名言佳句？', okText: '確定刪除', cancelText: '先不要' }))) return;
+  if (!(await showConfirm((preview ? '「' + preview + '」' : '這一句') + ' 會先移到「最近刪除」，保留 7 天，期間可以還原；首頁名言的輪替也會跟著變動。確定要刪除嗎？', { title: '刪除這一句名言佳句？', okText: '確定刪除', cancelText: '先不要' }))) return;
   try {
     if (quoteEditingId_ === id) { quoteEditingId_ = null; quoteEditDraft_ = null; }
     const result = await postJSON({ action: 'deleteQuote', id, expectedText: q ? q.text : undefined });
     if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message);
-    showToast('已刪除 🗑️');
-    loadQuotesPage();
+    showToast('已移到最近刪除（保留 7 天）🗑️');
+    await loadQuotesPage();
+    if (quoteTrashOpen_) loadQuoteTrash_();
     loadTodayQuote();
   } catch (err) {
     alert('刪除失敗：' + err.message);
@@ -8811,20 +9303,37 @@ function renderTodayQuote(r) {
   const textEl = document.getElementById('affirmationText');
   const authorEl = document.getElementById('affirmationAuthor');
   const btn = document.getElementById('affirmationRefreshBtn');
+  const swap = document.getElementById('quoteSwapBtn');
   try {
     if (r && r.isQuoteDay && r.quote) {
       icon.textContent = '📜';
       textEl.textContent = '「' + r.quote.text + '」';
-      authorEl.textContent = r.quote.author ? '—— ' + r.quote.author : '';
-      authorEl.style.display = r.quote.author ? 'block' : 'none';
+      const src = quoteSourceLabel_(r.quote);
+      authorEl.textContent = src ? '—— ' + src : '';
+      authorEl.style.display = src ? 'block' : 'none';
       btn.style.display = 'none';
+      if (swap) swap.style.display = r.canSwap ? '' : 'none';
     } else {
       icon.textContent = '💛';
       authorEl.style.display = 'none';
       btn.style.display = '';
+      if (swap) swap.style.display = 'none';
       loadTodayAffirmation();
     }
   } catch (err) {}
+}
+// 首頁「換一句」：從輪替池隨機換另一句，並記住為今天的那一句
+async function swapTodayQuote() {
+  const swap = document.getElementById('quoteSwapBtn');
+  if (!swap || swap.disabled) return;
+  swap.disabled = true; const label = swap.textContent; swap.textContent = '換句中…';
+  try {
+    const r = await postJSON({ action: 'rerollTodayQuote', date: fmtDate(new Date()) });
+    if (!r || r.error || r.ok === false) throw new Error((r && (r.error || r.message)) || '後端沒有回應');
+    renderTodayQuote(r);
+  } catch (err) {
+    showToast(localizeErrorText_(err.message));
+  } finally { swap.disabled = false; swap.textContent = label; }
 }
 function loadTodayAffirmation() {
   const todayStr = fmtDate(new Date());
