@@ -763,6 +763,13 @@
     padding:10px 12px;font-size:14px;color:var(--ink);font-family:inherit;width:100%;
     box-sizing:border-box;margin-bottom:8px;
   }
+  .gym-form select:not(.choice-chip){
+    background-color:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;
+    padding:10px 34px 10px 12px;font-size:14px;color:var(--ink);font-family:inherit;width:100%;
+    box-sizing:border-box;margin-bottom:8px;-webkit-appearance:none;appearance:none;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--ink-soft) 50%),linear-gradient(135deg,var(--ink-soft) 50%,transparent 50%);
+    background-position:calc(100% - 19px) 52%,calc(100% - 14px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
   .gym-form-row{display:flex;gap:8px;}
 
   /* ---- 股票 ---- */
@@ -1867,7 +1874,7 @@
       </div>
       <div class="card">
         <div class="field-label" style="margin-top:0;">🎬 居家跟練影片</div>
-        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">貼上 YouTube 網址，自動抓影片名稱加入今天的運動紀錄</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">貼上 YouTube 網址，自動抓影片名稱，加入上面所選日期的運動紀錄</div>
         <div class="gym-form">
           <div class="record-date-row" data-picker="exerciseVideo">
             <div class="opt-chip" data-days-ago="0">今天</div>
@@ -6813,21 +6820,42 @@ async function deleteGymLogItem(id) {
 
 /* ---- 居家跟練影片（YouTube 網址 → 自動抓標題） ---- */
 async function loadExerciseVideos() {
-  const ds = fmtDate(new Date());
   try {
-    const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
-    const entries = await res.json();
-    const videos = (entries || []).filter(e => e.category === '運動健身' && e.fields && e.fields.videoUrl);
+    let videos = null;
+    try {
+      // 最近 30 天的跟練影片（包含補記昨天、前天或更早日期的紀錄）
+      const res = await fetch(`${CONFIG.GAS_URL}?action=getExerciseVideos&days=30`, { cache: 'no-store' });
+      const data = await res.json();
+      if (Array.isArray(data)) videos = data;
+    } catch (e) {}
+    if (!videos) {
+      // 後端還沒更新到新版時，退回只看今天
+      const ds = fmtDate(new Date());
+      const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
+      const entries = await res.json();
+      videos = (entries || []).filter(e => e.category === '運動健身' && e.fields && e.fields.videoUrl);
+    }
     renderExerciseVideoList(videos);
   } catch (err) {}
+}
+function exerciseVideoDateLabel_(ds) {
+  const m = String(ds || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return '';
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const today = fmtDate(new Date());
+  const y = new Date(); y.setDate(y.getDate() - 1);
+  const wk = '日一二三四五六'[d.getDay()];
+  const base = `${Number(m[2])}/${Number(m[3])}（${wk}）`;
+  return ds === today ? '今天 ' + base : (ds === fmtDate(y) ? '昨天 ' + base : base);
 }
 function renderExerciseVideoList(list) {
   const area = document.getElementById('exerciseVideoList');
   if (!area) return;
-  if (!list.length) { area.innerHTML = '<div class="empty-state" style="padding:10px 0;">今天還沒有跟練影片紀錄</div>'; return; }
+  if (!list.length) { area.innerHTML = '<div class="empty-state" style="padding:10px 0;">最近 30 天還沒有跟練影片紀錄</div>'; return; }
   area.innerHTML = list.map(e => `
     <div class="gym-log-item">
-      <a href="${escapeHtml(e.fields.videoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--ink);text-decoration:none;">
+      <a href="${escapeHtml(e.fields.videoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--ink);text-decoration:none;min-width:0;">
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:2px;">${escapeHtml(exerciseVideoDateLabel_(e.date))}</div>
         <span class="gl-ex">▶️ ${escapeHtml(e.fields.videoTitle || '跟練影片')}</span>
       </a>
       <button class="gl-del" onclick="deleteExerciseVideo('${e.id}')">✕</button>
@@ -6853,6 +6881,7 @@ async function submitManualWorkout() {
     if (result && result.error) throw new Error(result.error);
     ['workoutManualMin', 'workoutManualKcal', 'workoutManualKm'].forEach(id => { document.getElementById(id).value = ''; });
     showToast(pick(['運動記好了 💪', '今天也動起來了 🌱', '又完成一次運動啦 ⌚']));
+    loadFitHome();
     loadWeekProgress();
     loadStreak();
     if (getRecordDate('workoutManual') === fmtDate(new Date())) loadTodayOverview();
@@ -6886,6 +6915,7 @@ async function submitExerciseVideo() {
     input.value = '';
     showToast(pick(['跟練紀錄好了 🎬', '又完成一支影片啦 💪', '記下這支影片了 🌱']));
     loadExerciseVideos();
+    loadFitHome();
     loadWeekProgress();
     loadStreak();
     if (getRecordDate('exerciseVideo') === fmtDate(new Date())) loadTodayOverview();
@@ -6903,6 +6933,7 @@ async function deleteExerciseVideo(id) {
     if (result && result.error) throw new Error(result.error);
     showToast('已刪除 🗑️');
     loadExerciseVideos();
+    loadFitHome();
     loadWeekProgress();
     loadStreak();
   } catch (err) {
