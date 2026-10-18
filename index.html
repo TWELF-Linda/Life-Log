@@ -3067,7 +3067,11 @@ function renderExtraFields() {
       input.value = (curVal === undefined || curVal === null) ? '' : curVal;
       input.style.cssText = 'background:var(--input-bg);border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit;width:100%;max-width:100%;box-sizing:border-box;min-width:0;';
       if (input.type === 'date') input.onclick = () => { try { openNativeDatePicker(input); } catch (e) {} };
-      input.oninput = () => { currentFieldValues[f.key] = input.value; };
+      input.oninput = () => {
+        currentFieldValues[f.key] = input.value;
+        // 票券類別裡的「票價」欄位：輸入有效金額時，自動帶入原始票價與最終實際支付金額（預設 TWD）
+        if (cat && cat.ticketScan && isTicketPriceField_(f)) autofillFromPriceField_(input.value);
+      };
       const lab = document.createElement('div');
       lab.textContent = f.label;
       lab.style.cssText = 'font-size:11px;color:var(--ink-soft);margin:0 0 3px 2px;';
@@ -6804,6 +6808,39 @@ function normalizeTicketPriceValues_() {
   }
   return '';
 }
+// 判斷「原有的票價輸入欄位」：key 為 price，或標籤含票價／價格／票錢的自訂欄位
+function isTicketPriceField_(f) {
+  return !!f && (f.key === 'price' || /票價|價格|票錢/.test(f.label || ''));
+}
+// 只接受純數字金額（可帶千分位、NT$、$、TWD、元）；其他（空白、含外幣文字、亂打）回傳 null，不自動帶入
+function parsePlainTwdAmount_(raw) {
+  const m = String(raw === null || raw === undefined ? '' : raw).trim().match(/^(?:NT\$|\$|TWD)?\s*(\d{1,3}(?:,\d{3})+|\d+)(\.\d{1,2})?\s*(?:元)?$/i);
+  if (!m) return null;
+  const n = Number(m[1].replace(/,/g, '') + (m[2] || ''));
+  return isFinite(n) ? n : null;
+}
+// 原有票價欄位輸入 → 預設帶入。規則：
+//  - 空白或無法判讀的輸入不動任何欄位，也不會變成 TWD 0
+//  - 原始票價幣別不是 TWD、或這張票根已有手動／已儲存的價格（autoAllowed=false）→ 不帶入
+//  - 原始票價、實付金額各自判斷：使用者手動改過的那一個不會被覆蓋
+function autofillFromPriceField_(raw) {
+  const v = currentFieldValues;
+  tpInitState_();
+  const st = tpState;
+  if (!st.autoAllowed) return;
+  if (String(v.origCurrency || 'TWD').toUpperCase() !== 'TWD') return;
+  const n = parsePlainTwdAmount_(raw);
+  if (n === null) {
+    if (String(raw || '').trim() === '' && !st.origTouched && !st.paidTouched) {
+      v.origAmount = null; v.paidAmount = null; v.paidCurrency = ''; // 清空票價欄位 → 一併清掉先前自動帶入的值
+      renderTicketPriceForm();
+    }
+    return;
+  }
+  if (!st.origTouched) { v.origAmount = n; v.origCurrency = 'TWD'; }
+  if (!st.paidTouched) { v.paidAmount = n; v.paidCurrency = 'TWD'; }
+  renderTicketPriceForm();
+}
 // ==== TICKET-PRICE-END ====
 
 // ---------- 票價表單（新增／編輯共用，只在票券類類別顯示） ----------
@@ -6835,7 +6872,7 @@ function makeAmountInput_(value, currency, placeholder) {
   return input;
 }
 // 價格表單的互動狀態（只活在畫面上，不會存進票根資料）。currentFieldValues 換成新物件（換類別、開新表單、編輯另一筆）時自動重置。
-let tpState = { obj: null, paidTouched: false, autoAllowed: true, confirming: false, justCleared: false };
+let tpState = { obj: null, paidTouched: false, origTouched: false, autoAllowed: true, confirming: false, justCleared: false };
 function tpInitState_() {
   const v = currentFieldValues;
   if (tpState.obj === v) return;
@@ -6844,6 +6881,7 @@ function tpInitState_() {
     obj: v,
     // 載入既有資料時，已有的實付金額視為「使用者確認過」，不會被自動帶入覆蓋
     paidTouched: hasPaid || !!v.paidCurrency,
+    origTouched: hasOrig,
     // 編輯舊票根時，只有兩個價格都是空的才允許自動帶入；新增票根一律允許
     autoAllowed: !editingEntryId || (!hasOrig && !hasPaid),
     confirming: false, justCleared: false
@@ -6882,6 +6920,7 @@ function buildPriceRows_(box) {
     const prev = String(v.origCurrency || 'TWD').toUpperCase();
     const next = oSel.value;
     if (next === prev) return;
+    st.origTouched = true;
     if (st.confirming) { oSel.value = prev; return; } // 對話框開著時的重複觸發：忽略，維持原狀
     // 情境 C：實付金額與實付幣別都沒有資料 → 直接套用新幣別，不顯示對話框、不建立實付資料。
     // 只要其中之一有資料（例如只選了幣別、金額還沒填），就視為待保護的支付資料，要先確認。
@@ -6908,6 +6947,7 @@ function buildPriceRows_(box) {
     renderTicketPriceForm();
   };
   oInput.oninput = () => {
+    st.origTouched = true;
     v.origAmount = oInput.value === '' ? null : Number(oInput.value);
     v.origCurrency = oSel.value;
     if (oSel.value !== 'TWD' || !st.autoAllowed || st.paidTouched || !paidInput) return;
@@ -6974,6 +7014,22 @@ function renderTicketPriceForm() {
     const note = document.createElement('div');
     note.className = 'tp-form-legacy';
     note.textContent = `舊紀錄的票價：「${legacy}」。貨幣與性質（原始票價或實付金額）尚未確認，不會被當成新台幣統計；有需要請在下面補填。`;
+    const legacyAmt = parsePlainTwdAmount_(legacy);
+    if (legacyAmt !== null) {
+      // 使用者主動按下才帶入（載入表單時不會自動覆蓋任何資料）
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'gen-btn';
+      btn.style.cssText = 'display:block;margin:8px 0 0;';
+      btn.textContent = `帶入為 ${formatMoney(legacyAmt, 'TWD')}（原始票價與實際支付）`;
+      btn.onclick = () => {
+        v.origAmount = legacyAmt; v.origCurrency = 'TWD';
+        v.paidAmount = legacyAmt; v.paidCurrency = 'TWD';
+        tpInitState_(); tpState.origTouched = true; tpState.paidTouched = true; tpState.autoAllowed = false;
+        renderTicketPriceForm();
+      };
+      note.appendChild(btn);
+    }
     box.appendChild(note);
   }
 
