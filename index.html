@@ -2367,6 +2367,13 @@
       <div id="elecLoadError" style="margin-top:6px;"></div>
     </div>
 
+    <div class="card" id="elecPredictCard" style="display:none;">
+      <div class="field-label" style="margin-top:0;">🎯 節電預測截止倒數</div>
+      <div class="stock-home-metric-value" id="elecPredictCountdown">—</div>
+      <div class="stat-card-sub" id="elecPredictDeadlineSub"></div>
+      <div class="stat-card-sub" id="elecPredictRemind" style="font-weight:700;"></div>
+    </div>
+
     <div class="card">
       <div class="field-label" style="margin-top:0;">🔢 記錄電表讀數</div>
       <div class="record-date-row" data-picker="elecReading">
@@ -5467,6 +5474,24 @@ async function loadElecHome() {
       prevEl.textContent = '';
     }
     document.getElementById('elecPeriodCompareSub').textContent = summary.periodCompareNote || '';
+
+    // 節電預測截止倒數（截止日 = 帳單結束日往前 15 天）
+    const predCard = document.getElementById('elecPredictCard');
+    if (cp && cp.predictDeadline) {
+      const d = cp.predictDaysLeft;
+      predCard.style.display = '';
+      document.getElementById('elecPredictCountdown').textContent =
+        d > 0 ? `還剩 ${d} 天` : (d === 0 ? '今天截止！' : '本期已截止');
+      document.getElementById('elecPredictDeadlineSub').textContent = `截止日：${cp.predictDeadline}（抄表日前 15 天）`;
+      const rem = document.getElementById('elecPredictRemind');
+      if (d >= 0 && d <= 1) {
+        rem.style.color = '#d9534f';
+        rem.textContent = `⏰ 本期預計用電約 ${cp.predictEstKwh} 度，請盡快到「台灣電力APP」輸入預測度數（送出後不能修改）`;
+      } else if (d > 1) {
+        rem.style.color = '';
+        rem.textContent = `目前趨勢本期預計約 ${cp.predictEstKwh} 度`;
+      } else { rem.textContent = ''; }
+    } else { predCard.style.display = 'none'; }
 
     const recentEl = document.getElementById('elecRecentLogArea');
     if (summary.recentLog && summary.recentLog.length) {
