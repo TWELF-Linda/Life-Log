@@ -1361,6 +1361,13 @@
   .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 
   .mood-chart{width:100%;height:90px;}
+  .mood-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(36px,1fr));gap:4px;}
+  .mood-strip .ms-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:3px 0;border-radius:10px;background:var(--input-bg);cursor:pointer;min-height:42px;}
+  .mood-strip .ms-day .ms-n{font-size:9.5px;color:var(--ink-soft);line-height:1;}
+  .mood-strip .ms-day .ms-e{font-size:18px;line-height:1.15;}
+  .mood-strip .ms-day.empty .ms-e{font-size:12px;color:var(--ink-soft);opacity:.45;}
+  .mood-strip .ms-day.today{box-shadow:0 0 0 2px var(--accent) inset;}
+  .mood-strip .ms-day.selected{box-shadow:0 0 0 2.5px var(--coral-dark) inset;}
 
   .health-item{
     display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start;
@@ -2128,7 +2135,7 @@
         <div class="stat-card-head">💪 運動</div>
         <div class="stat-card-main">
           <span class="stat-card-value" id="statExerciseValue">—</span>
-          <span class="stat-card-unit">次</span>
+          <span class="stat-card-unit">天</span>
           <span id="statExerciseDelta"></span>
         </div>
       </div>
@@ -2170,13 +2177,14 @@
 
     <div class="card" id="moodChartCard" style="display:none;">
       <div class="field-label" style="margin-top:0;">💭 心情趨勢</div>
-      <svg class="mood-chart" id="moodChartSvg"></svg>
+      <div class="mood-strip" id="moodStripArea"></div>
+      <div id="moodStripLegend" style="margin-top:8px;font-size:11.5px;color:var(--ink-soft);"></div>
     </div>
 
     <div class="card">
       <div class="field-label" style="margin-top:0;display:flex;align-items:center;justify-content:space-between;">
         <span>✨ AI 幫我看看這個月</span>
-        <button class="wrap-btn" onclick="generateMonthWrap()">生成月度分析</button>
+        <button class="wrap-btn" id="monthWrapBtn" onclick="generateMonthWrap()">生成月度分析</button>
       </div>
       <div id="monthWrapArea"></div>
     </div>
@@ -2541,6 +2549,13 @@ const CONFIG = {
 };
 
 let CATEGORIES = [];
+let statsCategoryMeta = {}; // 後端隨統計一起回傳的類別顏色／圖示：前端類別清單還沒載入（或找不到）時，統計圖表也有正確顏色
+const CAT_FALLBACK_COLORS_ = ['#F5A3C7', '#A8DDB5', '#B8C6E8', '#FFCF9E', '#C9A6E8', '#FFE29A', '#9ED8E8', '#E8B4D8', '#C9BBA8', '#B9E4C9'];
+function fallbackCatColor_(name) { // 完全查不到設定的類別：依名稱挑固定顏色，至少不同類別看得出差別
+  let hsh = 0;
+  for (const ch of String(name)) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
+  return CAT_FALLBACK_COLORS_[hsh % CAT_FALLBACK_COLORS_.length];
+}
 const GOALS = ['增肌', '減脂', '心肺耐力', '紓壓伸展', '體態雕塑'];
 const LOCATIONS = ['在家', '健身房', '兩者都可'];
 const MOODS = [
@@ -3234,6 +3249,13 @@ function applyCategories(list) {
     selectedCategory = defaultCat ? defaultCat.name : CATEGORIES[0].name;
   }
   renderCatRow();
+  // 統計頁的類別佔比如果比類別清單早畫好，類別載入後補畫一次，顏色才會正確
+  try { if (statsSummaryCache[statsYm]) renderDonut(statsSummaryCache[statsYm].categoryCounts); } catch (e) {}
+  const broken = CATEGORIES.filter(c => c.fieldsBroken).map(c => c.name);
+  if (broken.length && !applyCategories._warned) {
+    applyCategories._warned = true;
+    showToast(`類別「${broken.join('、')}」的欄位設定壞掉了，請到「管理類別」重新儲存`);
+  }
 }
 
 async function loadCategories() {
@@ -3269,11 +3291,13 @@ function catByName(name) {
 }
 function catIcon(name) {
   const c = catByName(name);
-  return c ? c.icon : '✦';
+  if (c) return c.icon;
+  return (statsCategoryMeta[name] && statsCategoryMeta[name].icon) || '✦';
 }
 function catColor(name) {
   const c = catByName(name);
-  return c ? c.color : '#D8CABB';
+  if (c && c.color) return c.color;
+  return (statsCategoryMeta[name] && statsCategoryMeta[name].color) || fallbackCatColor_(name);
 }
 function renderCatRow() {
   const row = document.getElementById('catRow');
@@ -8841,6 +8865,7 @@ document.addEventListener('visibilitychange', () => {
 
 
 function changeMonth(delta) {
+  statsMonth.setDate(1); // 先回到 1 號再換月：否則 31 號按下個月會跳過一整個月（例如 10/31 → 12/1）
   statsMonth.setMonth(statsMonth.getMonth() + delta);
   loadStatsPage();
 }
@@ -8859,7 +8884,9 @@ async function loadStatsPage() {
   // 效能優化：這個月之前載入過的話，先用快取秒開整頁（熱力圖／甜甜圈／心情趨勢／摘要都先畫出來），
   // 讓「月份切換不應明顯卡頓」——下面照樣打 API 換成最新資料再重畫一次，資料不會因此變舊。
   const hasCache = statsYm === ym && statsSummaryCache[ym];
+  if (!CATEGORIES.length) loadCategories(); // 類別清單還沒到的話補載，載入後 applyCategories 會重畫類別佔比
   if (hasCache) {
+    statsCategoryMeta = statsSummaryCache[ym].categoryMeta || statsCategoryMeta;
     renderHeatmap(ym, statsDayCounts);
     renderDonut(statsSummaryCache[ym].categoryCounts);
     renderMoodChart(statsMoodTrend);
@@ -8868,20 +8895,24 @@ async function loadStatsPage() {
     document.getElementById('monthWrapArea').innerHTML = ''; // 換月份了，舊的回顧內容先清掉，避免看起來像是這個月的
     dmRenderStatsCard();
   }
-  dmLoadMonth(ym, true).then(() => { if (statsYmNow_() === ym) dmRenderStatsCard(); }); // 心情符號與統計其他資料並行載入
+  dmLoadMonth(ym, true).then(() => { if (statsYmNow_() === ym) { dmRenderStatsCard(); renderMoodChart(); } }); // 心情符號與統計其他資料並行載入
   try {
     const [statsRes, calRes] = await Promise.all([
       fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`, { cache: 'no-store' }),
       fetch(`${CONFIG.GAS_URL}?action=getCalendarOverview&month=${ym}`, { cache: 'no-store' })
     ]);
     const stats = await statsRes.json();
-    statsCalendarOverview = await calRes.json();
+    const cal = await calRes.json();
+    if (stats && stats.error) throw new Error(stats.error);
+    if (statsYmNow_() !== ym) return; // 等回應的時候使用者已經切到別的月份，舊月份的資料不要蓋掉新月份的畫面
+    statsCalendarOverview = (cal && !cal.error) ? cal : {};
     statsMoodTrend = stats.moodTrend || [];
     statsYm = ym;
     statsDayCounts = stats.dayCounts || {};
-    statsSummaryCache[ym] = { categoryCounts: stats.categoryCounts, summary: stats.summary || {} };
-    renderHeatmap(ym, stats.dayCounts);
-    renderDonut(stats.categoryCounts);
+    statsCategoryMeta = stats.categoryMeta || {};
+    statsSummaryCache[ym] = { categoryCounts: stats.categoryCounts || {}, summary: stats.summary || {}, categoryMeta: statsCategoryMeta };
+    renderHeatmap(ym, stats.dayCounts || {});
+    renderDonut(stats.categoryCounts || {});
     renderMoodChart(statsMoodTrend);
     renderStatSummary(stats.summary || {});
   } catch (err) {}
@@ -8928,7 +8959,7 @@ function renderStatSummary(summary) {
 
   // 運動
   document.getElementById('statExerciseValue').textContent = exercise.count ?? 0;
-  document.getElementById('statExerciseDelta').innerHTML = deltaPill(exercise.delta, { decimals: 0, unit: ' 次', moreLessWord: true });
+  document.getElementById('statExerciseDelta').innerHTML = deltaPill(exercise.delta, { decimals: 0, unit: ' 天', moreLessWord: true });
 
   // 體重
   const hasWeight = weight.current !== null && weight.current !== undefined;
@@ -8943,10 +8974,14 @@ function renderStatSummary(summary) {
 async function generateMonthWrap() {
   const ym = statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0');
   const area = document.getElementById('monthWrapArea');
+  const wrapBtn = document.getElementById('monthWrapBtn');
+  if (wrapBtn && wrapBtn.disabled) return;
+  if (wrapBtn) wrapBtn.disabled = true;
   area.innerHTML = '<div class="summary-loading">正在回顧這個月的點點滴滴… ✨</div>';
   try {
     const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateMonthWrap', month: ym }) });
     const result = await res.json();
+    if (statsYmNow_() !== ym) return; // 等待期間已經切到別的月份：結果不是這個月的，不要顯示
     if (result.ok === false) { area.innerHTML = `<div class="empty-state">${escapeHtml(result.message)}</div>`; return; }
     if (result.error) { area.innerHTML = `<div class="empty-state">錯誤：${escapeHtml(result.error)}</div>`; return; }
     const s = result.stats;
@@ -8961,7 +8996,9 @@ async function generateMonthWrap() {
       </div>
     </div>`;
   } catch (err) {
-    area.innerHTML = `<div class="empty-state">生成失敗：${escapeHtml(err.message)}</div>`;
+    if (statsYmNow_() === ym) area.innerHTML = `<div class="empty-state">生成失敗：${escapeHtml(err.message)}</div>`;
+  } finally {
+    if (wrapBtn) wrapBtn.disabled = false;
   }
 }
 function renderHeatmap(ym, dayCounts) {
@@ -9000,7 +9037,7 @@ function renderStatsDayDetail() {
   const ds = statsSelectedDay;
   const dayInfo = statsCalendarOverview[ds];
   const cats = (dayInfo && dayInfo.cats) || [];
-  const moodEntry = statsMoodTrend.find(m => m.date === ds);
+  const dayMood = DM_BY_CODE[dmData[ds]];
   document.getElementById('statsDayDetailTitle').textContent = `📌 ${ds}`;
   let bodyHtml = '';
   if (cats.length) {
@@ -9013,9 +9050,8 @@ function renderStatsDayDetail() {
   } else {
     bodyHtml += '<div class="empty-state" style="padding:6px 0;">這天沒有紀錄</div>';
   }
-  if (moodEntry) {
-    const moodObj = MOODS.find(m => m.v === moodEntry.mood);
-    bodyHtml += `<div style="margin-top:4px;font-size:13px;color:var(--ink-soft);">${moodObj ? moodObj.e : ''} 心情：${moodEntry.mood}/5</div>`;
+  if (dayMood) {
+    bodyHtml += `<div style="margin-top:4px;font-size:13px;color:var(--ink-soft);">${dayMood.emoji} 心情：${escapeHtml(dayMood.label)}</div>`;
   }
   document.getElementById('statsDayDetailBody').innerHTML = bodyHtml;
   document.getElementById('statsDayDetailJumpBtn').onclick = () => jumpToDate(ds);
@@ -9079,24 +9115,32 @@ function renderDonut(categoryCounts) {
   }).join('');
   area.innerHTML = donut + `<div class="legend">${legend}</div>`;
 }
-function renderMoodChart(moodTrend) {
+// 心情趨勢：用「每日心情符號」（跟首頁、月曆同一份 dmData），一天一格依日期排列。
+// 心情是 10 種分類（開心、焦慮、疲倦…）不是 1~5 的分數，所以不畫折線，直接把每天的符號排出來，一眼看出這個月的心情走向。
+// 參數保留是為了相容舊的呼叫點，實際資料來自 dmData。
+function renderMoodChart() {
   const card = document.getElementById('moodChartCard');
-  if (!moodTrend.length) { card.style.display = 'none'; return; }
+  const area = document.getElementById('moodStripArea');
+  const legend = document.getElementById('moodStripLegend');
+  if (!card || !area) return;
+  const ym = statsYmNow_();
+  const [y, m] = ym.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const todayStr = fmtDate(new Date());
+  let recorded = 0;
+  let html = '';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = ym + '-' + String(d).padStart(2, '0');
+    const mood = DM_BY_CODE[dmData[ds]];
+    if (mood) recorded++;
+    const cls = 'ms-day' + (mood ? '' : ' empty') + (ds === todayStr ? ' today' : '') + (ds === statsSelectedDay ? ' selected' : '');
+    html += `<div class="${cls}" title="${ds}${mood ? '：' + mood.label : ''}" onclick="selectStatsDay('${ds}')"><span class="ms-n">${d}</span><span class="ms-e">${mood ? mood.emoji : '·'}</span></div>`;
+  }
+  // 這個月還沒載入完、或完全沒有記錄心情：整張卡片先藏起來（載入完成後會再呼叫一次）
+  if (!dmLoaded[ym] || !recorded) { card.style.display = 'none'; return; }
   card.style.display = 'block';
-  const svg = document.getElementById('moodChartSvg');
-  const w = svg.clientWidth || 300, h = 90, pad = 10;
-  const n = moodTrend.length;
-  const stepX = n > 1 ? (w - pad * 2) / (n - 1) : 0;
-  const yFor = v => h - pad - ((v - 1) / 4) * (h - pad * 2);
-  const points = moodTrend.map((m, i) => `${pad + i * stepX},${yFor(m.mood)}`).join(' ');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.innerHTML = `
-    <polyline points="${points}" fill="none" stroke="#D3C0FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-    ${moodTrend.map((m, i) => {
-      const isSel = m.date === statsSelectedDay;
-      return `<circle cx="${pad + i * stepX}" cy="${yFor(m.mood)}" r="${isSel ? 5.5 : 3.5}" fill="${isSel ? '#F0715E' : '#B39DDB'}"/>`;
-    }).join('')}
-  `;
+  area.innerHTML = html;
+  if (legend) legend.textContent = `已記錄 ${recorded} 天 · 點一天可以看那天的紀錄`;
 }
 
 /* ================= 今日鼓勵語 ================= */
