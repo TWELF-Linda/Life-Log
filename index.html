@@ -130,6 +130,26 @@
     font-size:22px;margin:0 auto 8px;
   }
   .record-hub-item .rh-label{font-size:13px;font-weight:700;color:var(--ink);}
+  .rh-g3{grid-template-columns:repeat(3,1fr);gap:8px;}
+  .rh-g3 .record-hub-item{padding:16px 4px 12px;}
+  .rh-g3 .rh-label{font-size:12.5px;}
+  .rh-head{text-align:center;}
+  .rh-sec{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:16px 4px 8px;letter-spacing:.5px;}
+  .rh-sec:first-child{margin-top:4px;}
+  .record-hub-item{position:relative;}
+  .record-hub-item .rh-sub{font-size:11px;color:var(--ink-soft);margin-top:3px;min-height:14px;}
+  .record-hub-item .rh-badge{position:absolute;top:8px;right:8px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--input-bg);color:var(--ink-soft);}
+  .record-hub-item .rh-badge.done{background:#DCEFD6;color:#3E6B34;}
+  html.dark-mode .record-hub-item .rh-badge.done{background:#2F4A2B;color:#BFE5B5;}
+  .rh-primary{grid-column:1/-1;display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;
+    background:linear-gradient(135deg,var(--card),var(--input-bg));}
+  .rh-primary .rh-icon{margin:0;width:56px;height:56px;font-size:26px;flex:none;}
+  .rh-primary .rh-label{font-size:16px;}
+  .rh-primary .rh-sub{font-size:12px;}
+  .rh-recent{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px;}
+  .rh-chip{flex:none;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;background:var(--card);
+    border:1.5px solid var(--line);font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;}
+  .rh-chip:active{transform:scale(.96);background:var(--input-bg);}
 
   /* ---- Phase01: 回顧 子分頁（往年今日／月曆／相片／票根）---- */
   .review-subtabs{margin-bottom:14px;}
@@ -1736,48 +1756,11 @@
   </div>
 
   <div class="page" id="page-record-hub">
-    <div class="card" style="text-align:center;">
+    <div class="card rh-head">
       <div class="cute-font" style="font-size:15px;font-weight:700;">✍️ 我要記錄什麼？</div>
-      <div style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">選一個開始，隨手記下今天的這一刻</div>
+      <div id="rhSub" style="font-size:12.5px;color:var(--ink-soft);margin-top:2px;">選一個開始，隨手記下今天的這一刻</div>
     </div>
-    <div class="record-hub-grid">
-      <div class="record-hub-item" onclick="openRecordEntry('log')">
-        <div class="rh-icon" style="background:var(--c-life);">📝</div>
-        <div class="rh-label">一般生活紀錄</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('electric')">
-        <div class="rh-icon" style="background:#E8B930;">⚡</div>
-        <div class="rh-label">電力</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('exercise')">
-        <div class="rh-icon" style="background:var(--c-fit);">💪</div>
-        <div class="rh-label">運動</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('mood')">
-        <div class="rh-icon" style="background:var(--c-soul);">💭</div>
-        <div class="rh-label">心情</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('condition')">
-        <div class="rh-icon" style="background:var(--c-other);">🩺</div>
-        <div class="rh-label">身體狀況</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('period')">
-        <div class="rh-icon" style="background:var(--c-show);">🌸</div>
-        <div class="rh-label">經期</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('stock')">
-        <div class="rh-icon" style="background:var(--c-culture);">📈</div>
-        <div class="rh-label">股票交易</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('photo')">
-        <div class="rh-icon" style="background:var(--c-soul);">📷</div>
-        <div class="rh-label">照片</div>
-      </div>
-      <div class="record-hub-item" onclick="openRecordEntry('quote')">
-        <div class="rh-icon" style="background:#F0DDB0;">📜</div>
-        <div class="rh-label">名言佳句</div>
-      </div>
-    </div>
+    <div id="recordHubBody"></div>
   </div>
 
   <div class="page" id="page-fit">
@@ -2845,7 +2828,64 @@ function closeFabMenu() {
 }
 
 // Phase01：「紀錄」Hub 卡片點擊後導去對應的既有輸入介面（Phase03 起 FAB 快速選單也共用這一個函式，避免兩套跳轉邏輯各改各的）
+// ---- 紀錄 Hub：分區、最近使用、今日狀態徽章 ----
+const RECORD_HUB_ITEMS_ = {
+  log: { icon: '📝', label: '一般生活紀錄', bg: 'var(--c-life)' },
+  mood: { icon: '💭', label: '心情', bg: 'var(--c-soul)' },
+  photo: { icon: '📷', label: '照片', bg: 'var(--c-soul)' },
+  quote: { icon: '📜', label: '名言佳句', bg: '#F0DDB0' },
+  exercise: { icon: '💪', label: '運動', bg: 'var(--c-fit)' },
+  condition: { icon: '🩺', label: '身體狀況', bg: 'var(--c-other)' },
+  period: { icon: '🌸', label: '經期', bg: 'var(--c-show)' },
+  stock: { icon: '📈', label: '股票交易', bg: 'var(--c-culture)' },
+  electric: { icon: '⚡', label: '電力', bg: '#E8B930' }
+};
+const RECORD_HUB_SECTIONS_ = [
+  ['🌿 生活', ['mood', 'photo', 'quote']],
+  ['❤️ 身體', ['exercise', 'condition', 'period']],
+  ['🏠 理財與家庭', ['stock', 'electric']]
+];
+let rhOverview_ = null;
+function rhRecents_() {
+  try { const a = JSON.parse(localStorage.getItem('rhRecent') || '[]'); return a.filter(k => RECORD_HUB_ITEMS_[k]).slice(0, 3); } catch (e) { return []; }
+}
+function rhPushRecent_(type) {
+  try {
+    const a = [type].concat(rhRecents_().filter(k => k !== type)).slice(0, 3);
+    localStorage.setItem('rhRecent', JSON.stringify(a));
+  } catch (e) {}
+}
+function rhStatus_(type) {
+  const d = rhOverview_; if (!d || d.error) return { sub: '', badge: '', done: false };
+  if (type === 'log') return { sub: d.entriesCount ? '今天已記 ' + d.entriesCount + ' 則' : '今天還沒有紀錄', badge: '', done: false };
+  if (type === 'mood') { const m = (typeof MOODS !== 'undefined') && MOODS.find(x => String(x.v) === String(d.mood)); return m ? { sub: '今天 ' + m.e + ' ' + m.v + '/5', badge: '已記', done: true } : { sub: '', badge: '', done: false }; }
+  if (type === 'exercise') return (d.gymSetsCount || d.hasExercise) ? { sub: d.gymSetsCount ? d.gymSetsCount + ' 組' : '今天已完成', badge: '已記', done: true } : { sub: '', badge: '', done: false };
+  if (type === 'period' && d.periodStatus) return { sub: d.periodStatus.inPeriod ? '第 ' + d.periodStatus.day + ' 天' : (d.periodStatus.daysUntilNext >= 0 ? d.periodStatus.daysUntilNext + ' 天後預估' : '預估已延遲'), badge: '', done: false };
+  return { sub: '', badge: '', done: false };
+}
+function rhCard_(type, primary) {
+  const it = RECORD_HUB_ITEMS_[type], st = rhStatus_(type);
+  const inner = '<div class="rh-icon" style="background:' + it.bg + ';">' + it.icon + '</div><div><div class="rh-label">' + it.label + '</div><div class="rh-sub">' + st.sub + '</div></div>';
+  const badge = st.badge ? '<span class="rh-badge' + (st.done ? ' done' : '') + '">' + (st.done ? '✓ ' : '') + st.badge + '</span>' : '';
+  if (primary) return '<div class="record-hub-item rh-primary" onclick="openRecordEntry(\'' + type + '\')">' + inner + badge + '</div>';
+  return '<div class="record-hub-item" onclick="openRecordEntry(\'' + type + '\')">' + badge + '<div class="rh-icon" style="background:' + it.bg + ';">' + it.icon + '</div><div class="rh-label">' + it.label + '</div><div class="rh-sub">' + st.sub + '</div></div>';
+}
+function renderRecordHub_() {
+  const el = document.getElementById('recordHubBody'); if (!el) return;
+  let h = '<div class="record-hub-grid" style="margin-top:0;">' + rhCard_('log', true) + '</div>';
+  const rec = rhRecents_();
+  if (rec.length) h += '<div class="rh-sec">🕘 最近使用</div><div class="rh-recent">' + rec.map(k => '<div class="rh-chip" onclick="openRecordEntry(\'' + k + '\')"><span>' + RECORD_HUB_ITEMS_[k].icon + '</span>' + RECORD_HUB_ITEMS_[k].label + '</div>').join('') + '</div>';
+  RECORD_HUB_SECTIONS_.forEach(sec => {
+    h += '<div class="rh-sec">' + sec[0] + '</div><div class="record-hub-grid' + (sec[1].length === 3 ? ' rh-g3' : '') + '">' + sec[1].map(k => rhCard_(k, false)).join('') + '</div>';
+  });
+  el.innerHTML = h;
+  const sub = document.getElementById('rhSub');
+  if (sub) { const w = ['日', '一', '二', '三', '四', '五', '六'], n = new Date(); sub.textContent = (n.getMonth() + 1) + '/' + n.getDate() + '（' + w[n.getDay()] + '）· 選一個開始，隨手記下今天的這一刻'; }
+}
+document.addEventListener('DOMContentLoaded', renderRecordHub_);
+
 function openRecordEntry(type) {
+  rhPushRecent_(type); try { renderRecordHub_(); } catch (e) {}
   if (type === 'log' || type === 'mood') {
     switchTab('page-log');
     expandQuickAddCard();
@@ -3966,6 +4006,7 @@ async function loadTodayOverview() {
 function renderTodayOverview(d) {
   try {
     if (!d || d.error) return;
+    rhOverview_ = d; try { renderRecordHub_(); } catch (e) {}
     const card = document.getElementById('todayOverviewCard');
     const row = document.getElementById('tovRow');
     const moodObj = MOODS.find(m => String(m.v) === String(d.mood));
@@ -8845,7 +8886,16 @@ async function copyQuote_(id) {
 const QUOTE_CARD_THEMES_ = {
   warm: { name: '暖米', bg: ['#FFF8EE', '#F6E3C8'], ink: '#4A3728', accent: '#D9923B', muted: '#9A8470' },
   dark: { name: '深色', bg: ['#2E2823', '#1A1613'], ink: '#F5E9D8', accent: '#E8A33D', muted: '#B8A58F' },
-  sage: { name: '淡綠', bg: ['#F3F7EE', '#DCE8D2'], ink: '#33412C', accent: '#6E9A57', muted: '#7C8C72' }
+  sage: { name: '淡綠', bg: ['#F3F7EE', '#DCE8D2'], ink: '#33412C', accent: '#6E9A57', muted: '#7C8C72' },
+  // 馬卡龍系列
+  pink: { name: '櫻花粉', bg: ['#FFF3F6', '#FADBE5'], ink: '#5A3442', accent: '#E58AA6', muted: '#A68091' },
+  peach: { name: '蜜桃', bg: ['#FFF4EC', '#FFD9C2'], ink: '#5A3A2C', accent: '#F09A72', muted: '#A88878' },
+  butter: { name: '奶油黃', bg: ['#FFFBE8', '#FBEDB0'], ink: '#54482A', accent: '#D9B53A', muted: '#9E9370' },
+  matcha: { name: '抹茶', bg: ['#F6FAE9', '#DDEBB4'], ink: '#3E4A26', accent: '#8FB04A', muted: '#83906A' },
+  mint: { name: '薄荷', bg: ['#EEFBF6', '#C6EFE0'], ink: '#264A40', accent: '#4FB89A', muted: '#6F9488' },
+  sky: { name: '天空藍', bg: ['#F0F8FF', '#C9E3F8'], ink: '#2B4560', accent: '#5B9BD5', muted: '#7490A8' },
+  lavender: { name: '薰衣草', bg: ['#F7F2FF', '#DDD0F5'], ink: '#42356A', accent: '#9B7FD8', muted: '#8B80A8' },
+  lilac: { name: '香芋紫', bg: ['#FBF1FA', '#EACBE8'], ink: '#55345A', accent: '#C27BC0', muted: '#9C7F9E' }
 };
 const QUOTE_CARD_SERIF_ = '"Chiron GoRound TC","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
 let quoteCardState_ = { q: null, ratio: 'square', theme: 'warm' };
@@ -8898,12 +8948,14 @@ async function drawQuoteCard_(q, ratio, themeKey) {
   lines.forEach(l => { ctx.fillText(l, W / 2, y); y += size * lh; });
   const afterText = Math.max(y - size * 0.4, areaTop + blockH);
   const src = quoteSourceLabel_(q);
+  // 結尾引號 ”（與開頭 “ 呼應）
+  ctx.save(); ctx.fillStyle = th.accent; ctx.globalAlpha = 0.5; ctx.font = '700 200px ' + QUOTE_CARD_SERIF_; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('”', W / 2, afterText + 150); ctx.restore();
   if (src) {
-    ctx.fillStyle = th.accent; ctx.fillRect(W / 2 - 40, afterText + 30, 80, 4);
     let ss = 40; ctx.font = '500 ' + ss + 'px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
     const text = '—— ' + src;
     while (ss > 24 && ctx.measureText(text).width > maxW) { ss -= 2; ctx.font = '500 ' + ss + 'px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif'; }
-    ctx.fillStyle = th.muted; ctx.fillText(text, W / 2, afterText + 30 + 4 + ss * 1.9);
+    ctx.fillStyle = th.muted; ctx.fillText(text, W / 2, afterText + 85 + ss * 1.5);
   }
   return cv;
 }
