@@ -2066,13 +2066,14 @@
 
     <div class="stat-card-grid" id="statSummaryGrid">
       <div class="stat-card" id="statCardMood">
-        <div class="stat-card-head">😊 平均心情</div>
+        <div class="stat-card-head">😊 本月心情</div>
         <div class="stat-card-main">
           <span class="stat-card-value" id="statMoodValue">—</span>
           <span class="stat-card-unit" id="statMoodUnit"></span>
           <span id="statMoodDelta"></span>
         </div>
-        <svg class="stat-mini-trend" id="statMoodTrendSvg" viewBox="0 0 300 34" preserveAspectRatio="none"></svg>
+        <div id="statMoodChips" style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px;font-size:12px;color:var(--ink-soft);"></div>
+        <svg class="stat-mini-trend" id="statMoodTrendSvg" viewBox="0 0 300 34" preserveAspectRatio="none" style="display:none;"></svg>
       </div>
 
       <div class="stat-card" id="statCardLife">
@@ -2360,6 +2361,8 @@
         </div>
       </div>
       <div class="stat-card-sub" id="elecPeriodSub"></div>
+      <div class="stat-card-sub" id="elecPeriodSinceSub" style="font-weight:700;color:var(--ink);"></div>
+      <div class="stat-card-sub" id="elecPeriodPrevSub"></div>
       <div class="stat-card-sub" id="elecPeriodCompareSub"></div>
       <div id="elecLoadError" style="margin-top:6px;"></div>
     </div>
@@ -5436,14 +5439,32 @@ async function loadElecHome() {
     if (summary && summary.error) throw new Error(summary.error);
     document.getElementById('elecLoadError').innerHTML = '';
 
+    const cp = summary.currentPeriod; // 後端一定會回傳「現在是哪一期」，即使本期還沒有任何讀數
     if (summary.period) {
       document.getElementById('elecPeriodBillValue').textContent = '$' + Math.round(summary.period.bill).toLocaleString();
       document.getElementById('elecPeriodKwhValue').textContent = summary.period.totalKwh + ' 度';
       document.getElementById('elecPeriodSub').textContent = `計費區間：${summary.period.label}${summary.period.isOngoing ? '（進行中）' : ''}`;
+    } else if (cp) {
+      document.getElementById('elecPeriodBillValue').textContent = '—';
+      document.getElementById('elecPeriodKwhValue').textContent = '0 度';
+      document.getElementById('elecPeriodSub').textContent = `計費區間：${cp.label}${cp.isOngoing ? '（進行中）' : ''}`;
     } else {
       document.getElementById('elecPeriodBillValue').textContent = '—';
       document.getElementById('elecPeriodKwhValue').textContent = '—';
       document.getElementById('elecPeriodSub').textContent = '還沒有足夠的讀數可以估算本期用電';
+    }
+    // 自上期計費區間結束後，新增了多少度
+    const sinceEl = document.getElementById('elecPeriodSinceSub');
+    const prevEl = document.getElementById('elecPeriodPrevSub');
+    if (cp) {
+      const lastDate = (cp.latestReadingDate || '').replace(/-/g, '/');
+      const noNewReading = !cp.latestReadingDate || lastDate < cp.sinceFrom;
+      sinceEl.textContent = `自上期結束（${cp.prevEnd}）後，新增 ${cp.sinceKwh} 度`
+        + (noNewReading ? `（最新讀數是 ${lastDate || '—'}，記錄新讀數後才會算進來）` : '');
+      prevEl.textContent = cp.prevKwh !== null && cp.prevKwh !== undefined ? `上期（${cp.prevLabel}）共用電 ${cp.prevKwh} 度` : '';
+    } else {
+      sinceEl.textContent = '';
+      prevEl.textContent = '';
     }
     document.getElementById('elecPeriodCompareSub').textContent = summary.periodCompareNote || '';
 
@@ -6956,12 +6977,19 @@ async function loadTicketWall() {
   area.innerHTML = '<div class="empty-state">整理票根中… 🎫</div>';
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getTicketWall`, { cache: 'no-store' });
-    ticketWallAll = await res.json();
+    const wallData = await res.json();
+    // 後端出錯或登入過期時回傳的是 {error: ...} 而不是陣列；直接當陣列用會變成「map is not a function」，
+    // 這裡改成把真正的原因顯示出來，並提供重試。
+    if (!Array.isArray(wallData)) {
+      if (wallData && wallData.error === 'AUTH_REQUIRED') throw new Error('登入已過期，請重新整理頁面並重新登入');
+      throw new Error((wallData && (wallData.error || wallData.message)) || '後端回傳的資料格式不正確');
+    }
+    ticketWallAll = wallData;
     renderTicketFilterRow();
     renderTicketYearRow();
     renderTicketWall();
   } catch (err) {
-    area.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
+    area.innerHTML = '<div class="empty-state">讀取失敗：' + escapeHtml(err.message) + '<br><button type="button" class="gen-btn" style="margin-top:10px;" onclick="loadTicketWall()">重試</button></div>';
   }
   renderReviewYearFooter('reviewYearFooter-tickets');
 }
@@ -8429,6 +8457,7 @@ function jumpFromCalendar(ds) {
   jumpToDate(ds);
 }
 
+function statsYmNow_() { return statsMonth.getFullYear() + '-' + String(statsMonth.getMonth() + 1).padStart(2, '0'); }
 /* ================= 每日心情符號 =================
  * 資料流：後端 DailyMood 分頁（Date 唯一鍵）→ dmData（date → code）→ 首頁卡片／月曆格／月度回顧，三處共用同一份 dmData。
  * 儲存規則：等後端確認成功才更新畫面（不做「先假裝成功」），失敗會明確提示並維持原本的心情。 */
@@ -8564,6 +8593,41 @@ function dmRenderMonthSummary(ym) {
     rows + '<div class="dm-sum-note">只統計你實際記錄過的日子，沒記錄的日子不列入；這只是生活紀錄的整理，不是心理或健康評估。</div>';
 }
 
+// 統計頁「😊 本月心情」卡：最常出現的心情＋已記錄天數＋各心情次數。只算實際記錄過的日子。
+function dmRenderStatsCard() {
+  const valEl = document.getElementById('statMoodValue');
+  if (!valEl) return;
+  const ym = statsYmNow_();
+  const unitEl = document.getElementById('statMoodUnit');
+  const chips = document.getElementById('statMoodChips');
+  document.getElementById('statMoodDelta').innerHTML = '';
+  if (!dmLoaded[ym]) {
+    valEl.textContent = '—';
+    unitEl.textContent = dmLoadError[ym] ? '心情紀錄讀取失敗' : '讀取中…';
+    chips.innerHTML = '';
+    return;
+  }
+  const counts = {};
+  let total = 0;
+  Object.keys(dmData).forEach(ds => {
+    if (dmYm(ds) !== ym || !DM_BY_CODE[dmData[ds]]) return;
+    counts[dmData[ds]] = (counts[dmData[ds]] || 0) + 1;
+    total++;
+  });
+  if (!total) {
+    valEl.textContent = '—';
+    unitEl.textContent = '這個月還沒有記錄心情';
+    chips.innerHTML = '';
+    return;
+  }
+  const max = Math.max.apply(null, Object.keys(counts).map(k => counts[k]));
+  const top = DM_MOODS.filter(mm => counts[mm.code] === max);
+  valEl.textContent = top.map(t => t.emoji).join('');
+  unitEl.textContent = `${top.map(t => t.label).join('、')}最多（${max} 天）・已記錄 ${total} 天`;
+  chips.innerHTML = DM_MOODS.filter(mm => counts[mm.code]).sort((a, b) => counts[b.code] - counts[a.code])
+    .map(mm => `<span>${mm.emoji} ${counts[mm.code]}</span>`).join('');
+}
+
 function dmRefreshViews(ds) {
   dmRenderHome();
   if (calSelectedDate === ds) dmRenderCalPicker();
@@ -8646,7 +8710,9 @@ async function loadStatsPage() {
     renderStatSummary(statsSummaryCache[ym].summary || {});
   } else {
     document.getElementById('monthWrapArea').innerHTML = ''; // 換月份了，舊的回顧內容先清掉，避免看起來像是這個月的
+    dmRenderStatsCard();
   }
+  dmLoadMonth(ym, true).then(() => { if (statsYmNow_() === ym) dmRenderStatsCard(); }); // 心情符號與統計其他資料並行載入
   try {
     const [statsRes, calRes] = await Promise.all([
       fetch(`${CONFIG.GAS_URL}?action=getMonthStats&month=${ym}`, { cache: 'no-store' }),
@@ -8697,11 +8763,8 @@ function renderStatSummary(summary) {
   const exercise = summary.exercise || {};
   const weight = summary.weight || {};
 
-  // 心情
-  document.getElementById('statMoodValue').textContent = mood.avgMood !== null && mood.avgMood !== undefined ? mood.avgMood : '—';
-  document.getElementById('statMoodUnit').textContent = mood.avgMood !== null && mood.avgMood !== undefined ? '/ 5' : '這個月還沒有心情紀錄';
-  document.getElementById('statMoodDelta').innerHTML = deltaPill(mood.delta, { decimals: 1 });
-  drawSparkline(document.getElementById('statMoodTrendSvg'), statsMoodTrend, m => m.mood);
+  // 心情：改用「每日心情符號」（與月曆、首頁同一份資料），不再用舊的每則紀錄 1~5 分自評
+  dmRenderStatsCard();
 
   // 生活紀錄
   document.getElementById('statLifeValue').textContent = life.totalEntries ?? 0;
