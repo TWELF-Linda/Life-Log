@@ -4056,7 +4056,7 @@ function entryInfo(entry) {
     if (isTicket && (d.key === 'price' || /票價|價格|票錢/.test(d.label || ''))) return; // 價格由下方統一列出
     push(d.label, f[d.key]);
   });
-  if (!defs.some(d => d.key === 'seat')) push('座位', f.seat, false);
+  if (!defs.some(d => d.key === 'seat')) push('座位', entrySeat_(entry, true), false);
   if (isTicket) {
     push('日期', tm.showDate);
     push('場地', f.venue || tm.venue, true);
@@ -4664,6 +4664,11 @@ function editEntry(id) {
   selectedCategory = entry.category;
   currentFieldValues = Object.assign({}, entry.fields || {});
   const cat = catByName(entry.category);
+  // 舊紀錄的座位可能不是存在 seat 欄位（例如寫在心得文字裡）：編輯時幫忙帶進「座位」欄位，存檔後票根牆就能穩定顯示
+  if (cat && (cat.fields || []).some(f => f.key === 'seat') && !currentFieldValues.seat) {
+    const sv = entrySeat_(entry);
+    if (sv) currentFieldValues.seat = sv;
+  }
   const moodField = cat && (cat.fields || []).find(f => f.type === 'mood');
   if (moodField && entry.mood) currentFieldValues[moodField.key] = Number(entry.mood);
   renderCatRow();
@@ -6999,6 +7004,28 @@ function ticketWrapSpendHtml(year) {
 // 整理出票券卡片要顯示的標題／表演者／場地／地址／座位，盡量沿用既有資料，不新增資料結構。
 // 場地依序取 ticketMeta.venue、fields.venue；地址取 fields.venueAddress / fields.address、ticketMeta.address，
 // 地址若跟場地名稱一樣就不重複顯示。找不到的欄位保持空字串，絕不自行推測。
+// 找座位資訊：先看結構化欄位（seat 等常見 key，或任何 key／類別欄位名稱含「座位」的欄位），
+// 其次是掃描結果，最後才從心得文字裡找「座位：xxx」這種寫法——舊紀錄的座位常常是寫在文字裡
+function entrySeat_(t, skipInfo) {
+  const fields = t.fields || {};
+  const meta = t.ticketMeta || {};
+  const val = v => (v === null || v === undefined) ? '' : String(v).trim();
+  const direct = val(fields.seat) || val(fields.seatNo) || val(fields.seatNumber) || val(fields.seats) || val(fields.seatInfo) || val(meta.seat);
+  if (direct) return direct;
+  const cat = (typeof catByName === 'function') ? catByName(t.category) : null;
+  const labelOf = {};
+  ((cat && cat.fields) || []).forEach(d => { labelOf[d.key] = d.label || ''; });
+  for (const k of Object.keys(fields)) {
+    if (/seat|座/i.test(k) || /座位|座號|席位/.test(labelOf[k] || '')) { const v = val(fields[k]); if (v) return v; }
+  }
+  // 詳細頁怎麼顯示座位，票根牆就怎麼找：直接沿用 entryInfo 的列（涵蓋自訂的欄位 key）
+  if (!skipInfo) try {
+    const row = (entryInfo(t).rows || []).find(r => /座位|座號|席位|seat/i.test(r.label || ''));
+    if (row && row.value) return row.value;
+  } catch (err) {}
+  const m = String(t.text || '').match(/(?:座位|座號|席位)\s*[:：]?\s*([^\n，,;；。]{1,30})/);
+  return m ? m[1].trim() : '';
+}
 function ticketCardInfo(t) {
   const meta = t.ticketMeta || {};
   const fields = t.fields || {};
@@ -7007,7 +7034,7 @@ function ticketCardInfo(t) {
   const venue = String(fields.venue || meta.venue || '').trim();
   let address = String(fields.venueAddress || fields.address || meta.address || meta.venueAddress || '').trim();
   if (address && venue && address.toLowerCase() === venue.toLowerCase()) address = '';
-  const seat = fields.seat || fields.seatNo || fields.seatNumber || '';
+  const seat = entrySeat_(t);
   return { title, performer, venue, address, seat };
 }
 // 把 yyyy-MM-dd 轉成「yyyy/MM/dd (週X)」，用本地時間建構避免時區跑掉一天。
