@@ -1591,8 +1591,14 @@
         <div class="mood-row" id="moodRow"></div>
         <div class="tp-form" id="ticketPriceBox" style="display:none;"></div>
         <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
-        <div id="editDateHint" style="display:none;font-size:11.5px;color:var(--accent-dark);margin:-4px 0 8px;">✏️ 更新後將存到這一天（可用上方 ‹ › 切換日期來搬移這筆紀錄）</div>
+        <div id="editDateHint" style="display:none;font-size:11.5px;color:var(--accent-dark);margin:-4px 0 8px;">✏️ 更新後將存到上方「時間點」設定的日期與時間（也可用 ‹ › 切換日期來搬移這筆紀錄）</div>
         <div id="copyHint" style="display:none;font-size:11.5px;color:var(--accent-dark);margin:-4px 0 8px;line-height:1.6;"></div>
+        <div class="entry-dt-row" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;">
+          <span style="font-size:12px;color:var(--accent-dark);font-weight:700;">🕒 時間點</span>
+          <input type="date" id="entryDateInput" oninput="onEntryDtInput_('date')" style="flex:1;min-width:130px;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:7px 10px;font-size:13px;font-family:inherit;">
+          <input type="time" id="entryTimeInput" oninput="onEntryDtInput_('time')" style="flex:0 0 auto;box-sizing:border-box;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:7px 10px;font-size:13px;font-family:inherit;">
+          <button type="button" class="gen-btn" id="entryDtResetBtn" onclick="resetEntryDt_()" style="display:none;padding:6px 10px;font-size:12px;">重設為現在</button>
+        </div>
         <div class="add-row">
           <button class="photo-btn" onclick="document.getElementById('fileInput').click()">🖼️ 相片</button>
           <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
@@ -2460,6 +2466,35 @@ let statsMonth = new Date();
 let searchDebounce = null;
 let editingCategoryId = null;
 let editingEntryId = null;
+// ---------- 手動設定紀錄時間點 ----------
+// 日期預設跟著上方日期導覽列（currentDate），時間預設是「按下儲存的當下」；使用者手動改過就以輸入框為準。
+// 編輯既有紀錄時，時間預設帶入該筆原本的時間（entryTimeBase_），不會被改成現在。
+let entryDateTouched_ = false, entryTimeTouched_ = false, entryTimeBase_ = null;
+function nowHHmm_() { const n = new Date(); return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0'); }
+function syncEntryDtInputs_() {
+  const di = document.getElementById('entryDateInput'), ti = document.getElementById('entryTimeInput');
+  if (!di || !ti) return;
+  if (!entryDateTouched_) di.value = fmtDate(currentDate);
+  if (!entryTimeTouched_) ti.value = entryTimeBase_ || nowHHmm_();
+  const rb = document.getElementById('entryDtResetBtn');
+  if (rb) rb.style.display = (entryDateTouched_ || entryTimeTouched_) ? 'inline-block' : 'none';
+}
+function onEntryDtInput_(which) {
+  if (which === 'date') entryDateTouched_ = true; else entryTimeTouched_ = true;
+  syncEntryDtInputs_();
+}
+function resetEntryDt_() { entryDateTouched_ = false; entryTimeTouched_ = false; syncEntryDtInputs_(); }
+function clearEntryDtState_() { entryDateTouched_ = false; entryTimeTouched_ = false; entryTimeBase_ = null; syncEntryDtInputs_(); }
+function getEntryDtValues_() {
+  const di = document.getElementById('entryDateInput'), ti = document.getElementById('entryTimeInput');
+  const dateOk = di && /^\d{4}-\d{2}-\d{2}$/.test(di.value);
+  const timeOk = ti && /^\d{2}:\d{2}$/.test(ti.value);
+  return {
+    date: dateOk ? di.value : fmtDate(currentDate),
+    // 新增：沒手動改時間就用儲存當下；編輯：用輸入框（預設是原本的時間）
+    time: timeOk && (entryTimeTouched_ || entryTimeBase_) ? ti.value : nowHHmm_()
+  };
+}
 let copyingFromId = null; // 複製票根草稿的來源 ID：只存在於畫面上，按「儲存為新票根」才會真的寫入
 let editingFields = [];
 let editingExistingPhotoUrls = []; // 正在編輯的紀錄「原本已經存在」的照片，不代表要重新上傳
@@ -3938,6 +3973,7 @@ async function refresh(opts) {
   const isToday = fmtDate(currentDate) === fmtDate(new Date());
   document.getElementById('dateLabel').textContent = heroDateLabel(currentDate);
   document.getElementById('dateJump').value = fmtDate(currentDate);
+  syncEntryDtInputs_();
   document.getElementById('homeHeroSub').textContent = heroGreetingText(currentDate, isToday);
   document.getElementById('backTodayBtn').style.display = isToday ? 'none' : 'inline-block';
   if (opts.labelsOnly) return;
@@ -4636,7 +4672,7 @@ async function submitEntry() {
   const isCopy = !isEdit && !!copyingFromId;
   const copySourceId = isCopy ? copyingFromId : null;
   btn.disabled = true; btn.textContent = isEdit ? '更新中…' : '記錄中…';
-  const now = new Date();
+  const dt = getEntryDtValues_();
   const cat = catByName(selectedCategory);
   const isTicketCat = cat && cat.ticketScan;
   const moodField = cat && (cat.fields || []).find(f => f.type === 'mood');
@@ -4645,13 +4681,13 @@ async function submitEntry() {
   // photoBase64/photoMimeType 保留給只認得單張照片的舊版後端；photos 是完整清單（多張照片要存進 Sheet/Drive 需要後端一併更新才會生效）
   const firstPhoto = photosPayload[0] || {};
   const body = isEdit
-    ? { action: 'updateEntry', id: editingEntryId, date: fmtDate(currentDate), category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
+    ? { action: 'updateEntry', id: editingEntryId, date: dt.date, time: dt.time, category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
         // existingPhotoUrls：使用者這次選擇要保留的舊照片（在編輯畫面裡按 ✕ 移除的就不會在這裡面）。
         // 後端會把這份清單當「保留」，再加上這次新增的 photos，是合併而不是整包覆蓋。
         existingPhotoUrls: editingExistingPhotoUrls.slice(),
         photos: photosPayload, photoBase64: firstPhoto.photoBase64 || null, photoMimeType: firstPhoto.photoMimeType || null }
-    : { action: 'addEntry', date: fmtDate(currentDate),
-        time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
+    : { action: 'addEntry', date: dt.date,
+        time: dt.time,
         category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
         photos: photosPayload, photoBase64: firstPhoto.photoBase64 || null, photoMimeType: firstPhoto.photoMimeType || null };
   // 複製票根：後端用 copyFromId 找到來源票根，沿用它「仍被保留」的照片參照（不重新上傳、不複製檔案），並帶過去剔除座位／日期後的辨識資訊。
@@ -4662,6 +4698,7 @@ async function submitEntry() {
     document.getElementById('textInput').value = '';
     pendingPhotos = []; renderPhotoGrid();
     currentFieldValues = {}; renderExtraFields();
+    clearEntryDtState_();
     if (isEdit || isCopy) cancelEditEntry();
     // 後端做了最終的重複照片把關（情境 B/C：內容跟既有照片或彼此重複），有略過的話另外提示，
     // 跟儲存成功的提示分開顯示，避免蓋掉「已略過」這個比較重要的訊息。
@@ -4689,6 +4726,7 @@ async function submitEntry() {
         document.getElementById('textInput').value = '';
         pendingPhotos = []; renderPhotoGrid();
         currentFieldValues = {}; renderExtraFields();
+        clearEntryDtState_();
         if (isCopy) cancelEditEntry();
         showToast('📴 沒有網路，先存在裝置上，恢復連線會自動送出');
       } else {
@@ -4723,6 +4761,9 @@ function editEntry(id) {
   expandQuickAddCard();
   editingEntryId = id;
   copyingFromId = null;
+  entryDateTouched_ = false; entryTimeTouched_ = false;
+  entryTimeBase_ = entry.time || null;
+  syncEntryDtInputs_();
   document.getElementById('copyHint').style.display = 'none';
   selectedCategory = entry.category;
   currentFieldValues = Object.assign({}, entry.fields || {});
@@ -4749,6 +4790,7 @@ function editEntry(id) {
 }
 function cancelEditEntry() {
   editingEntryId = null;
+  clearEntryDtState_();
   copyingFromId = null; // 取消複製：草稿只存在畫面上，這裡清掉就不會留下任何半成品資料
   document.getElementById('submitBtn').textContent = '記下這一刻';
   document.getElementById('cancelEditBtn').style.display = 'none';
@@ -4800,6 +4842,7 @@ async function copyTicketEntry_(entry) {
   expandQuickAddCard();
   editingEntryId = null;          // 複製永遠是「新增」，不是編輯原票根
   copyingFromId = entry.id;
+  clearEntryDtState_();
   selectedCategory = entry.category;
   const draft = buildTicketCopyFields_(entry, cat);
   currentFieldValues = draft.fields;   // 全新的物件 → 價格表單狀態會重新初始化，且不會被當成「編輯中」
