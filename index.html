@@ -133,6 +133,11 @@
   .rh-g3{grid-template-columns:repeat(3,1fr);gap:8px;}
   .rh-g3 .record-hub-item{padding:16px 4px 12px;}
   .rh-g3 .rh-label{font-size:12.5px;}
+  .hs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .hs-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 2px;border-radius:14px;background:var(--input-bg);
+    font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;min-height:44px;}
+  .hs-item:active{transform:scale(.95);}
+  .hs-ic{font-size:22px;}
   .rh-head{text-align:center;}
   .rh-sec{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin:16px 4px 8px;letter-spacing:.5px;}
   .rh-sec:first-child{margin-top:4px;}
@@ -652,8 +657,46 @@
     display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border-radius:16px;
     background:var(--input-bg);cursor:pointer;
   }
+  .more-menu-grid{display:block;max-height:68vh;overflow-y:auto;}
+  .more-menu-group-title{font-size:12px;font-weight:700;color:var(--ink-soft);margin:12px 2px 6px;}
+  .more-menu-group-title:first-child{margin-top:0;}
+  .more-menu-subgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .more-menu-item.active{outline:2px solid var(--accent);}
   .more-menu-item .icon{font-size:22px;}
   .more-menu-item .label{font-size:12px;color:var(--ink);font-weight:600;}
+
+  /* ---- 每日心情符號 ---- */
+  .cal-cell .cal-mood{position:absolute;top:1px;right:2px;font-size:clamp(11px,3.4vw,16px);line-height:1;pointer-events:none;}
+  .cal-cell.has-mood .cal-daynum{align-self:flex-start;margin-left:clamp(4px,1.4vw,8px);} /* 有心情符號的格子：日期靠左、符號靠右上，兩者不會重疊 */
+  .dm-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .dm-btn{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    padding:8px 2px 6px;min-height:58px;border-radius:12px;border:2px solid transparent;
+    background:var(--input-bg);color:var(--ink);font-family:inherit;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:transform .08s;
+  }
+  .dm-btn:active{transform:scale(.94);}
+  .dm-btn .dm-emoji{font-size:24px;line-height:1.1;}
+  .dm-btn .dm-label{font-size:11px;color:var(--ink-soft);font-weight:600;white-space:nowrap;}
+  .dm-btn.selected{border-color:var(--accent);background:var(--card);box-shadow:0 0 0 2px rgba(255,140,122,.25);}
+  .dm-btn.selected .dm-label{color:var(--accent-dark);}
+  .dm-btn.pending{opacity:.7;border-color:var(--accent);border-style:dashed;}
+  .dm-btn:disabled{cursor:progress;}
+  .dm-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 14px;}
+  .dm-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;}
+  .dm-title{font-size:12.5px;font-weight:700;color:var(--ink);}
+  .dm-date{font-size:11px;color:var(--ink-soft);}
+  .dm-status{font-size:12.5px;color:var(--ink-soft);margin:0 0 8px;line-height:1.6;}
+  .dm-status b{color:var(--ink);}
+  .dm-retry{background:none;border:1px solid var(--line);border-radius:10px;padding:4px 10px;font-size:12px;color:var(--accent-dark);font-family:inherit;cursor:pointer;margin-left:6px;}
+  .dm-cal-title{font-size:12.5px;font-weight:700;color:var(--ink);margin:0 0 6px;text-align:center;}
+  .dm-sum-line{font-size:13px;color:var(--ink);margin:2px 0 8px;line-height:1.7;}
+  .dm-sum-row{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px;color:var(--ink);}
+  .dm-sum-row .dm-sum-label{flex:0 0 74px;white-space:nowrap;}
+  .dm-sum-bar{flex:1;height:8px;border-radius:6px;background:var(--input-bg);overflow:hidden;}
+  .dm-sum-bar>span{display:block;height:100%;border-radius:6px;background:var(--accent);}
+  .dm-sum-count{flex:0 0 34px;text-align:right;color:var(--ink-soft);}
+  .dm-sum-note{font-size:11px;color:var(--ink-soft);margin-top:8px;}
 
   /* ---- 月曆總覽 ---- */
   .cal-weekday-row{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--ink-soft);margin-bottom:4px;}
@@ -1625,10 +1668,33 @@
       <div class="daily-reminder-text placeholder" id="dailyReminderText">正在準備今天的提醒…</div>
     </div>
 
+    <!-- 每日心情：首頁入口（與月曆共用同一份 dmData） -->
+    <div class="dm-card" id="dmHomeCard">
+      <div class="dm-head"><div class="dm-title">🙂 今日心情</div><div class="dm-date" id="dmHomeDate"></div></div>
+      <div class="dm-status" id="dmHomeStatus">讀取中…</div>
+      <div class="dm-grid" id="dmHomePicker"></div>
+    </div>
+
     <!-- 第二區：今日總覽 -->
     <div class="card today-overview-card" id="todayOverviewCard" style="display:none;">
       <div class="field-label" style="margin-top:0;">📋 今日總覽</div>
       <div class="tov-row" id="tovRow"></div>
+    </div>
+
+    <!-- 常用功能入口 -->
+    <div class="card home-shortcuts">
+      <div class="field-label" style="margin-top:0;">🧭 常用功能</div>
+      <div class="hs-grid">
+        <div class="hs-item" onclick="switchTab('page-quotes')"><span class="hs-ic">📜</span><span>名言佳句</span></div>
+        <div class="hs-item" onclick="switchTab('page-electric')"><span class="hs-ic">⚡</span><span>電力紀錄</span></div>
+        <div class="hs-item" onclick="switchTab('page-tickets')"><span class="hs-ic">🎟️</span><span>票根牆</span></div>
+        <div class="hs-item" onclick="switchTab('page-fit')"><span class="hs-ic">💪</span><span>健身</span></div>
+        <div class="hs-item" onclick="switchTab('page-stock')"><span class="hs-ic">📈</span><span>股票</span></div>
+        <div class="hs-item" onclick="switchTab('page-period')"><span class="hs-ic">🌸</span><span>經期</span></div>
+        <div class="hs-item" onclick="switchTab('page-photos')"><span class="hs-ic">🖼️</span><span>相片牆</span></div>
+        <div class="hs-item" onclick="switchTab('page-calendar')"><span class="hs-ic">📅</span><span>月曆</span></div>
+        <div class="hs-item" onclick="dmOpenCalendarToday()"><span class="hs-ic">🙂</span><span>每日心情</span></div>
+      </div>
     </div>
 
     <!-- 第三區：主要 CTA -->
@@ -1713,7 +1779,7 @@
   </div>
 
   <div class="page" id="page-quotes">
-    <div class="advanced-back" onclick="switchTab('page-record-hub')">← 紀錄</div>
+    <div class="advanced-back" onclick="pageBack_('page-record-hub')">← 返回</div>
     <div class="card" id="quoteDrawCard">
       <button class="submit-btn" id="quoteDrawBtn" style="width:100%;" onclick="drawRandomQuote_()">🎲 抽一句</button>
       <div id="quoteDrawResult" style="margin-top:10px;"></div>
@@ -1982,9 +2048,12 @@
     </div>
     <div class="card" id="calDayDetail" style="display:none;">
       <div class="cdd-date" id="calDayDetailDate">—</div>
+      <div class="dm-cal-title" id="dmCalTitle">這天的心情</div>
+      <div class="dm-grid" id="dmCalPicker" style="margin-bottom:12px;"></div>
       <div class="cdd-stats" id="calDayDetailStats"></div>
       <button class="gen-btn" style="width:100%;margin-top:10px;" onclick="jumpFromCalendarSelected()">查看這一天 →</button>
     </div>
+    <div class="card" id="dmMonthSummary"></div>
     <div class="card review-year-footer" id="reviewYearFooter-calendar"></div>
   </div>
 
@@ -2838,7 +2907,7 @@ const RECORD_HUB_ITEMS_ = {
   condition: { icon: '🩺', label: '身體狀況', bg: 'var(--c-other)' },
   period: { icon: '🌸', label: '經期', bg: 'var(--c-show)' },
   stock: { icon: '📈', label: '股票交易', bg: 'var(--c-culture)' },
-  electric: { icon: '⚡', label: '電力', bg: '#E8B930' }
+  electric: { icon: '⚡', label: '電力紀錄', bg: '#E8B930' }
 };
 const RECORD_HUB_SECTIONS_ = [
   ['🌿 生活', ['mood', 'photo', 'quote']],
@@ -3021,7 +3090,7 @@ const PAGE_TO_NAV_GROUP = {
   'page-stock': 'more',
   'page-period': 'more',
   'page-electric': 'more',
-  'page-quotes': 'record'
+  'page-quotes': 'more'
 };
 function navGroupForPage(pageId) {
   return PAGE_TO_NAV_GROUP[pageId] || null;
@@ -3073,7 +3142,14 @@ function reviewYearFooterHtml(s) {
   `;
 }
 const LAST_TAB_KEY = 'lifelog_last_tab';
+let prevPageId_ = null;
+function pageBack_(fallback) {
+  const t = (prevPageId_ && prevPageId_ !== 'page-quotes' && document.getElementById(prevPageId_)) ? prevPageId_ : fallback;
+  switchTab(t);
+}
 function switchTab(pageId) {
+  const curActive = document.querySelector('.page.active');
+  if (curActive && curActive.id !== pageId) prevPageId_ = curActive.id;
   if (pageId !== 'page-log' && typeof hideWallReturnBar_ === 'function') hideWallReturnBar_();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
@@ -3688,7 +3764,7 @@ const TAB_META = {
   'page-memory': { icon: '🕰️', label: '回顧' },
   'page-stock': { icon: '📈', label: '股票' },
   'page-period': { icon: '🌷', label: '經期' },
-  'page-electric': { icon: '⚡', label: '電表' }
+  'page-electric': { icon: '⚡', label: '電力紀錄' }
 };
 const MAX_PRIMARY_TABS = 4;
 const DEFAULT_TAB_ORDER = ['page-log', 'page-fit', 'page-calendar', 'page-stats', 'page-tickets', 'page-photos', 'page-memory', 'page-stock', 'page-period', 'page-electric'];
@@ -3718,14 +3794,27 @@ const MAIN_NAV_ITEMS = [
 ];
 // 「更多」Bottom Sheet 固定內容：健身／股票／經期／電表／設定／使用教學
 // 前 4 個（有 page 的項目）會依照使用者在「設定 → 分頁順序」存的順序排列，設定／使用教學固定排最後。
-const MORE_MENU_ITEMS = [
-  { icon: '💪', label: '健身', page: 'page-fit' },
-  { icon: '📈', label: '股票', page: 'page-stock' },
-  { icon: '🌸', label: '經期', page: 'page-period' },
-  { icon: '⚡', label: '電表', page: 'page-electric' },
-  { icon: '⚙️', label: '設定', action: 'settings' },
-  { icon: '❔', label: '使用教學', action: 'tutorial' }
+const MORE_MENU_GROUPS = [
+  { title: '📚 收藏與回顧', items: [
+    { icon: '📜', label: '名言佳句', page: 'page-quotes' },
+    { icon: '🎟️', label: '票根牆', page: 'page-tickets' },
+    { icon: '🖼️', label: '相片牆', page: 'page-photos' },
+    { icon: '📅', label: '月曆', page: 'page-calendar' }
+  ] },
+  { title: '💪 健康', items: [
+    { icon: '💪', label: '健身', page: 'page-fit' },
+    { icon: '🌸', label: '經期', page: 'page-period' }
+  ] },
+  { title: '🏠 家用與財務', items: [
+    { icon: '⚡', label: '電力紀錄', page: 'page-electric' },
+    { icon: '📈', label: '股票', page: 'page-stock' }
+  ] },
+  { title: '⚙️ 系統', items: [
+    { icon: '⚙️', label: '設定', action: 'settings' },
+    { icon: '❔', label: '使用教學', action: 'tutorial' }
+  ] }
 ];
+const MORE_MENU_ITEMS = MORE_MENU_GROUPS.reduce((a, g) => a.concat(g.items), []);
 // 使用者自訂的分頁順序（來自 Settings → 分頁順序），開機時／存檔後會更新這份快取，
 // 「更多」選單開啟時依這份順序排列 MORE_MENU_ITEMS 裡有對應 page 的項目。
 let CURRENT_TAB_ORDER = DEFAULT_TAB_ORDER.slice();
@@ -3757,21 +3846,19 @@ function renderTabbarButtons(order) {
   }).join('');
 }
 function openMoreMenu() {
-  const pageItems = MORE_MENU_ITEMS.filter(item => item.page).sort((a, b) => {
-    const ai = CURRENT_TAB_ORDER.indexOf(a.page), bi = CURRENT_TAB_ORDER.indexOf(b.page);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-  });
-  const actionItems = MORE_MENU_ITEMS.filter(item => item.action);
-  document.getElementById('moreMenuGrid').innerHTML = pageItems.concat(actionItems).map(item => {
-    const action = item.action === 'settings' ? 'toggleSettings()'
-      : item.action === 'tutorial' ? 'toggleOnboarding(true)'
-      : `switchTab('${item.page}')`;
-    return `
-      <div class="more-menu-item" onclick="${action};closeMoreMenu();">
-        <span class="icon">${item.icon}</span>
-        <span class="label">${item.label}</span>
-      </div>
-    `;
+  const act = document.querySelector('.page.active');
+  const activeId = act ? act.id : '';
+  const tile = item => {
+    const action = item.action === 'settings' ? 'toggleSettings()' : item.action === 'tutorial' ? 'toggleOnboarding(true)' : `switchTab('${item.page}')`;
+    return `<div class="more-menu-item${item.page === activeId ? ' active' : ''}" onclick="${action};closeMoreMenu();"><span class="icon">${item.icon}</span><span class="label">${item.label}</span></div>`;
+  };
+  document.getElementById('moreMenuGrid').innerHTML = MORE_MENU_GROUPS.map(g => {
+    const items = g.items.slice().sort((a, b) => {
+      if (!a.page || !b.page) return 0;
+      const ai = CURRENT_TAB_ORDER.indexOf(a.page), bi = CURRENT_TAB_ORDER.indexOf(b.page);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+    return `<div class="more-menu-group-title">${g.title}</div><div class="more-menu-subgrid">${items.map(tile).join('')}</div>`;
   }).join('');
   document.getElementById('moreMenuOverlay').classList.add('show');
 }
@@ -8232,6 +8319,7 @@ let calOverviewData = {}; // Phase04：快取這個月的密度資料，點日�
 let calLoadedYm = null; // 效能優化：記錄快取資料是哪個月份，切回同一個月時可以先秒開再背景更新
 let calSelectedDate = null;
 function changeCalMonth(delta) {
+  calMonth.setDate(1); // 先回到 1 號再加減月份，避免 31 號 +1 個月時跳過整個月（例如 10/31 → 12/1）
   calMonth.setMonth(calMonth.getMonth() + delta);
   loadCalendarPage();
 }
@@ -8250,6 +8338,15 @@ async function loadCalendarPage() {
   } else {
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">載入中…</div>';
   }
+  // 每日心情與月曆總覽「並行」載入，互不拖慢；心情資料先到的話，等總覽回來一起畫，晚到的話再補畫一次
+  dmRenderMonthSummary(ym);
+  const moodP = dmLoadMonth(ym, true).then(() => {
+    const curYm = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
+    if (curYm !== ym) return; // 使用者已經切到別的月份，這份結果不要畫上去
+    if (calLoadedYm === ym) renderCalendarGrid(ym, calOverviewData);
+    dmRenderMonthSummary(ym);
+    if (calSelectedDate) dmRenderCalPicker();
+  });
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getCalendarOverview&month=${ym}`, { cache: 'no-store' });
     const overview = await res.json();
@@ -8260,6 +8357,15 @@ async function loadCalendarPage() {
     if (!hasCache) grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">讀取失敗：${escapeHtml(err.message)}</div>`;
   }
   renderReviewYearFooter('reviewYearFooter-calendar');
+  await moodP;
+  // 從首頁「每日心情」進來時，月曆畫好後自動選到今天，直接顯示心情選擇器
+  if (calPendingSelect && calPendingSelect.substring(0, 7) === ym) {
+    const target = calPendingSelect;
+    calPendingSelect = null;
+    const cells = document.querySelectorAll('#calGrid .cal-cell:not(.empty)');
+    const idx = Number(target.substring(8, 10)) - 1;
+    if (cells[idx]) selectCalendarDay(target, cells[idx]);
+  }
 }
 function renderCalendarGrid(ym, overview) {
   const grid = document.getElementById('calGrid');
@@ -8282,8 +8388,10 @@ function renderCalendarGrid(ym, overview) {
       if (day.hasExercise) { dots += `<span class="cal-dot" style="background:#3E8C5B;"></span>`; legendSet['運動'] = '#3E8C5B'; }
       if (day.hasPeriod) { dots += `<span class="cal-dot" style="background:#FF8FB3;"></span>`; legendSet['經期'] = '#FF8FB3'; }
     }
-    html += `<div class="cal-cell${ds === todayStr ? ' today' : ''}${ds === calSelectedDate ? ' selected' : ''}" onclick="selectCalendarDay('${ds}', this)">
-      <span class="cal-daynum">${d}</span>
+    const mood = DM_BY_CODE[dmData[ds]];
+    const moodHtml = mood ? `<span class="cal-mood" title="${mood.label}">${mood.emoji}</span>` : '';
+    html += `<div class="cal-cell${ds === todayStr ? ' today' : ''}${ds === calSelectedDate ? ' selected' : ''}${mood ? ' has-mood' : ''}" onclick="selectCalendarDay('${ds}', this)"${mood ? ` aria-label="${d}日 ${mood.label}"` : ''}>
+      ${moodHtml}<span class="cal-daynum">${d}</span>
       <div class="cal-dots">${dots}</div>
     </div>`;
   }
@@ -8309,6 +8417,9 @@ function selectCalendarDay(ds, cellEl) {
   ];
   document.getElementById('calDayDetailStats').innerHTML = rows.map(r => `<div class="cdd-stat-row">${r}</div>`).join('');
   document.getElementById('calDayDetail').style.display = 'block';
+  dmRenderCalPicker();
+  const detail = document.getElementById('calDayDetail');
+  if (detail.scrollIntoView) detail.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 function jumpFromCalendarSelected() {
   if (calSelectedDate) jumpFromCalendar(calSelectedDate);
@@ -8317,6 +8428,197 @@ function jumpFromCalendar(ds) {
   switchTab('page-log');
   jumpToDate(ds);
 }
+
+/* ================= 每日心情符號 =================
+ * 資料流：後端 DailyMood 分頁（Date 唯一鍵）→ dmData（date → code）→ 首頁卡片／月曆格／月度回顧，三處共用同一份 dmData。
+ * 儲存規則：等後端確認成功才更新畫面（不做「先假裝成功」），失敗會明確提示並維持原本的心情。 */
+const DM_MOODS = [
+  { code: 'happy',   emoji: '😄', label: '很開心',   desc: '愉快、滿足、充滿活力' },
+  { code: 'good',    emoji: '🙂', label: '不錯',     desc: '平靜、滿意、整體順利' },
+  { code: 'neutral', emoji: '😐', label: '普普通通', desc: '平淡、沒特別感覺' },
+  { code: 'down',    emoji: '😔', label: '有點低落', desc: '失落、疲累、心情不太好' },
+  { code: 'sad',     emoji: '😢', label: '很難過',   desc: '悲傷、沮喪、情緒較低' },
+  { code: 'angry',   emoji: '😡', label: '生氣',     desc: '煩躁、不滿、感到生氣' },
+  { code: 'anxious', emoji: '😰', label: '焦慮',     desc: '緊張、擔心、壓力較大' },
+  { code: 'healed',  emoji: '🥰', label: '被療癒了', desc: '感到溫暖、幸福、被關心' },
+  { code: 'driven',  emoji: '🤩', label: '超有幹勁', desc: '興奮、有成就感、充滿動力' },
+  { code: 'tired',   emoji: '😴', label: '疲倦',     desc: '想休息、精神不足、很累' }
+];
+const DM_BY_CODE = {};
+DM_MOODS.forEach(m => { DM_BY_CODE[m.code] = m; });
+let dmData = {};          // 'yyyy-MM-dd' -> mood code（只放「後端確認過」的資料）
+let dmLoaded = {};        // 'yyyy-MM' -> true：該月份已成功從後端載入
+let dmLoadError = {};     // 'yyyy-MM' -> true：該月份載入失敗（要明確顯示，不可當成「沒有紀錄」）
+let dmInflight = {};      // 'yyyy-MM' -> Promise：同月份重複請求時共用
+let dmSaving = {};        // 'yyyy-MM-dd' -> 正在儲存的 mood code（儲存中鎖住，防止重複點擊）
+let dmSavedAt = {};       // 'yyyy-MM-dd' -> 最近一次儲存成功的時間，避免較舊的載入結果蓋掉剛存好的資料
+let calPendingSelect = null;
+
+function dmToday() { return fmtDate(new Date()); } // 使用者本地日期，不經過 UTC 轉換
+function dmYm(ds) { return ds.substring(0, 7); }
+function dmCalYm() { return calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0'); }
+
+function dmPickerHtml(ds) {
+  const cur = dmData[ds];
+  const savingCode = dmSaving[ds];
+  const busy = !!savingCode;
+  return DM_MOODS.map(m => {
+    const cls = 'dm-btn' + (cur === m.code ? ' selected' : '') + (savingCode === m.code ? ' pending' : '');
+    return `<button type="button" class="${cls}" ${busy ? 'disabled' : ''} aria-pressed="${cur === m.code}" title="${m.desc}" onclick="dmPick('${ds}','${m.code}')">
+      <span class="dm-emoji">${m.emoji}</span><span class="dm-label">${m.label}</span></button>`;
+  }).join('');
+}
+
+// 載入某個月份的心情。force=true 一定重打 API（切月份／進月曆頁時用，確保資料最新）。回傳 true/false 代表是否成功。
+function dmLoadMonth(ym, force) {
+  if (dmLoaded[ym] && !force) return Promise.resolve(true);
+  if (dmInflight[ym]) return dmInflight[ym];
+  if (!checkConfig()) return Promise.resolve(false);
+  const startedAt = Date.now();
+  const p = (async () => {
+    try {
+      const res = await fetch(`${CONFIG.GAS_URL}?action=getDailyMoodMonth&month=${ym}`, { cache: 'no-store' });
+      const result = await res.json();
+      if (result.error || result.ok === false || !result.moods) throw new Error(result.message || result.error || '讀取失敗');
+      // 以後端為準，整個月份換成最新資料；但這次請求期間才剛儲存成功的日期，保留本機較新的值
+      Object.keys(dmData).forEach(ds => {
+        if (dmYm(ds) === ym && !(dmSavedAt[ds] && dmSavedAt[ds] >= startedAt)) delete dmData[ds];
+      });
+      Object.keys(result.moods).forEach(ds => {
+        if (DM_BY_CODE[result.moods[ds]] && !(dmSavedAt[ds] && dmSavedAt[ds] >= startedAt)) dmData[ds] = result.moods[ds];
+      });
+      dmLoaded[ym] = true;
+      delete dmLoadError[ym];
+      return true;
+    } catch (err) {
+      dmLoadError[ym] = true;
+      return false;
+    } finally {
+      delete dmInflight[ym];
+      dmRenderHome();
+    }
+  })();
+  dmInflight[ym] = p;
+  return p;
+}
+
+function dmRenderHome() {
+  const card = document.getElementById('dmHomeCard');
+  if (!card) return;
+  const ds = dmToday();
+  const ym = dmYm(ds);
+  const parts = ds.split('-');
+  document.getElementById('dmHomeDate').textContent = `${Number(parts[1])}/${Number(parts[2])}`;
+  const status = document.getElementById('dmHomeStatus');
+  const cur = dmData[ds];
+  if (cur && DM_BY_CODE[cur]) {
+    const m = DM_BY_CODE[cur];
+    status.innerHTML = `今天是 <b>${m.emoji} ${m.label}</b>，想改的話再點一下別的就好`;
+  } else if (!dmLoaded[ym] && dmLoadError[ym]) {
+    status.innerHTML = `讀取今天的心情失敗 <button type="button" class="dm-retry" onclick="dmLoadMonth('${ym}', true)">重試</button>`;
+  } else if (!dmLoaded[ym]) {
+    status.textContent = '讀取中…';
+  } else {
+    status.textContent = '今天的心情如何？點一下就記好 ✨';
+  }
+  document.getElementById('dmHomePicker').innerHTML = dmPickerHtml(ds);
+}
+
+function dmRenderCalPicker() {
+  const box = document.getElementById('dmCalPicker');
+  if (!box || !calSelectedDate) return;
+  const ds = calSelectedDate;
+  const cur = DM_BY_CODE[dmData[ds]];
+  document.getElementById('dmCalTitle').textContent = cur ? `這天的心情：${cur.emoji} ${cur.label}（可重新選擇）` : '這天的心情如何？點一下就記好';
+  box.innerHTML = dmPickerHtml(ds);
+}
+
+function dmRenderMonthSummary(ym) {
+  const box = document.getElementById('dmMonthSummary');
+  if (!box) return;
+  const [y, m] = ym.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  let head = '<div class="field-label" style="margin-top:0;">🙂 本月心情回顧</div>';
+  if (!dmLoaded[ym]) {
+    box.innerHTML = head + `<div class="dm-sum-note">${dmLoadError[ym] ? '心情紀錄讀取失敗，暫時無法統計' : '讀取中…'}</div>`;
+    return;
+  }
+  const counts = {};
+  let total = 0;
+  Object.keys(dmData).forEach(ds => {
+    if (dmYm(ds) !== ym || !DM_BY_CODE[dmData[ds]]) return; // 只算「實際已儲存」的日子
+    counts[dmData[ds]] = (counts[dmData[ds]] || 0) + 1;
+    total++;
+  });
+  if (!total) {
+    box.innerHTML = head + '<div class="dm-sum-note">這個月還沒有記錄心情。點月曆上的日期，或到首頁點一下今天的心情就可以開始囉。</div>';
+    return;
+  }
+  const max = Math.max.apply(null, Object.keys(counts).map(k => counts[k]));
+  const top = DM_MOODS.filter(mm => counts[mm.code] === max);
+  const rows = DM_MOODS.filter(mm => counts[mm.code]).sort((a, b) => counts[b.code] - counts[a.code]).map(mm =>
+    `<div class="dm-sum-row"><span class="dm-sum-label">${mm.emoji} ${mm.label}</span><span class="dm-sum-bar"><span style="width:${Math.round(counts[mm.code] / max * 100)}%"></span></span><span class="dm-sum-count">${counts[mm.code]} 天</span></div>`
+  ).join('');
+  box.innerHTML = head +
+    `<div class="dm-sum-line">已記錄 <b>${total}</b> 天（本月共 ${daysInMonth} 天）・最常出現：${top.map(t => t.emoji + ' ' + t.label).join('、')}（${max} 天）</div>` +
+    rows + '<div class="dm-sum-note">只統計你實際記錄過的日子，沒記錄的日子不列入；這只是生活紀錄的整理，不是心理或健康評估。</div>';
+}
+
+function dmRefreshViews(ds) {
+  dmRenderHome();
+  if (calSelectedDate === ds) dmRenderCalPicker();
+  else if (calSelectedDate) dmRenderCalPicker(); // 讓「儲存中」鎖定狀態也同步
+  const ym = dmYm(ds);
+  if (dmCalYm() === ym && calLoadedYm === ym) renderCalendarGrid(ym, calOverviewData);
+  if (dmCalYm() === ym) dmRenderMonthSummary(ym);
+}
+
+// 點一下心情 → 直接儲存（新增或修改同一天，後端以日期為唯一鍵）
+async function dmPick(ds, code) {
+  if (!DM_BY_CODE[code]) return;
+  if (dmSaving[ds]) return; // 儲存中，忽略重複點擊
+  if (dmData[ds] === code) { showToast(`這天已經是 ${DM_BY_CODE[code].emoji} ${DM_BY_CODE[code].label} 囉`); return; }
+  if (!checkConfig()) return;
+  dmSaving[ds] = code;
+  dmRefreshViews(ds);
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'saveDailyMood', date: ds, mood: code }) });
+    const result = await res.json();
+    if (result.error === 'AUTH_REQUIRED') throw new Error('登入已過期，請重新整理頁面後再試');
+    if (result.error) throw new Error(result.error);
+    if (result.ok === false) throw new Error(result.message || '儲存失敗');
+    dmData[ds] = code;
+    dmSavedAt[ds] = Date.now();
+    const parts = ds.split('-');
+    const m = DM_BY_CODE[code];
+    showToast(`已儲存 ${Number(parts[1])}/${Number(parts[2])} ${m.emoji} ${m.label}`);
+  } catch (err) {
+    showToast('⚠️ 心情沒有儲存成功：' + (err.message || '網路錯誤') + '，請再試一次', 4200);
+  } finally {
+    delete dmSaving[ds];
+    dmRefreshViews(ds);
+  }
+}
+
+// 首頁「每日心情」捷徑：切到月曆，並自動選到今天
+function dmOpenCalendarToday() {
+  calMonth = new Date();
+  calMonth.setDate(1);
+  calPendingSelect = dmToday();
+  switchTab('page-calendar');
+}
+
+function dmInitHome() {
+  dmRenderHome();
+  dmLoadMonth(dmYm(dmToday()), true);
+}
+// 分頁放著跨過午夜、或回到前景時：首頁的「今天」要跟著更新，必要時補載當月資料
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  const ym = dmYm(dmToday());
+  if (!dmLoaded[ym]) dmLoadMonth(ym, true); else dmRenderHome();
+});
+
 
 function changeMonth(delta) {
   statsMonth.setMonth(statsMonth.getMonth() + delta);
@@ -8949,13 +9251,13 @@ async function drawQuoteCard_(q, ratio, themeKey) {
   const afterText = Math.max(y - size * 0.4, areaTop + blockH);
   const src = quoteSourceLabel_(q);
   // 結尾引號 ”（與開頭 “ 呼應）
-  ctx.save(); ctx.fillStyle = th.accent; ctx.globalAlpha = 0.5; ctx.font = '700 200px ' + QUOTE_CARD_SERIF_; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.fillText('”', W / 2, afterText + 150); ctx.restore();
+  ctx.save(); ctx.fillStyle = th.accent; ctx.globalAlpha = 0.5; ctx.font = '700 200px ' + QUOTE_CARD_SERIF_; ctx.textAlign = 'right'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText('”', W - padX + 20, afterText + 130); ctx.restore();
   if (src) {
     let ss = 40; ctx.font = '500 ' + ss + 'px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
     const text = '—— ' + src;
     while (ss > 24 && ctx.measureText(text).width > maxW) { ss -= 2; ctx.font = '500 ' + ss + 'px "Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif'; }
-    ctx.fillStyle = th.muted; ctx.fillText(text, W / 2, afterText + 85 + ss * 1.5);
+    ctx.textAlign = 'center'; ctx.fillStyle = th.muted; ctx.fillText(text, W / 2, afterText + 100 + ss * 1.5);
   }
   return cv;
 }
@@ -9524,6 +9826,7 @@ function startApp() {
       try { cached.date = cached.today; applyHomeBundle_(cached, true); } catch (err) {}
     }
     loadHomeBundle_();
+    dmInitHome();
   } else {
     loadSavedTabOrder();
     loadTodayQuote();
