@@ -886,6 +886,11 @@
   .ticket-card .tp-legacy{font-size:10px;line-height:1.3;color:var(--ink-soft);overflow-wrap:anywhere;}
   .ticket-card .ticket-addr{font-size:11px;color:var(--ink-soft);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .ticket-card .ticket-venue-empty{opacity:.7;}
+  /* 票根複製按鈕：票根牆卡片右上角（標題列內）與生活紀錄卡片 */
+  .ticket-card .ticket-info{position:relative;}
+  .ticket-card .ticket-title-bar{padding-right:38px;}
+  .ticket-card .tc-copy-btn{position:absolute;top:0;right:2px;width:34px;height:34px;background:none;border:none;color:#fff;font-size:16px;line-height:1;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,0.3);}
+  .ticket.has-copy .ticket-top{padding-right:82px;}
   @media (max-width:420px){
     .ticket-card .ti-image{width:76px;}
     .ticket-card .tb-price{max-width:52%;}
@@ -1576,6 +1581,7 @@
         <div class="tp-form" id="ticketPriceBox" style="display:none;"></div>
         <textarea id="textInput" placeholder="寫下這一刻……即使只有一兩句話也沒關係 🌷"></textarea>
         <div id="editDateHint" style="display:none;font-size:11.5px;color:var(--accent-dark);margin:-4px 0 8px;">✏️ 更新後將存到這一天（可用上方 ‹ › 切換日期來搬移這筆紀錄）</div>
+        <div id="copyHint" style="display:none;font-size:11.5px;color:var(--accent-dark);margin:-4px 0 8px;line-height:1.6;"></div>
         <div class="add-row">
           <button class="photo-btn" onclick="document.getElementById('fileInput').click()">🖼️ 相片</button>
           <button class="submit-btn" id="submitBtn" onclick="submitEntry()">記下這一刻</button>
@@ -1583,7 +1589,7 @@
         <button class="gen-btn" id="cancelEditBtn" style="display:none;margin-top:8px;" onclick="cancelEditEntry()">取消編輯</button>
         <input type="file" id="fileInput" accept="image/*" multiple onchange="handlePhoto(event)">
         <div id="existingPhotoArea" style="display:none;margin-top:8px;">
-          <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">📷 原本的照片（點縮圖可放大查看）</div>
+          <div id="existingPhotoLabel" style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">📷 原本的照片（點縮圖可放大查看）</div>
           <div id="existingPhotoGrid" class="photo-wall-grid"></div>
           <div id="existingPhotoHint" class="existing-photo-hint"></div>
         </div>
@@ -2443,6 +2449,7 @@ let statsMonth = new Date();
 let searchDebounce = null;
 let editingCategoryId = null;
 let editingEntryId = null;
+let copyingFromId = null; // 複製票根草稿的來源 ID：只存在於畫面上，按「儲存為新票根」才會真的寫入
 let editingFields = [];
 let editingExistingPhotoUrls = []; // 正在編輯的紀錄「原本已經存在」的照片，不代表要重新上傳
 
@@ -3907,7 +3914,7 @@ function expandQuickAddCard() {
   document.getElementById('ctaRecordBtn').style.display = 'none';
 }
 function collapseQuickAddCard() {
-  if (editingEntryId) cancelEditEntry();
+  if (editingEntryId || copyingFromId) cancelEditEntry();
   document.getElementById('quickAddCard').style.display = 'none';
   document.getElementById('ctaRecordBtn').style.display = 'block';
 }
@@ -4172,12 +4179,15 @@ function renderTicket(entry, opts) {
   outer.appendChild(check);
 
   const div = document.createElement('div');
-  div.className = 'ticket';
+  const entryCat_ = catByName(entry.category);
+  const canCopy_ = !!(entryCat_ && entryCat_.ticketScan);
+  div.className = 'ticket' + (canCopy_ ? ' has-copy' : '');
   div.style.flex = '1';
   div.style.borderLeftColor = catColor(entry.category);
   div.innerHTML = `
     <button class="del-btn" onclick="deleteEntry('${entry.id}')" style="right:10px;">✕</button>
     <button class="del-btn" onclick="editEntry('${entry.id}')" style="right:34px;">✎</button>
+    ${canCopy_ ? `<button class="del-btn" title="複製票根" aria-label="複製票根" onclick="copyTicket('${entry.id}')" style="right:58px;">⧉</button>` : ''}
     ${entryCardBodyHtml(entry, opts)}
   `;
   outer.appendChild(div);
@@ -4350,6 +4360,8 @@ function renderExistingPhotoArea() {
     return;
   }
   area.style.display = 'block';
+  const lbl = document.getElementById('existingPhotoLabel');
+  if (lbl) lbl.textContent = copyingFromId ? '📷 沿用原票根的照片（點縮圖可放大查看）' : '📷 原本的照片（點縮圖可放大查看）';
   grid.innerHTML = editingExistingPhotoUrls.map((u, i) => `
     <div class="photo-wall-item" data-index="${i}">
       <img src="${escapeHtml(u)}" loading="lazy" onclick="openExistingPhotoPreview(${i})">
@@ -4357,6 +4369,12 @@ function renderExistingPhotoArea() {
     </div>
   `).join('');
   const newCount = pendingPhotos.filter(p => p.selected).length;
+  if (copyingFromId) {
+    hint.textContent = newCount
+      ? `新票根會沿用這 ${editingExistingPhotoUrls.length} 張照片，並新增 ${newCount} 張新照片（原票根的照片不受影響）`
+      : `新票根會沿用這 ${editingExistingPhotoUrls.length} 張照片；點 ✕ 只會從新票根移除，不影響原票根`;
+    return;
+  }
   hint.textContent = newCount
     ? `會保留這 ${editingExistingPhotoUrls.length} 張原本的照片，並新增 ${newCount} 張新照片`
     : `這 ${editingExistingPhotoUrls.length} 張原本的照片會繼續保留，點 ✕ 可以移除不要的`;
@@ -4569,7 +4587,7 @@ window.addEventListener('online', flushOfflineQueue);
 async function submitEntry() {
   const text = document.getElementById('textInput').value.trim();
   const selectedPhotos = pendingPhotos.filter(p => p.selected);
-  if (!text && !selectedPhotos.length && !editingEntryId) { alert('至少寫點文字或加張照片喔 🌷'); return; }
+  if (!text && !selectedPhotos.length && !editingEntryId && !copyingFromId) { alert('至少寫點文字或加張照片喔 🌷'); return; }
   const priceCat = catByName(selectedCategory);
   if (priceCat && priceCat.ticketScan) {
     const priceErr = normalizeTicketPriceValues_();
@@ -4577,6 +4595,8 @@ async function submitEntry() {
   }
   const btn = document.getElementById('submitBtn');
   const isEdit = !!editingEntryId;
+  const isCopy = !isEdit && !!copyingFromId;
+  const copySourceId = isCopy ? copyingFromId : null;
   btn.disabled = true; btn.textContent = isEdit ? '更新中…' : '記錄中…';
   const now = new Date();
   const cat = catByName(selectedCategory);
@@ -4596,13 +4616,15 @@ async function submitEntry() {
         time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
         category: selectedCategory, text: text, mood: moodVal, fields: currentFieldValues,
         photos: photosPayload, photoBase64: firstPhoto.photoBase64 || null, photoMimeType: firstPhoto.photoMimeType || null };
+  // 複製票根：後端用 copyFromId 找到來源票根，沿用它「仍被保留」的照片參照（不重新上傳、不複製檔案），並帶過去剔除座位／日期後的辨識資訊。
+  if (isCopy) { body.copyFromId = copySourceId; body.existingPhotoUrls = editingExistingPhotoUrls.slice(); }
   try {
     const result = await postJSON(body);
     if (result && result.error) throw new Error(result.error);
     document.getElementById('textInput').value = '';
     pendingPhotos = []; renderPhotoGrid();
     currentFieldValues = {}; renderExtraFields();
-    if (isEdit) cancelEditEntry();
+    if (isEdit || isCopy) cancelEditEntry();
     // 後端做了最終的重複照片把關（情境 B/C：內容跟既有照片或彼此重複），有略過的話另外提示，
     // 跟儲存成功的提示分開顯示，避免蓋掉「已略過」這個比較重要的訊息。
     if (result && result.skippedDuplicates) {
@@ -4614,7 +4636,7 @@ async function submitEntry() {
     if (isEdit && wallReturn_) { backToTicketWall_(); return; }
     loadTodayOverview();
     await loadEntries();
-    if (!isEdit && isTicketCat && result.photoUrl && result.id) {
+    if (!isEdit && !isCopy && isTicketCat && result.photoUrl && result.id) { // 複製的票根沿用原票根的辨識資訊，不再重跑一次 AI 辨識
       btn.textContent = 'AI 辨識票根中…';
       try {
         await postJSON({ action: 'recognizeTicket', entryId: result.id }, 60000);
@@ -4629,6 +4651,7 @@ async function submitEntry() {
         document.getElementById('textInput').value = '';
         pendingPhotos = []; renderPhotoGrid();
         currentFieldValues = {}; renderExtraFields();
+        if (isCopy) cancelEditEntry();
         showToast('📴 沒有網路，先存在裝置上，恢復連線會自動送出');
       } else {
         alert('沒有網路，而且裝置暫存空間不夠，這筆沒能存住，請恢復連線後再試一次：' + err.message);
@@ -4637,7 +4660,7 @@ async function submitEntry() {
       alert('儲存失敗：' + err.message);
     }
   } finally {
-    btn.disabled = false; btn.textContent = editingEntryId ? '更新這筆紀錄' : '記下這一刻';
+    btn.disabled = false; btn.textContent = editingEntryId ? '更新這筆紀錄' : (copyingFromId ? '儲存為新票根' : '記下這一刻');
   }
 }
 let loadedEntries = [];
@@ -4661,6 +4684,8 @@ function editEntry(id) {
   }
   expandQuickAddCard();
   editingEntryId = id;
+  copyingFromId = null;
+  document.getElementById('copyHint').style.display = 'none';
   selectedCategory = entry.category;
   currentFieldValues = Object.assign({}, entry.fields || {});
   const cat = catByName(entry.category);
@@ -4675,6 +4700,7 @@ function editEntry(id) {
   document.getElementById('textInput').value = entry.text || '';
   document.getElementById('submitBtn').textContent = '更新這筆紀錄';
   document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  document.getElementById('cancelEditBtn').textContent = '取消編輯';
   document.getElementById('editDateHint').style.display = 'block';
   // 修正：編輯既有紀錄不代表要重新上傳照片。載入這筆紀錄原本已有的照片（若有），
   // 並清空「待上傳」清單 —— 使用者不主動選新照片的話，儲存時會保留這些原本的照片。
@@ -4685,14 +4711,86 @@ function editEntry(id) {
 }
 function cancelEditEntry() {
   editingEntryId = null;
+  copyingFromId = null; // 取消複製：草稿只存在畫面上，這裡清掉就不會留下任何半成品資料
   document.getElementById('submitBtn').textContent = '記下這一刻';
   document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('cancelEditBtn').textContent = '取消編輯';
   document.getElementById('editDateHint').style.display = 'none';
+  const ch = document.getElementById('copyHint'); if (ch) ch.style.display = 'none';
   document.getElementById('textInput').value = '';
   editingExistingPhotoUrls = [];
   pendingPhotos = []; renderPhotoGrid();
   currentFieldValues = {};
   renderExtraFields();
+}
+// ---------- 複製票根 ----------
+// 用途：同一場演出連續看好幾天時，從既有票根複製出一份草稿，只改日期、座位等不同的資料。
+// 草稿只存在表單畫面上（copyingFromId + currentFieldValues），按「儲存為新票根」才會送出 addEntry；
+// 取消、關閉、切換頁面都不會寫入任何資料。送出時後端會建立全新的 ID 與建立時間，原票根完全不動。
+// 這些欄位屬於「場次／個人票券」資訊，複製時一律清空（座位、排數、區域、場次、日期、時間、票號等）
+const TICKET_COPY_CLEAR_KEY_RE = /seat|^(row|rows|section|block|zone|gate|entrance|ticketNo|ticketNumber|orderNo|orderNumber|barcode|qr|session|showTime|showDate)$/i;
+const TICKET_COPY_CLEAR_LABEL_RE = /座位|座號|座區|座席|席位|席次|排數|排號|幾排|樓層|區域|看台|看臺|入口|票區|票號|票券編號|訂單|序號|條碼|場次|日期|時間|取票/;
+function buildTicketCopyFields_(entry, cat) {
+  const fields = JSON.parse(JSON.stringify((entry && entry.fields) || {})); // 深層複製：之後改新草稿不會動到原票根的物件
+  const defOf = {};
+  ((cat && cat.fields) || []).forEach(d => { defOf[d.key] = d; });
+  const cleared = [];
+  Object.keys(fields).forEach(k => {
+    if (ENTRY_SYSTEM_FIELD_KEYS.indexOf(k) !== -1 || k === 'price') return; // 價格欄位沿用（原始票價／實付各自保留）、場地地址保留
+    const d = defOf[k];
+    const label = d ? String(d.label || '') : '';
+    const isMood = !!(d && d.type === 'mood');
+    if (isMood || (d && d.type === 'date') || TICKET_COPY_CLEAR_KEY_RE.test(k) || TICKET_COPY_CLEAR_LABEL_RE.test(label)) {
+      if (!isMood && entryFieldVal_(fields[k])) cleared.push(label || k);
+      delete fields[k];
+    }
+  });
+  return { fields: fields, cleared: cleared };
+}
+async function copyTicketEntry_(entry) {
+  if (!entry) return;
+  const cat = catByName(entry.category);
+  if (!cat || !cat.ticketScan) { showToast('只有票根類別可以複製'); return; }
+  const dirty = editingEntryId || copyingFromId || document.getElementById('textInput').value.trim() || pendingPhotos.length;
+  if (dirty && !(await showConfirm('目前表單裡有尚未儲存的內容，開始複製會覆蓋掉它，是否繼續？', { title: '開始複製票根', okText: '繼續複製', cancelText: '先不要' }))) return;
+  switchTab('page-log');
+  if (entry.date) {
+    const [y, m, d] = entry.date.split('-').map(Number);
+    const entryDate = new Date(y, m - 1, d);
+    if (fmtDate(entryDate) !== fmtDate(currentDate)) { currentDate = entryDate; refresh(); }
+  }
+  expandQuickAddCard();
+  editingEntryId = null;          // 複製永遠是「新增」，不是編輯原票根
+  copyingFromId = entry.id;
+  selectedCategory = entry.category;
+  const draft = buildTicketCopyFields_(entry, cat);
+  currentFieldValues = draft.fields;   // 全新的物件 → 價格表單狀態會重新初始化，且不會被當成「編輯中」
+  renderCatRow();
+  document.getElementById('textInput').value = ''; // 心得是那一天的感受，不沿用
+  document.getElementById('submitBtn').textContent = '儲存為新票根';
+  const cb = document.getElementById('cancelEditBtn');
+  cb.style.display = 'inline-block'; cb.textContent = '取消複製';
+  document.getElementById('editDateHint').style.display = 'none';
+  editingExistingPhotoUrls = (entry.photoUrls && entry.photoUrls.length) ? entry.photoUrls.slice() : (entry.photoUrl ? [entry.photoUrl] : []);
+  pendingPhotos = [];
+  renderPhotoGrid();
+  let title = '';
+  try { title = String(ticketCardInfo(entry).title || ''); } catch (e) {}
+  if (title.length > 20) title = title.slice(0, 20) + '…';
+  const hint = document.getElementById('copyHint');
+  hint.textContent = `📋 複製自${title ? '「' + title + '」' : '這張票根'}：已沿用演出資訊、場地、價格與照片` +
+    (draft.cleared.length ? `；已清空 ${draft.cleared.join('、')}` : '') +
+    `。座位請自行填寫；儲存日期目前是 ${entry.date || fmtDate(currentDate)}（與原票根相同），可用上方 ‹ › 調整，價格請確認。按「儲存為新票根」才會新增，取消不會留下任何紀錄。`;
+  hint.style.display = 'block';
+  document.getElementById('textInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function copyTicket(id) {
+  let entry = loadedEntries.find(e => e.id === id);
+  if (!entry) entry = (searchEntryCache || []).find(e => e.id === id);
+  copyTicketEntry_(entry);
+}
+function copyTicketFromWall_(id) {
+  copyTicketEntry_(ticketWallAll.find(t => t.id === id));
 }
 async function loadSummary() {
   const ds = fmtDate(currentDate);
@@ -6781,18 +6879,20 @@ function buildPriceRows_(box) {
     const next = oSel.value;
     if (next === prev) return;
     if (st.confirming) { oSel.value = prev; return; } // 對話框開著時的重複觸發：忽略，維持原狀
-    // 情境 B：實付金額還沒填 → 直接套用新幣別，不顯示對話框、不建立實付資料
-    if (!hasMoneyAmount(v.paidAmount)) {
+    // 情境 C：實付金額與實付幣別都沒有資料 → 直接套用新幣別，不顯示對話框、不建立實付資料。
+    // 只要其中之一有資料（例如只選了幣別、金額還沒填），就視為待保護的支付資料，要先確認。
+    const hasPaidData = hasMoneyAmount(v.paidAmount) || !!String(v.paidCurrency || '').trim();
+    if (!hasPaidData) {
       v.origCurrency = next;
       oInput.step = ZERO_DECIMAL_CURRENCIES[next] ? '1' : '0.01';
       return;
     }
-    // 情境 A：實付金額已有資料 → 清除前先確認，確認前不改動任何欄位
+    // 情境 B：實付金額或幣別已有資料 → 清除前先確認，確認前不改動任何欄位
     st.confirming = true;
     oSel.disabled = true;
     let ok = false;
     try {
-      ok = await showConfirm('變更原始票價幣別後，最終實際支付金額將被清除，以避免保留不適用的付款資料。此操作會清除目前已填寫的實際支付金額與支付貨幣，是否繼續？',
+      ok = await showConfirm('變更原始票價幣別後，最終實際支付金額及其幣別將被清除。是否確認繼續？',
         { title: '確認變更原始票價幣別', okText: '確認變更並清除', cancelText: '取消變更' });
     } finally { st.confirming = false; oSel.disabled = false; }
     if (!ok) { oSel.value = prev; return; } // 取消：幣別恢復、金額與實付資料完整保留
@@ -6812,6 +6912,9 @@ function buildPriceRows_(box) {
     v.paidAmount = v.origAmount; v.paidCurrency = 'TWD';
     paidInput.value = String(v.origAmount); paidSel.value = 'TWD';
   };
+  // 輸入完成（離開欄位／確認輸入）後，實付金額就視為「已初始化」：之後再改原始票價金額，不會再動到實付金額。
+  // （輸入過程中逐字更新才不會停在半截數字，所以鎖定放在 change 而不是 input。）
+  oInput.onchange = () => { if (hasMoneyAmount(v.paidAmount)) st.autoAllowed = false; };
   o.row.appendChild(oSel); o.row.appendChild(oInput);
   box.appendChild(o.wrap);
 
@@ -7101,6 +7204,7 @@ function renderTicketWall() {
         </div>
         <div class="ticket-info">
           <div class="ticket-title-bar" style="background:${titleColor};">${escapeHtml(title)}</div>
+          <button class="tc-copy-btn" title="複製票根" aria-label="複製票根" onclick="event.stopPropagation();copyTicketFromWall_('${t.id}')">⧉</button>
           <div class="ticket-body">${ticketBodyHtml(t)}</div>
         </div>`;
       list.appendChild(card);
