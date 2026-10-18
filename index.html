@@ -4810,13 +4810,16 @@ function cancelEditEntry() {
 // 這些欄位屬於「場次／個人票券」資訊，複製時一律清空（座位、排數、區域、場次、日期、時間、票號等）
 const TICKET_COPY_CLEAR_KEY_RE = /seat|^(row|rows|section|block|zone|gate|entrance|ticketNo|ticketNumber|orderNo|orderNumber|barcode|qr|session|showTime|showDate)$/i;
 const TICKET_COPY_CLEAR_LABEL_RE = /座位|座號|座區|座席|席位|席次|排數|排號|幾排|樓層|區域|看台|看臺|入口|票區|票號|票券編號|訂單|序號|條碼|場次|日期|時間|取票/;
+const TICKET_COPY_PRICE_KEYS = ['origAmount', 'origCurrency', 'paidAmount', 'paidCurrency', 'paidTwdEquiv', 'paidTwdSource', 'price'];
 function buildTicketCopyFields_(entry, cat) {
   const fields = JSON.parse(JSON.stringify((entry && entry.fields) || {})); // 深層複製：之後改新草稿不會動到原票根的物件
   const defOf = {};
   ((cat && cat.fields) || []).forEach(d => { defOf[d.key] = d; });
   const cleared = [];
   Object.keys(fields).forEach(k => {
-    if (ENTRY_SYSTEM_FIELD_KEYS.indexOf(k) !== -1 || k === 'price') return; // 價格欄位沿用（原始票價／實付各自保留）、場地地址保留
+    // 票價屬於「每張票」的個人資料：原價、實付、幣別、帳單金額與舊版 price 一律清空，由使用者手動輸入
+    if (TICKET_COPY_PRICE_KEYS.indexOf(k) !== -1) { if (entryFieldVal_(fields[k]) && cleared.indexOf('票價') === -1) cleared.push('票價'); delete fields[k]; return; }
+    if (ENTRY_SYSTEM_FIELD_KEYS.indexOf(k) !== -1) return; // 場地地址等系統欄位保留
     const d = defOf[k];
     const label = d ? String(d.label || '') : '';
     const isMood = !!(d && d.type === 'mood');
@@ -4859,9 +4862,9 @@ async function copyTicketEntry_(entry) {
   try { title = String(ticketCardInfo(entry).title || ''); } catch (e) {}
   if (title.length > 20) title = title.slice(0, 20) + '…';
   const hint = document.getElementById('copyHint');
-  hint.textContent = `📋 複製自${title ? '「' + title + '」' : '這張票根'}：已沿用演出資訊、場地、價格與照片` +
+  hint.textContent = `📋 複製自${title ? '「' + title + '」' : '這張票根'}：已沿用演出資訊、場地與照片` +
     (draft.cleared.length ? `；已清空 ${draft.cleared.join('、')}` : '') +
-    `。座位請自行填寫；儲存日期目前是 ${entry.date || fmtDate(currentDate)}（與原票根相同），可用上方 ‹ › 調整，價格請確認。按「儲存為新票根」才會新增，取消不會留下任何紀錄。`;
+    `。座位與票價請自行填寫；儲存日期目前是 ${entry.date || fmtDate(currentDate)}（與原票根相同），可用「時間點」調整，票價請自行輸入。按「儲存為新票根」才會新增，取消不會留下任何紀錄。`;
   hint.style.display = 'block';
   document.getElementById('textInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
