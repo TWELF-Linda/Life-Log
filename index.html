@@ -2265,6 +2265,7 @@
           <input type="number" step="0.1" id="elecBillTotalDue" inputmode="decimal" placeholder="應繳總金額">
         </div>
         <button class="submit-btn" id="elecBillSubmitBtn" style="width:100%;" onclick="submitElecBill()">登打這筆帳單</button>
+        <button class="gen-btn" id="elecBillCancelEditBtn" style="width:100%;margin-top:8px;display:none;" onclick="cancelEditElecBill()">取消編輯</button>
       </div>
       <div class="card">
         <div class="field-label" style="margin-top:0;">📋 帳單記錄與比對</div>
@@ -2886,6 +2887,7 @@ function reviewYearFooterHtml(s) {
 }
 const LAST_TAB_KEY = 'lifelog_last_tab';
 function switchTab(pageId) {
+  if (pageId !== 'page-log' && typeof hideWallReturnBar_ === 'function') hideWallReturnBar_();
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById(pageId).classList.add('active');
   const activeNavGroup = navGroupForPage(pageId);
@@ -4022,15 +4024,17 @@ function entryInfo(entry) {
     rows.push({ label, value, wide: !!wide || value.length > 18 });
   };
   // 標題：掃描辨識的名稱優先，其次類別的名稱欄位
-  let title = entryFieldVal_(tm.showName);
+  // 標題：使用者自己填／編輯過的欄位優先，其次才是掃描辨識的名稱（否則改了劇名，畫面仍顯示辨識出的舊名稱）
+  let title = '';
   let titleKey = '';
   for (const k of ENTRY_TITLE_KEYS) {
     if (defs.some(d => d.key === k) && entryFieldVal_(f[k])) {
-      if (!title) title = entryFieldVal_(f[k]);
-      titleKey = titleKey || k;
+      title = entryFieldVal_(f[k]);
+      titleKey = k;
       break;
     }
   }
+  if (!title) title = entryFieldVal_(tm.showName);
   if (title) seen.add(title.toLowerCase());
   defs.forEach(d => {
     if (d.type === 'mood' || d.key === titleKey) return;
@@ -4041,7 +4045,7 @@ function entryInfo(entry) {
   if (!defs.some(d => d.key === 'seat')) push('座位', f.seat, false);
   if (isTicket) {
     push('日期', tm.showDate);
-    push('場地', tm.venue, true);
+    push('場地', f.venue || tm.venue, true);
     push('地址', entryFieldVal_(f.venueAddress) || tm.address, true);
     const p = ticketPriceOf(entry);
     const priceRows = [];
@@ -4593,6 +4597,7 @@ async function submitEntry() {
     } else {
       showToast(isEdit ? pick(UPDATE_MSGS) : pick(SAVE_MSGS));
     }
+    if (isEdit && wallReturn_) { backToTicketWall_(); return; }
     loadTodayOverview();
     await loadEntries();
     if (!isEdit && isTicketCat && result.photoUrl && result.id) {
@@ -5114,6 +5119,47 @@ async function deleteElecReadingUI(id, date, reading) {
     alert('刪除失敗（資料未變動）：' + elecErrMsg_(err));
   }
 }
+let elecBillsCache_ = [];
+let editingElecBill_ = null; // { label, rowHint, note }
+function editElecBill(id) {
+  const b = elecBillsCache_.find(x => String(x.id) === String(id));
+  if (!b) return;
+  editingElecBill_ = { label: String(b.periodLabel).trim(), rowHint: String(b.id), note: b.note || '' };
+  const set = (el, v) => { document.getElementById(el).value = (v === '' || v === null || v === undefined) ? '' : v; };
+  set('elecBillPeriodLabel', b.periodLabel);
+  set('elecBillKwh', b.billedKwh);
+  set('elecBillFlowFee', b.flowFee);
+  set('elecBillPublicFee', b.publicFee);
+  set('elecBillSavingReward', b.savingReward);
+  set('elecBillPrevBalance', b.prevBalance);
+  set('elecBillTotalDue', b.totalDue);
+  document.getElementById('elecBillSubmitBtn').textContent = '更新這筆帳單';
+  document.getElementById('elecBillCancelEditBtn').style.display = 'block';
+  document.getElementById('elecBillPeriodLabel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function resetElecBillForm_() {
+  editingElecBill_ = null;
+  ['elecBillPeriodLabel', 'elecBillKwh', 'elecBillFlowFee', 'elecBillPublicFee', 'elecBillSavingReward', 'elecBillPrevBalance', 'elecBillTotalDue'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('elecBillSubmitBtn').textContent = '登打這筆帳單';
+  document.getElementById('elecBillCancelEditBtn').style.display = 'none';
+}
+function cancelEditElecBill() { resetElecBillForm_(); }
+async function deleteElecBill(id) {
+  const b = elecBillsCache_.find(x => String(x.id) === String(id));
+  if (!b) return;
+  if (!(await showConfirm('刪除這筆帳單？（' + b.periodLabel + '）舊表上的那一列也會一併刪除，無法復原'))) return;
+  try {
+    const result = await postJSON({ action: 'deleteElecBill', periodLabel: String(b.periodLabel).trim(), rowHint: String(b.id) });
+    if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認刪除成功');
+    showToast('已刪除 🗑️');
+    if (editingElecBill_ && editingElecBill_.rowHint === String(b.id)) resetElecBillForm_();
+    loadElecBills();
+  } catch (err) {
+    alert('刪除失敗（資料未變動）：' + elecErrMsg_(err));
+  }
+}
 function elecFmtNum_(v, digits) {
   if (v === '' || v === null || v === undefined || isNaN(Number(v))) return '—';
   const f = Math.pow(10, digits === undefined ? 1 : digits);
@@ -5127,6 +5173,7 @@ async function loadElecBills() {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getElecBills&limit=10`, { cache: 'no-store' });
     const bills = await res.json();
     if (!bills.length || bills.error) { area.innerHTML = '還沒有任何帳單資料'; return; }
+    elecBillsCache_ = bills;
     area.className = '';
     area.style.textAlign = 'left';
     const stat = (label, value, unit) => `
@@ -5155,6 +5202,10 @@ async function loadElecBills() {
         </div>
         ${adj.length ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:6px;">${adj.join('　·　')}</div>` : ''}
         ${b.note ? `<div style="font-size:11.5px;color:var(--ink-soft);margin-top:4px;">📝 ${escapeHtml(String(b.note))}</div>` : ''}
+        <div style="margin-top:8px;display:flex;gap:8px;">
+          <button class="gen-btn" style="flex:1;" onclick="editElecBill('${escapeHtml(String(b.id))}')">✎ 編輯</button>
+          <button class="gen-btn" style="flex:1;" onclick="deleteElecBill('${escapeHtml(String(b.id))}')">🗑 刪除</button>
+        </div>
         ${hasEst ? `
         <div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--input-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
           <div style="font-size:12px;color:var(--ink-soft);">系統估算　${elecFmtNum_(b.estKwh)} 度 ／ ${elecFmtNum_(b.estFlowFee, 0)} 元</div>
@@ -5180,26 +5231,28 @@ async function submitElecBill() {
   }
   btn.disabled = true;
   const originalText = btn.textContent;
-  btn.textContent = '登打中…';
+  btn.textContent = editingElecBill_ ? '更新中…' : '登打中…';
   try {
+    const isEditBill = !!editingElecBill_;
     const result = await postJSON({
-      action: 'addElecBill', periodLabel, billedKwh: Number(billedKwh), flowFee: Number(flowFee),
+      action: isEditBill ? 'updateElecBill' : 'addElecBill',
+      origLabel: isEditBill ? editingElecBill_.label : undefined, rowHint: isEditBill ? editingElecBill_.rowHint : undefined,
+      note: isEditBill ? editingElecBill_.note : undefined,
+      periodLabel, billedKwh: Number(billedKwh), flowFee: Number(flowFee),
       publicFee: Number(document.getElementById('elecBillPublicFee').value) || 0,
       savingReward: Number(document.getElementById('elecBillSavingReward').value) || 0,
       prevBalance: Number(document.getElementById('elecBillPrevBalance').value) || 0,
       totalDue: Number(totalDue)
     });
-    if (result && result.error) throw new Error(result.error);
-    showToast('帳單登打完成 🎉');
-    ['elecBillPeriodLabel', 'elecBillKwh', 'elecBillFlowFee', 'elecBillPublicFee', 'elecBillSavingReward', 'elecBillPrevBalance', 'elecBillTotalDue'].forEach(id => {
-      document.getElementById(id).value = '';
-    });
+    if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認成功');
+    showToast(isEditBill ? '帳單已更新 ✅' : '帳單登打完成 🎉');
+    resetElecBillForm_();
     loadElecBills();
   } catch (err) {
     alert('登打失敗：' + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = originalText;
+    btn.textContent = editingElecBill_ ? '更新這筆帳單' : '登打這筆帳單';
   }
 }
 async function loadElecPrediction() {
@@ -6930,9 +6983,9 @@ function ticketWrapSpendHtml(year) {
 function ticketCardInfo(t) {
   const meta = t.ticketMeta || {};
   const fields = t.fields || {};
-  const title = meta.showName || fields.showName || fields.title || fields.exhibitName || fields.tourName || t.text || '未命名紀錄';
+  const title = fields.showName || fields.title || fields.exhibitName || fields.tourName || meta.showName || t.text || '未命名紀錄';
   const performer = fields.artist || fields.cast || fields.starring || fields.guests || fields.director || meta.artist || '';
-  const venue = String(meta.venue || fields.venue || '').trim();
+  const venue = String(fields.venue || meta.venue || '').trim();
   let address = String(fields.venueAddress || fields.address || meta.address || meta.venueAddress || '').trim();
   if (address && venue && address.toLowerCase() === venue.toLowerCase()) address = '';
   const seat = fields.seat || fields.seatNo || fields.seatNumber || '';
@@ -6995,7 +7048,7 @@ function renderTicketWall() {
       card.className = 'ticket-card';
       card.dataset.entryId = t.id;
       // 點擊卡片：沿用既有「跳到當天紀錄」功能，那裡本來就有完整的票根詳細內容、編輯與刪除。
-      card.onclick = () => jumpToDate(t.date);
+      card.onclick = () => openTicketFromWall_(t);
       card.innerHTML = `
         <div class="ti-image">
           ${imgUrl ? `<img src="${imgUrl}" loading="lazy" alt="">` : `<div class="ti-placeholder">${catIcon(t.category)}</div>`}
@@ -7783,6 +7836,39 @@ function renderStatsDayDetail() {
   document.getElementById('statsDayDetailBody').innerHTML = bodyHtml;
   document.getElementById('statsDayDetailJumpBtn').onclick = () => jumpToDate(ds);
   card.style.display = 'block';
+}
+// 從票根牆點進該場演出：記住來源，頁面頂端顯示「回票根牆」，編輯存檔後也會自動回到票根牆
+let wallReturn_ = false;
+function openTicketFromWall_(t) {
+  jumpToDate(t.date);
+  wallReturn_ = true;
+  showWallReturnBar_();
+  setTimeout(() => {
+    const el = document.querySelector('[data-entry-id="' + t.id + '"]');
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 600);
+}
+function showWallReturnBar_() {
+  let bar = document.getElementById('wallReturnBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'wallReturnBar';
+    bar.style.cssText = 'position:sticky;top:0;z-index:30;padding:8px 0;';
+    bar.innerHTML = '<button class="gen-btn" style="width:100%;" onclick="backToTicketWall_()">← 回票根牆</button>';
+    const page = document.getElementById('page-log');
+    page.insertBefore(bar, page.firstChild);
+  }
+  bar.style.display = 'block';
+}
+function hideWallReturnBar_() {
+  const bar = document.getElementById('wallReturnBar');
+  if (bar) bar.style.display = 'none';
+  wallReturn_ = false;
+}
+function backToTicketWall_() {
+  if (editingEntryId) cancelEditEntry();
+  hideWallReturnBar_();
+  switchTab('page-tickets');
 }
 function jumpToDate(ds) {
   const [y, m, d] = ds.split('-').map(Number);
