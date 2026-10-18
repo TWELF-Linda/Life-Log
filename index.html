@@ -1639,6 +1639,20 @@
       <div class="tool-desc" style="margin-top:8px;">首頁的句子會自然輪替：雙數日顯示你收藏的名言（依收藏順序逐句輪流），單數日顯示每日鼓勵語。</div>
     </div>
     <div class="card">
+      <div class="field-label" style="margin-top:0;cursor:pointer;" onclick="toggleQuoteBatch()">📥 批次匯入名言 <span id="quoteBatchArrow" style="font-size:12px;color:var(--ink-soft);">▼ 展開</span></div>
+      <div id="quoteBatchBox" style="display:none;">
+        <div class="tool-desc" style="margin-bottom:8px;">一行一句，直接貼上即可。要附作者／出處，用「——」、「｜」、「|」或 Tab（從 Google Sheets 兩欄複製貼上）隔開，例如：<br>只要心中有愛，就能找到方向 —— 無名<br>開頭的編號（1. 2、）與「」會自動去掉。重複的句子與超過 300 字的會自動略過。</div>
+        <textarea id="quoteBatchInput" rows="8" placeholder="每行一句…" oninput="parseQuoteBatch()"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <label class="gen-btn" style="flex:1;text-align:center;margin:0;cursor:pointer;">選擇文字檔 (.txt / .csv)
+            <input type="file" id="quoteBatchFile" accept=".txt,.csv,.tsv,text/plain" style="display:none;" onchange="loadQuoteBatchFile(this)">
+          </label>
+        </div>
+        <div id="quoteBatchPreview" style="margin-top:8px;"></div>
+        <button class="submit-btn" id="quoteBatchBtn" style="width:100%;margin-top:10px;display:none;" onclick="submitQuoteBatch()">匯入</button>
+      </div>
+    </div>
+    <div class="card">
       <div class="field-label" style="margin-top:0;">📚 我的名言佳句（<span id="quoteCount">0</span>）</div>
       <div id="quoteListArea"><div class="empty-state">載入中…</div></div>
     </div>
@@ -7997,6 +8011,94 @@ async function submitQuote() {
   } finally {
     btn.disabled = false;
     btn.textContent = originalText;
+  }
+}
+// ---------- 批次匯入名言 ----------
+let quoteBatchItems_ = [];
+function toggleQuoteBatch() {
+  const box = document.getElementById('quoteBatchBox');
+  const open = box.style.display === 'none';
+  box.style.display = open ? 'block' : 'none';
+  document.getElementById('quoteBatchArrow').textContent = open ? '▲ 收合' : '▼ 展開';
+}
+function parseQuoteLine_(raw) {
+  let line = String(raw || '').replace(/\r/g, '').trim();
+  if (!line) return null;
+  line = line.replace(/^\s*(?:\d{1,4}\s*[.、．)）]|[-*•・●○▪■□]+)\s*/, ''); // 開頭編號／項目符號
+  let text = line, author = '';
+  const tab = line.split('\t');
+  if (tab.length >= 2) { text = tab[0]; author = tab.slice(1).join(' '); }
+  else {
+    const m = line.match(/^(.*?)\s*(?:——|—|－－|--|｜|\|)\s*([^—｜|]{1,60})$/);
+    if (m && m[1].trim()) { text = m[1]; author = m[2]; }
+  }
+  const strip = v => String(v || '').trim().replace(/^[「『"“]+/, '').replace(/[」』"”]+$/, '').trim();
+  text = strip(text); author = strip(author).replace(/^[-–—~～]+\s*/, '');
+  text = text.replace(/\s*(?:——|—|－－|--)\s*$/, '').trim();
+  if (!text) return null;
+  return { text, author };
+}
+function parseQuoteBatch() {
+  const raw = document.getElementById('quoteBatchInput').value;
+  const seen = {};
+  quoteBatchItems_ = [];
+  let dup = 0, tooLong = 0;
+  raw.split('\n').forEach(l => {
+    const it = parseQuoteLine_(l);
+    if (!it) return;
+    if (it.text.length > 300) { tooLong++; return; }
+    if (seen[it.text]) { dup++; return; }
+    seen[it.text] = true;
+    quoteBatchItems_.push(it);
+  });
+  const prev = document.getElementById('quoteBatchPreview');
+  const btn = document.getElementById('quoteBatchBtn');
+  if (!quoteBatchItems_.length) {
+    prev.innerHTML = raw.trim() ? '<div class="empty-state" style="padding:6px 0;">沒有解析到可匯入的句子</div>' : '';
+    btn.style.display = 'none';
+    return;
+  }
+  const show = quoteBatchItems_.slice(0, 8).map(q =>
+    `<div style="font-size:12.5px;line-height:1.6;color:var(--ink);padding:4px 0;border-bottom:1px solid var(--line);">「${escapeHtml(q.text)}」${q.author ? `<span style="color:var(--ink-soft);"> —— ${escapeHtml(q.author)}</span>` : ''}</div>`).join('');
+  prev.innerHTML = `<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:4px;">解析到 <b>${quoteBatchItems_.length}</b> 句${dup ? `，貼上內容中重複 ${dup} 句` : ''}${tooLong ? `，超過 300 字 ${tooLong} 句（將略過）` : ''}${quoteBatchItems_.length > 8 ? '（預覽前 8 句）' : ''}</div>${show}`;
+  btn.style.display = 'block';
+  btn.textContent = `匯入 ${quoteBatchItems_.length} 句`;
+}
+function loadQuoteBatchFile(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const ta = document.getElementById('quoteBatchInput');
+    ta.value = (ta.value ? ta.value.replace(/\s+$/, '') + '\n' : '') + String(reader.result || '').replace(/^\uFEFF/, '');
+    input.value = '';
+    parseQuoteBatch();
+  };
+  reader.readAsText(f, 'UTF-8');
+}
+async function submitQuoteBatch() {
+  const btn = document.getElementById('quoteBatchBtn');
+  if (btn.disabled || !quoteBatchItems_.length) return;
+  btn.disabled = true;
+  const label = btn.textContent;
+  btn.textContent = '匯入中…';
+  try {
+    let added = 0, dup = 0, tooLong = 0;
+    for (let i = 0; i < quoteBatchItems_.length; i += 500) {
+      const result = await postJSON({ action: 'addQuotesBatch', items: quoteBatchItems_.slice(i, i + 500) }, 60000);
+      if (!result || result.error || result.ok === false) throw new Error((result && (result.error || result.message)) || '後端沒有確認匯入成功');
+      added += result.added || 0; dup += result.duplicates || 0; tooLong += result.tooLong || 0;
+    }
+    showToast(`已匯入 ${added} 句 📜` + (dup ? `（略過重複 ${dup} 句）` : ''));
+    document.getElementById('quoteBatchInput').value = '';
+    parseQuoteBatch();
+    loadQuotesPage();
+    loadTodayQuote();
+  } catch (err) {
+    alert('匯入失敗：' + err.message + '（若有部分已匯入，重新匯入時重複的句子會自動略過）');
+    btn.textContent = label;
+  } finally {
+    btn.disabled = false;
   }
 }
 async function deleteQuoteItem(id) {
