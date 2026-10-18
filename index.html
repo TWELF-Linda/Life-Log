@@ -3807,7 +3807,12 @@ async function loadTodayOverview() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getTodayOverview`, { cache: 'no-store' });
     const d = await res.json();
-    if (d.error) return;
+    renderTodayOverview(d);
+  } catch (err) {}
+}
+function renderTodayOverview(d) {
+  try {
+    if (!d || d.error) return;
     const card = document.getElementById('todayOverviewCard');
     const row = document.getElementById('tovRow');
     const moodObj = MOODS.find(m => String(m.v) === String(d.mood));
@@ -3848,6 +3853,15 @@ async function loadHomeMemoryPreview() {
     const ds = fmtDate(new Date());
     const res = await fetch(`${CONFIG.GAS_URL}?action=getOnThisDay&date=${ds}`, { cache: 'no-store' });
     const years = await res.json();
+    renderMemoryPreview(years);
+  } catch (err) {
+    card.style.display = 'none';
+  }
+}
+function renderMemoryPreview(years) {
+  const card = document.getElementById('memoryPreviewCard');
+  try {
+    if (!Array.isArray(years)) { card.style.display = 'none'; return; }
     const body = document.getElementById('memoryPreviewBody');
     const btn = document.getElementById('memoryPreviewBtn');
     const title = document.getElementById('memoryPreviewTitle');
@@ -3881,14 +3895,17 @@ function collapseQuickAddCard() {
   document.getElementById('quickAddCard').style.display = 'none';
   document.getElementById('ctaRecordBtn').style.display = 'block';
 }
-async function refresh() {
+async function refresh(opts) {
+  opts = opts || {};
   const isToday = fmtDate(currentDate) === fmtDate(new Date());
   document.getElementById('dateLabel').textContent = heroDateLabel(currentDate);
   document.getElementById('dateJump').value = fmtDate(currentDate);
   document.getElementById('homeHeroSub').textContent = heroGreetingText(currentDate, isToday);
   document.getElementById('backTodayBtn').style.display = isToday ? 'none' : 'inline-block';
-  loadHomeMemoryPreview();
+  if (opts.labelsOnly) return;
+  if (!opts.fromBundle) loadHomeMemoryPreview();
   if (!checkConfig()) return;
+  if (opts.fromBundle) { ric(() => { loadSummary(); loadWeekSummary(); loadDailyBlessing(); }); return; }
   // 效能優化：「今天的紀錄」是首頁最重要的內容，先單獨載入讓它最快出現；
   // 今日總結／週摘要不影響這件事，改成閒置時再一起平行載入（原本是三個 await 排隊、等於等三次網路來回）。
   await loadEntries();
@@ -3903,13 +3920,18 @@ async function loadEntries() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
     const entries = await res.json();
-    loadedEntries = entries;
-    entriesFilter = 'all'; // 換日期時重置篩選，避免忘記篩選條件、以為某天沒有紀錄
-    renderEntriesFilterRow();
-    renderEntriesList();
+    if (!Array.isArray(entries)) throw new Error((entries && entries.error) || '資料格式不正確');
+    applyEntries_(entries);
+    if (ds === fmtDate(new Date())) patchHomeCache_({ entries: entries });
   } catch (err) {
     listEl.innerHTML = '<div class="empty-state">讀取失敗：' + err.message + '</div>';
   }
+}
+function applyEntries_(entries) {
+  loadedEntries = entries;
+  entriesFilter = 'all'; // 換日期時重置篩選，避免忘記篩選條件、以為某天沒有紀錄
+  renderEntriesFilterRow();
+  renderEntriesList();
 }
 function renderEntriesFilterRow() {
   const row = document.getElementById('entriesFilterRow');
@@ -7912,6 +7934,15 @@ async function loadTodayQuote() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getTodayQuote&date=${fmtDate(new Date())}`, { cache: 'no-store' });
     const r = await res.json();
+    renderTodayQuote(r);
+  } catch (err) {}
+}
+function renderTodayQuote(r) {
+  const icon = document.getElementById('affirmationIcon');
+  const textEl = document.getElementById('affirmationText');
+  const authorEl = document.getElementById('affirmationAuthor');
+  const btn = document.getElementById('affirmationRefreshBtn');
+  try {
     if (r && r.isQuoteDay && r.quote) {
       icon.textContent = '📜';
       textEl.textContent = '「' + r.quote.text + '」';
@@ -7998,18 +8029,77 @@ window.fetch = function(url, options) {
   return _rawFetch(url, options);
 };
 
+const HOME_CACHE_KEY = 'lifelog_home_bundle_v1';
+function readHomeCache_() {
+  try {
+    const c = JSON.parse(localStorage.getItem(HOME_CACHE_KEY) || 'null');
+    if (c && c.today === fmtDate(new Date())) return c;
+  } catch (err) {}
+  return null;
+}
+function writeHomeCache_(b) {
+  try { localStorage.setItem(HOME_CACHE_KEY, JSON.stringify(b)); } catch (err) {}
+}
+function patchHomeCache_(partial) {
+  try {
+    const c = readHomeCache_();
+    if (c) writeHomeCache_(Object.assign({}, c, partial));
+  } catch (err) {}
+}
+// 把首頁資料套到畫面上；fromCache=true 時是「先秒開舊資料」，之後還會被最新資料覆蓋
+function applyHomeBundle_(b, fromCache) {
+  if (Array.isArray(b.categories) && b.categories.length) applyCategories(b.categories);
+  if (Array.isArray(b.tabOrder) && b.tabOrder.length) renderTabbarButtons(b.tabOrder);
+  if (b.quote) renderTodayQuote(b.quote);
+  if (b.overview) renderTodayOverview(b.overview);
+  if (Array.isArray(b.onThisDay) && fmtDate(currentDate) === fmtDate(new Date())) renderMemoryPreview(b.onThisDay);
+  if (Array.isArray(b.entries) && fmtDate(currentDate) === b.date) applyEntries_(b.entries);
+}
+async function loadHomeBundle_() {
+  try {
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getHomeBundle&date=${fmtDate(currentDate)}`, { cache: 'no-store' });
+    const b = await res.json();
+    if (b && b.error === 'AUTH_REQUIRED') {
+      // 記住的憑證已失效：清掉並回到登入畫面
+      try { localStorage.removeItem(REMEMBER_TOKEN_KEY); localStorage.removeItem(HOME_CACHE_KEY); } catch (err) {}
+      APP_TOKEN = '';
+      showLockScreen();
+      return;
+    }
+    if (!b || b.ok !== true) throw new Error('bundle 不可用（後端可能還沒更新）');
+    applyHomeBundle_(b, false);
+    if (b.date === b.today) writeHomeCache_(b);
+    refresh({ fromBundle: true });
+  } catch (err) {
+    // 後備：後端還沒部署新版時，退回原本的多請求流程
+    loadSavedTabOrder();
+    loadTodayQuote();
+    loadTodayOverview();
+    loadCategories().then(refresh);
+  }
+}
 function startApp() {
   // 先切回上次瀏覽的頁面，不用等下面這些網路請求跑完——不然畫面會先閃一下 HTML 預設的
   // 首頁（page-log），等資料回來才跳到原本的頁面，使用者會看到「先回首頁再跳回去」的閃爍。
   restoreLastTab_();
   renderTabbarButtons(DEFAULT_TAB_ORDER);
-  loadSavedTabOrder();
   loadTodayAffirmation();
-  loadTodayQuote();
-  loadTodayOverview();
   renderOfflineBadge();
   flushOfflineQueue();
-  loadCategories().then(refresh);
+  // 先用上次存的首頁資料「秒開」畫面（只限今天、且目前看的就是今天），再用一個合併請求取得最新資料
+  if (checkConfig()) {
+    refresh({ labelsOnly: true });
+    const cached = readHomeCache_();
+    if (cached && fmtDate(currentDate) === cached.today) {
+      try { cached.date = cached.today; applyHomeBundle_(cached, true); } catch (err) {}
+    }
+    loadHomeBundle_();
+  } else {
+    loadSavedTabOrder();
+    loadTodayQuote();
+    loadTodayOverview();
+    loadCategories().then(refresh);
+  }
 }
 function restoreLastTab_() {
   if (location.hash === '#quick') { quickRecord(); return; }
@@ -8036,20 +8126,12 @@ async function initAuth() {
   // 曾經導致鎖定畫面沒跳出來、但讀取/儲存資料全部失敗的 bug。
   const remembered = localStorage.getItem(REMEMBER_TOKEN_KEY) || '';
   if (remembered) {
-    try {
-      const res = await _rawFetch(`${CONFIG.GAS_URL}?action=getCategories&token=${encodeURIComponent(remembered)}`, { cache: 'no-store' });
-      const result = await res.json();
-      if (result && result.error === 'AUTH_REQUIRED') {
-        localStorage.removeItem(REMEMBER_TOKEN_KEY); // 記住的憑證已失效，清掉並要求重新登入
-      } else {
-        APP_TOKEN = remembered;
-        PRELOADED_CATEGORIES = result; // 驗證時已經拿到最新類別了，startApp() 裡不用再打一次
-        startApp();
-        return;
-      }
-    } catch (err) {
-      // 網路問題：不擅自放行，但也先別清掉記住的憑證，等連線恢復再試
-    }
+    // 效能：不再先「單獨驗證一次」才開始載入（那會讓整個首頁多等一趟網路來回）。
+    // 有記住的憑證就直接進 App 並行載入資料；憑證若已失效，第一個請求會回 AUTH_REQUIRED，
+    // loadHomeBundle_ 會清掉憑證並跳出登入畫面。沒有憑證的人仍然一定先看到鎖定畫面。
+    APP_TOKEN = remembered;
+    startApp();
+    return;
   }
   showLockScreen();
 }
