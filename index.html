@@ -771,6 +771,8 @@
     background-position:calc(100% - 19px) 52%,calc(100% - 14px) 52%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;
   }
   .gym-form-row{display:flex;gap:8px;}
+  .fit-week-nav{background:var(--card);border:1px solid var(--line);color:var(--ink);width:34px;height:34px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer;flex:none;}
+  .fit-week-nav[disabled]{opacity:.3;cursor:default;}
 
   /* ---- 股票 ---- */
   .stock-form-row{display:flex;gap:8px;margin-bottom:8px;}
@@ -1837,7 +1839,6 @@
   </div>
 
   <div class="page" id="page-fit">
-    <div id="streakBadgeArea"></div>
     <div id="restBannerArea"></div>
 
     <div id="fitSubHome">
@@ -1885,11 +1886,20 @@
           <input type="text" id="exerciseVideoUrlInput" placeholder="貼上 YouTube 影片網址" inputmode="url">
           <button class="submit-btn" id="exerciseVideoSubmitBtn" style="width:100%;margin-top:8px;" onclick="submitExerciseVideo()">＋ 抓取名稱並加入紀錄</button>
         </div>
-        <div id="exerciseVideoList" style="margin-top:10px;"></div>
       </div>
       <div class="card">
-        <div class="field-label" style="margin-top:0;">🏋️ 最近一次</div>
-        <div id="fitHomeLastSet" class="empty-state" style="padding:6px 0;">還沒有重訓紀錄</div>
+        <div class="field-label" style="margin-top:0;">📅 運動紀錄</div>
+        <div style="display:flex;align-items:center;gap:8px;margin:4px 0 6px;">
+          <button class="fit-week-nav" id="fitWeekPrev" aria-label="上一週" onclick="shiftFitWeek_(-1)">‹</button>
+          <div id="fitWeekRange" style="flex:1;text-align:center;font-size:13.5px;font-weight:700;color:var(--ink);">本週</div>
+          <button class="fit-week-nav" id="fitWeekNext" aria-label="下一週" onclick="shiftFitWeek_(1)" disabled>›</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px;">
+          <button class="today-btn" id="fitWeekToday" onclick="jumpFitWeek_(null)" style="display:none;">回到本週</button>
+          <input type="date" id="fitWeekPick" aria-label="跳到指定日期所在的那一週" onclick="openNativeDatePicker(this)" onchange="jumpFitWeek_(this.value)" style="background:var(--input-bg);border:1.5px solid var(--line);border-radius:10px;padding:5px 8px;font-size:12px;color:var(--ink);font-family:inherit;">
+        </div>
+        <div id="fitWeekSummary" style="font-size:12px;color:var(--ink-soft);text-align:center;margin-bottom:6px;"></div>
+        <div id="fitWeekLog"><div class="empty-state" style="padding:10px 0;">載入中…</div></div>
       </div>
       <div class="card">
         <div class="field-label" style="margin-top:0;">⚖️ 體重</div>
@@ -3391,13 +3401,12 @@ function showFitHome() {
 // 健身首頁摘要：本週目標進度、最近一次重訓、目前體重——都是既有資料，只是換一種簡化的方式先呈現
 async function loadFitHome() {
   try {
-    const [weekRes, setRes, weightRes] = await Promise.all([
+    loadFitWeekLog();
+    const [weekRes, weightRes] = await Promise.all([
       fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`, { cache: 'no-store' }),
-      fetch(`${CONFIG.GAS_URL}?action=getLatestGymSet`, { cache: 'no-store' }),
       fetch(`${CONFIG.GAS_URL}?action=getBodyStats`, { cache: 'no-store' })
     ]);
     const week = await weekRes.json();
-    const lastSet = await setRes.json();
     const weightList = await weightRes.json();
 
     if (week.target) {
@@ -3408,19 +3417,6 @@ async function loadFitHome() {
       document.getElementById('fitHomeGoalLabel').textContent = '本週運動天數';
       document.getElementById('fitHomeGoalValue').textContent = String(week.daysThisWeek || 0);
       document.getElementById('fitHomeProgressFill').style.width = '0%';
-    }
-
-    const lastSetArea = document.getElementById('fitHomeLastSet');
-    if (lastSet && lastSet.exercise) {
-      lastSetArea.className = '';
-      lastSetArea.innerHTML = `
-        <div class="fit-home-last-set-name">${escapeHtml(lastSet.exercise)}</div>
-        <div class="fit-home-last-set-detail">${lastSet.weight ? lastSet.weight + 'kg' : ''}${lastSet.reps ? ' × ' + lastSet.reps : ''}${lastSet.sets ? ' × ' + lastSet.sets : ''}${lastSet.date ? '　' + lastSet.date : ''}</div>
-      `;
-    } else {
-      lastSetArea.className = 'empty-state';
-      lastSetArea.style.padding = '6px 0';
-      lastSetArea.textContent = '還沒有重訓紀錄';
     }
 
     const weightArea = document.getElementById('fitHomeWeight');
@@ -5309,8 +5305,6 @@ async function loadStreak() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getStreak`, { cache: 'no-store' });
     const s = await res.json();
-    const badgeArea = document.getElementById('streakBadgeArea');
-    badgeArea.innerHTML = s.streak > 0 ? `<div class="streak-badge">🔥 連續運動 ${s.streak} 天</div>` : '';
     const restArea = document.getElementById('restBannerArea');
     restArea.innerHTML = s.suggestRest ? `<div class="rest-banner">🌿 ${escapeHtml(s.restMessage)}</div>` : '';
     if (STREAK_MILESTONES.includes(s.streak) && !celebratedStreaks.has(s.streak)) {
@@ -6819,48 +6813,101 @@ async function deleteGymLogItem(id) {
 }
 
 /* ---- 居家跟練影片（YouTube 網址 → 自動抓標題） ---- */
-async function loadExerciseVideos() {
+// 本週（週一～週日）運動紀錄：居家跟練影片、手動記錄的運動、重訓每組、健身清單完成紀錄，統一一份。
+// 每週一自動從空白開始（後端依週一～週日計算）。
+let fitWeekLogSeq_ = 0;
+let fitWeekAnchor_ = null;   // null = 本週；否則是要查看那一週裡的任一天（YYYY-MM-DD）
+let fitWeekShown_ = '';      // 目前畫面顯示的那一週的週一
+function shiftFitWeek_(dir) {
+  const cur = fitWeekShown_ || getMondayStr(new Date());
+  const [y, m, d] = cur.split('-').map(Number);
+  const nd = new Date(y, m - 1, d + dir * 7);
+  jumpFitWeek_(fmtDate(nd));
+}
+function jumpFitWeek_(ds) {
+  const thisMonday = getMondayStr(new Date());
+  if (!ds || !/^\d{4}-\d{2}-\d{2}$/.test(ds)) { fitWeekAnchor_ = null; }
+  else {
+    const [y, m, d] = ds.split('-').map(Number);
+    // 不能看未來的週：超過本週就回到本週
+    fitWeekAnchor_ = getMondayStr(new Date(y, m - 1, d)) >= thisMonday ? null : ds;
+  }
+  const pick = document.getElementById('fitWeekPick'); if (pick) pick.value = '';
+  loadFitWeekLog();
+}
+function loadExerciseVideos() { return loadFitWeekLog(); } // 舊呼叫點沿用，改成刷新本週總覽
+async function loadFitWeekLog() {
+  const mySeq = ++fitWeekLogSeq_;
   try {
-    let videos = null;
-    try {
-      // 最近 30 天的跟練影片（包含補記昨天、前天或更早日期的紀錄）
-      const res = await fetch(`${CONFIG.GAS_URL}?action=getExerciseVideos&days=30`, { cache: 'no-store' });
-      const data = await res.json();
-      if (Array.isArray(data)) videos = data;
-    } catch (e) {}
-    if (!videos) {
-      // 後端還沒更新到新版時，退回只看今天
-      const ds = fmtDate(new Date());
-      const res = await fetch(`${CONFIG.GAS_URL}?action=getEntries&date=${ds}`, { cache: 'no-store' });
-      const entries = await res.json();
-      videos = (entries || []).filter(e => e.category === '運動健身' && e.fields && e.fields.videoUrl);
-    }
-    renderExerciseVideoList(videos);
-  } catch (err) {}
+    const res = await fetch(`${CONFIG.GAS_URL}?action=getWeekExerciseLog${fitWeekAnchor_ ? '&date=' + fitWeekAnchor_ : ''}`, { cache: 'no-store' });
+    const data = await res.json();
+    if (mySeq !== fitWeekLogSeq_) return; // 有更新的請求，丟掉這份舊結果
+    if (!data || !Array.isArray(data.items)) throw new Error('bad');
+    renderFitWeekLog_(data);
+  } catch (err) {
+    const area = document.getElementById('fitWeekLog');
+    if (area && !area.querySelector('.gym-log-item')) area.innerHTML = '<div class="empty-state" style="padding:10px 0;">暫時讀不到本週紀錄（記得更新 Apps Script 並重新部署）</div>';
+  }
 }
-function exerciseVideoDateLabel_(ds) {
+function fitWeekDateLabel_(ds) {
   const m = String(ds || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return '';
+  if (!m) return ds || '';
   const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-  const today = fmtDate(new Date());
   const y = new Date(); y.setDate(y.getDate() - 1);
-  const wk = '日一二三四五六'[d.getDay()];
-  const base = `${Number(m[2])}/${Number(m[3])}（${wk}）`;
-  return ds === today ? '今天 ' + base : (ds === fmtDate(y) ? '昨天 ' + base : base);
+  const base = `${Number(m[2])}/${Number(m[3])}（週${'日一二三四五六'[d.getDay()]}）`;
+  return ds === fmtDate(new Date()) ? '今天 ' + base : (ds === fmtDate(y) ? '昨天 ' + base : base);
 }
-function renderExerciseVideoList(list) {
-  const area = document.getElementById('exerciseVideoList');
+function renderFitWeekLog_(data) {
+  const area = document.getElementById('fitWeekLog');
   if (!area) return;
-  if (!list.length) { area.innerHTML = '<div class="empty-state" style="padding:10px 0;">最近 30 天還沒有跟練影片紀錄</div>'; return; }
-  area.innerHTML = list.map(e => `
-    <div class="gym-log-item">
-      <a href="${escapeHtml(e.fields.videoUrl)}" target="_blank" rel="noopener" style="flex:1;color:var(--ink);text-decoration:none;min-width:0;">
-        <div style="font-size:11.5px;color:var(--ink-soft);margin-bottom:2px;">${escapeHtml(exerciseVideoDateLabel_(e.date))}</div>
-        <span class="gl-ex">▶️ ${escapeHtml(e.fields.videoTitle || '跟練影片')}</span>
-      </a>
-      <button class="gl-del" onclick="deleteExerciseVideo('${e.id}')">✕</button>
-    </div>
-  `).join('');
+  const short = s => { const m = String(s).split('-'); return Number(m[1]) + '/' + Number(m[2]); };
+  fitWeekShown_ = data.weekStart || '';
+  const isCur = (typeof data.isCurrentWeek === 'boolean') ? data.isCurrentWeek : (data.weekStart === getMondayStr(new Date()));
+  const lastMonday = (() => { const [y, m, d] = getMondayStr(new Date()).split('-').map(Number); return fmtDate(new Date(y, m - 1, d - 7)); })();
+  const tag = isCur ? '（本週）' : (data.weekStart === lastMonday ? '（上週）' : '');
+  const rng = document.getElementById('fitWeekRange');
+  if (rng) rng.textContent = `${short(data.weekStart)} ～ ${short(data.weekEnd)}${tag}`;
+  const nextBtn = document.getElementById('fitWeekNext'); if (nextBtn) nextBtn.disabled = isCur;
+  const todayBtn = document.getElementById('fitWeekToday'); if (todayBtn) todayBtn.style.display = isCur ? 'none' : 'inline-block';
+  const sum = document.getElementById('fitWeekSummary');
+  const dayCount = new Set(data.items.map(it => it.date)).size;
+  if (sum) sum.textContent = data.items.length
+    ? `這週運動 ${dayCount} 天・${data.items.length} 筆紀錄${isCur ? '（週一～週日，每週一重新計算）' : ''}`
+    : '';
+  if (!data.items.length) { area.innerHTML = `<div class="empty-state" style="padding:10px 0;">${isCur ? '這週還沒有運動紀錄' : '這一週沒有運動紀錄'}</div>`; return; }
+  const days = [];
+  const byDay = {};
+  data.items.forEach(it => { if (!byDay[it.date]) { byDay[it.date] = []; days.push(it.date); } byDay[it.date].push(it); });
+  const row = it => {
+    const del = it.deletable ? `<button class="gl-del" onclick="deleteWeekLogItem_('${it.kind}','${it.id}')">✕</button>` : '';
+    if (it.kind === 'video') {
+      return `<div class="gym-log-item"><a href="${escapeHtml(it.url)}" target="_blank" rel="noopener" style="flex:1;min-width:0;color:var(--ink);text-decoration:none;"><span class="gl-ex">▶️ ${escapeHtml(it.title)}</span></a>${del}</div>`;
+    }
+    const icon = it.kind === 'gym' ? '🏋️' : (it.kind === 'workout' ? '⌚' : (it.kind === 'check' ? '✅' : '📝'));
+    const detail = it.detail ? `<span class="gl-detail">${escapeHtml(it.detail)}</span>` : '';
+    return `<div class="gym-log-item"><div style="flex:1;min-width:0;"><span class="gl-ex">${icon} ${escapeHtml(it.title)}</span>${detail}</div>${del}</div>`;
+  };
+  area.innerHTML = days.map(ds => `
+    <div class="gym-log-day" style="margin-top:6px;">
+      <div class="gl-date">${escapeHtml(fitWeekDateLabel_(ds))}</div>
+      ${byDay[ds].map(row).join('')}
+    </div>`).join('');
+}
+async function deleteWeekLogItem_(kind, id) {
+  if (kind === 'gym') return deleteGymLogItem(id);
+  if (kind === 'video') return deleteExerciseVideo(id);
+  if (!(await showConfirm('刪除這筆運動紀錄？'))) return;
+  try {
+    const result = await postJSON({ action: 'deleteEntry', id });
+    if (result && result.error) throw new Error(result.error);
+    showToast('已刪除 🗑️');
+    loadFitWeekLog();
+    loadFitHome();
+    loadWeekProgress();
+    loadStreak();
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
 }
 async function submitManualWorkout() {
   const btn = document.getElementById('workoutManualBtn');
@@ -6964,6 +7011,7 @@ async function submitWeight() {
   }
 }
 async function loadWeekProgress() {
+  loadFitWeekLog();
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getWeekProgress`, { cache: 'no-store' });
     const p = await res.json();
