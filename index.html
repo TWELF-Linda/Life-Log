@@ -413,6 +413,13 @@
     background:rgba(0,0,0,.55);color:#fff;font-size:11px;line-height:1;cursor:pointer;
     display:flex;align-items:center;justify-content:center;padding:0;
   }
+  .photo-move{
+    position:absolute;bottom:4px;width:22px;height:22px;border-radius:50%;border:none;
+    background:rgba(0,0,0,.55);color:#fff;font-size:10px;line-height:1;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;padding:0;
+  }
+  .photo-move.l{right:30px;} .photo-move.r{right:4px;}
+  .photo-move[disabled]{opacity:.25;pointer-events:none;}
   #photoGridHint{display:none;margin-top:6px;font-size:12px;color:var(--ink-soft);}
 
   .photo-wall-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
@@ -4346,10 +4353,13 @@ function renderPhotoGrid() {
       ${p.takenToday ? '<span class="photo-badge">今天</span>' : ''}
       <span class="photo-check">${p.selected ? '✅' : '⬜'}</span>
       <button class="photo-remove" onclick="event.stopPropagation();removePendingPhoto(${i})">✕</button>
+      <button class="photo-move l" aria-label="往前移" ${i === 0 ? 'disabled' : ''} onclick="event.stopPropagation();movePendingPhoto(${i},-1)">◀</button>
+      <button class="photo-move r" aria-label="往後移" ${i === pendingPhotos.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation();movePendingPhoto(${i},1)">▶</button>
     </div>
   `).join('');
   const n = pendingPhotos.filter(p => p.selected).length;
-  hint.textContent = n ? `已選 ${n} 張照片會一起存進這則紀錄，點照片可切換要不要上傳` : '目前沒有勾選任何照片，點照片可以勾選';
+  hint.textContent = (n ? `已選 ${n} 張照片會一起存進這則紀錄，點照片可切換要不要上傳` : '目前沒有勾選任何照片，點照片可以勾選') +
+    (pendingPhotos.length > 1 ? '。可用 ◀ ▶ 調整上傳順序' : '');
   hint.style.display = 'block';
   renderExistingPhotoArea();
 }
@@ -4373,19 +4383,39 @@ function renderExistingPhotoArea() {
   grid.innerHTML = editingExistingPhotoUrls.map((u, i) => `
     <div class="photo-wall-item" data-index="${i}">
       <img src="${escapeHtml(u)}" loading="lazy" onclick="openExistingPhotoPreview(${i})">
+      ${i === 0 ? '<span class="photo-badge">封面</span>' : ''}
       <button class="photo-remove" onclick="event.stopPropagation();removeExistingPhoto(${i})">✕</button>
+      <button class="photo-move l" aria-label="往前移" ${i === 0 ? 'disabled' : ''} onclick="event.stopPropagation();moveExistingPhoto(${i},-1)">◀</button>
+      <button class="photo-move r" aria-label="往後移" ${i === editingExistingPhotoUrls.length - 1 ? 'disabled' : ''} onclick="event.stopPropagation();moveExistingPhoto(${i},1)">▶</button>
     </div>
   `).join('');
+  const orderTip = editingExistingPhotoUrls.length > 1 ? '。可用 ◀ ▶ 調整順序，第一張是封面' : '';
   const newCount = pendingPhotos.filter(p => p.selected).length;
   if (copyingFromId) {
     hint.textContent = newCount
       ? `新票根會沿用這 ${editingExistingPhotoUrls.length} 張照片，並新增 ${newCount} 張新照片（原票根的照片不受影響）`
       : `新票根會沿用這 ${editingExistingPhotoUrls.length} 張照片；點 ✕ 只會從新票根移除，不影響原票根`;
+    hint.textContent += orderTip;
     return;
   }
   hint.textContent = newCount
     ? `會保留這 ${editingExistingPhotoUrls.length} 張原本的照片，並新增 ${newCount} 張新照片`
     : `這 ${editingExistingPhotoUrls.length} 張原本的照片會繼續保留，點 ✕ 可以移除不要的`;
+  hint.textContent += orderTip;
+}
+// 調整照片順序：已存在的照片與新上傳的照片各自排序（新上傳的照片一律排在原本的照片後面）。
+// 第一張已存在的照片就是封面（票根牆、相片牆用的那張）。
+function moveExistingPhoto(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= editingExistingPhotoUrls.length) return;
+  const t = editingExistingPhotoUrls[i]; editingExistingPhotoUrls[i] = editingExistingPhotoUrls[j]; editingExistingPhotoUrls[j] = t;
+  renderExistingPhotoArea();
+}
+function movePendingPhoto(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= pendingPhotos.length) return;
+  const t = pendingPhotos[i]; pendingPhotos[i] = pendingPhotos[j]; pendingPhotos[j] = t;
+  renderPhotoGrid();
 }
 // 開啟「原本已存在」照片的預覽，一樣支援左右滑動切換
 function openExistingPhotoPreview(index) {
