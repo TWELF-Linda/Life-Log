@@ -1844,6 +1844,28 @@
         <button class="submit-btn" style="width:100%;margin-top:12px;" onclick="showFitAdvanced('gym')">開始今天訓練</button>
       </div>
       <div class="card">
+        <div class="field-label" style="margin-top:0;">⌚ 快速記錄運動</div>
+        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">戴 Apple Watch 運動完，照手錶上的數字填進來，會算進連續運動天數</div>
+        <div class="gym-form">
+          <div class="record-date-row" data-picker="workoutManual">
+            <div class="opt-chip" data-days-ago="0">今天</div>
+            <div class="opt-chip" data-days-ago="1">昨天</div>
+            <div class="opt-chip" data-days-ago="2">前天</div>
+            <input type="date" aria-label="運動記錄日期" onclick="openNativeDatePicker(this)">
+          </div>
+          <select id="workoutManualType" aria-label="運動類型">
+            <option>跑步</option><option>步行</option><option>健行</option><option>騎車</option>
+            <option>游泳</option><option>瑜伽</option><option>皮拉提斯</option><option>重量訓練</option>
+            <option>HIIT</option><option>舞蹈</option><option>網球</option><option>羽球</option>
+            <option>橢圓機</option><option>划船</option><option>伸展</option><option>其他運動</option>
+          </select>
+          <input type="number" id="workoutManualMin" placeholder="時長（分鐘）" inputmode="numeric" min="1" max="600">
+          <input type="number" id="workoutManualKcal" placeholder="消耗大卡（選填）" inputmode="numeric" min="0" max="5000">
+          <input type="number" id="workoutManualKm" placeholder="距離（公里，選填）" inputmode="decimal" step="0.01" min="0" max="500">
+          <button class="submit-btn" id="workoutManualBtn" style="width:100%;margin-top:8px;" onclick="submitManualWorkout()">＋ 加入運動紀錄</button>
+        </div>
+      </div>
+      <div class="card">
         <div class="field-label" style="margin-top:0;">🎬 居家跟練影片</div>
         <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">貼上 YouTube 網址，自動抓影片名稱加入今天的運動紀錄</div>
         <div class="gym-form">
@@ -5272,6 +5294,7 @@ async function loadFitnessPage() {
   loadFitHome();
   initRecordDatePicker('weight');
   initRecordDatePicker('exerciseVideo');
+  initRecordDatePicker('workoutManual');
   loadExerciseVideos();
 }
 
@@ -6810,6 +6833,35 @@ function renderExerciseVideoList(list) {
       <button class="gl-del" onclick="deleteExerciseVideo('${e.id}')">✕</button>
     </div>
   `).join('');
+}
+async function submitManualWorkout() {
+  const btn = document.getElementById('workoutManualBtn');
+  if (btn.disabled) return;
+  const type = document.getElementById('workoutManualType').value;
+  const mins = Math.round(Number(document.getElementById('workoutManualMin').value));
+  const kcal = Math.round(Number(document.getElementById('workoutManualKcal').value));
+  const km = Math.round(Number(document.getElementById('workoutManualKm').value) * 100) / 100;
+  if (!mins || mins < 1) { alert('請填運動時長（分鐘）'); return; }
+  let text = '⌚ ' + type + ' ' + mins + ' 分鐘';
+  if (kcal > 0) text += '，' + kcal + ' 大卡';
+  if (km > 0) text += '，' + km + ' 公里';
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = '儲存中…';
+  try {
+    const result = await postJSON({ action: 'addEntry', date: getRecordDate('workoutManual'), category: '運動健身', text });
+    if (result && result.error) throw new Error(result.error);
+    ['workoutManualMin', 'workoutManualKcal', 'workoutManualKm'].forEach(id => { document.getElementById(id).value = ''; });
+    showToast(pick(['運動記好了 💪', '今天也動起來了 🌱', '又完成一次運動啦 ⌚']));
+    loadWeekProgress();
+    loadStreak();
+    if (getRecordDate('workoutManual') === fmtDate(new Date())) loadTodayOverview();
+  } catch (err) {
+    alert('加入紀錄失敗：' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
 }
 async function submitExerciseVideo() {
   const btn = document.getElementById('exerciseVideoSubmitBtn');
@@ -9020,7 +9072,8 @@ function quoteSourceLabel_(q) {
   return a && b ? a + ' ' + b : (a || b);
 }
 function splitQuoteSourceClient_(raw) {
-  const m = String(raw || '').trim().match(/^(.*?)\s*<<\s*(.+?)\s*>>\s*(.*)$/);
+  const t = String(raw || '').trim();
+  const m = t.match(/^(.*?)\s*<<\s*(.+?)\s*>>\s*(.*)$/) || t.match(/^(.*?)\s*《\s*(.+?)\s*》\s*(.*)$/);
   return m ? { author: (m[1] || m[3] || '').trim(), book: m[2].trim() } : { author: String(raw || '').trim(), book: '' };
 }
 function quoteEditDirty_() {
