@@ -1698,9 +1698,11 @@
     </div>
 
     <!-- 常用功能入口 -->
-    <div class="card home-shortcuts">
-      <div class="field-label" style="margin-top:0;">🧭 常用功能</div>
-      <div class="hs-grid">
+    <div class="card home-shortcuts" id="homeShortcutsCard">
+      <div class="field-label hs-head" role="button" tabindex="0" aria-expanded="true" id="hsHead" style="margin-top:0;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleHomeShortcuts()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleHomeShortcuts();}">
+        <span>🧭 常用功能</span><span id="hsArrow" style="font-size:12px;color:var(--ink-soft);font-weight:600;">▲ 收合</span>
+      </div>
+      <div class="hs-grid" id="hsGrid" style="margin-top:8px;">
         <div class="hs-item" onclick="switchTab('page-quotes')"><span class="hs-ic">📜</span><span>名言佳句</span></div>
         <div class="hs-item" onclick="switchTab('page-electric')"><span class="hs-ic">⚡</span><span>電力紀錄</span></div>
         <div class="hs-item" onclick="switchTab('page-tickets')"><span class="hs-ic">🎟️</span><span>票根牆</span></div>
@@ -1891,6 +1893,10 @@
             <input type="date" aria-label="跟練影片記錄日期" onclick="openNativeDatePicker(this)">
           </div>
           <input type="text" id="exerciseVideoUrlInput" placeholder="貼上 YouTube 影片網址" inputmode="url">
+          <div style="font-size:12px;color:var(--ink-soft);margin:2px 0 6px;">⌚ Apple Watch 數據（選填，照手錶上的數字填）</div>
+          <input type="number" id="exerciseVideoMin" placeholder="時長（分鐘，選填）" inputmode="numeric" min="1" max="600">
+          <input type="number" id="exerciseVideoKcal" placeholder="消耗大卡（選填）" inputmode="numeric" min="0" max="5000">
+          <input type="number" id="exerciseVideoKm" placeholder="距離（公里，選填）" inputmode="decimal" step="0.01" min="0" max="500">
           <button class="submit-btn" id="exerciseVideoSubmitBtn" style="width:100%;margin-top:8px;" onclick="submitExerciseVideo()">＋ 抓取名稱並加入紀錄</button>
         </div>
       </div>
@@ -1908,9 +1914,19 @@
         <div id="fitWeekSummary" style="font-size:12px;color:var(--ink-soft);text-align:center;margin-bottom:6px;"></div>
         <div id="fitWeekLog"><div class="empty-state" style="padding:10px 0;">載入中…</div></div>
       </div>
-      <div class="card">
-        <div class="field-label" style="margin-top:0;">⚖️ 體重</div>
+      <div class="card" id="fitHomeWeightCard">
+        <div class="field-label" style="margin-top:0;">⚖️ 記錄體重</div>
         <div id="fitHomeWeight" class="empty-state" style="padding:6px 0;">還沒有體重紀錄</div>
+        <div class="record-date-row" data-picker="weightHome" style="margin-top:10px;">
+          <div class="opt-chip" data-days-ago="0">今天</div>
+          <div class="opt-chip" data-days-ago="1">昨天</div>
+          <div class="opt-chip" data-days-ago="2">前天</div>
+          <input type="date" aria-label="體重記錄日期" onclick="openNativeDatePicker(this)">
+        </div>
+        <div class="weight-row" style="margin-top:8px;">
+          <input type="number" step="0.1" id="weightHomeInput" inputmode="decimal" placeholder="體重 (kg)" onkeydown="if(event.key==='Enter')submitWeight('home')">
+          <button class="submit-btn" id="weightHomeSubmitBtn" onclick="submitWeight('home')">記錄</button>
+        </div>
       </div>
       <div class="advanced-link" onclick="showFitAdvanced('goal')">⚙️ 訓練設定（部位／器械／目標／趨勢…）→</div>
     </div>
@@ -2140,7 +2156,7 @@
         </div>
       </div>
 
-      <div class="stat-card clickable" id="statCardWeight" onclick="switchTab('page-fit');switchFitSubTab('weight');">
+      <div class="stat-card clickable" id="statCardWeight" onclick="goRecordWeight_();">
         <div class="stat-card-head">⚖️ 體重</div>
         <div class="stat-card-main">
           <span class="stat-card-value" id="statWeightValue">—</span>
@@ -2929,6 +2945,7 @@ const FAB_MENU_ITEMS = [
   { icon: '📷', label: '拍照記錄', type: 'photo' },
   { icon: '⚡', label: '電力', type: 'electric' },
   { icon: '💪', label: '運動', type: 'exercise' },
+  { icon: '⚖️', label: '體重', type: 'weight' },
   { icon: '🌸', label: '身體狀況', type: 'condition' },
   { icon: '📈', label: '股票交易', type: 'stock' },
   { icon: '📜', label: '名言佳句', type: 'quote' }
@@ -2968,6 +2985,7 @@ const RECORD_HUB_ITEMS_ = {
   photo: { icon: '📷', label: '照片', bg: 'var(--c-soul)' },
   quote: { icon: '📜', label: '名言佳句', bg: '#F0DDB0' },
   exercise: { icon: '💪', label: '運動', bg: 'var(--c-fit)' },
+  weight: { icon: '⚖️', label: '體重', bg: 'var(--c-fit)' },
   condition: { icon: '🩺', label: '身體狀況', bg: 'var(--c-other)' },
   period: { icon: '🌸', label: '經期', bg: 'var(--c-show)' },
   stock: { icon: '📈', label: '股票交易', bg: 'var(--c-culture)' },
@@ -2975,7 +2993,7 @@ const RECORD_HUB_ITEMS_ = {
 };
 const RECORD_HUB_SECTIONS_ = [
   ['🌿 生活', ['mood', 'photo', 'quote']],
-  ['❤️ 身體', ['exercise', 'condition', 'period']],
+  ['❤️ 身體', ['exercise', 'weight', 'condition', 'period']],
   ['🏠 理財與家庭', ['stock', 'electric']]
 ];
 let rhOverview_ = null;
@@ -3016,7 +3034,33 @@ function renderRecordHub_() {
   if (sub) { const w = ['日', '一', '二', '三', '四', '五', '六'], n = new Date(); sub.textContent = (n.getMonth() + 1) + '/' + n.getDate() + '（' + w[n.getDay()] + '）· 選一個開始，隨手記下今天的這一刻'; }
 }
 document.addEventListener('DOMContentLoaded', renderRecordHub_);
+// 首頁「常用功能」可摺疊，狀態記在這台裝置上
+function applyHomeShortcuts_() {
+  let collapsed = false;
+  try { collapsed = localStorage.getItem('hsCollapsed') === '1'; } catch (e) {}
+  const grid = document.getElementById('hsGrid'), arrow = document.getElementById('hsArrow'), head = document.getElementById('hsHead');
+  if (!grid) return;
+  grid.style.display = collapsed ? 'none' : '';
+  if (arrow) arrow.textContent = collapsed ? '▼ 展開' : '▲ 收合';
+  if (head) { head.setAttribute('aria-expanded', collapsed ? 'false' : 'true'); head.style.marginBottom = collapsed ? '0' : ''; }
+}
+function toggleHomeShortcuts() {
+  let collapsed = false;
+  try { collapsed = localStorage.getItem('hsCollapsed') === '1'; localStorage.setItem('hsCollapsed', collapsed ? '0' : '1'); } catch (e) { collapsed = !collapsed; }
+  applyHomeShortcuts_();
+}
+document.addEventListener('DOMContentLoaded', applyHomeShortcuts_);
 
+// 直接跳到健身首頁的體重輸入框（紀錄 Hub、快速新增選單、統計頁體重卡共用）
+function goRecordWeight_() {
+  switchTab('page-fit');
+  setTimeout(() => {
+    document.getElementById('fitAdvancedWrap').style.display = 'none';
+    document.getElementById('fitSubHome').style.display = 'block';
+    const el = document.getElementById('weightHomeInput');
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.focus(); }
+  }, 120);
+}
 function openRecordEntry(type) {
   rhPushRecent_(type); try { renderRecordHub_(); } catch (e) {}
   if (type === 'log' || type === 'mood') {
@@ -3039,6 +3083,8 @@ function openRecordEntry(type) {
     }, 80);
   } else if (type === 'exercise') {
     switchTab('page-fit');
+  } else if (type === 'weight') {
+    goRecordWeight_();
   } else if (type === 'period') {
     switchTab('page-period');
   } else if (type === 'condition') {
@@ -4338,7 +4384,7 @@ function moodEmoji(v) {
 //   entry.text       ＝ 使用者自己寫的心得（舊資料也一律當心得原樣顯示，不拆分、不改寫）
 //   entry.fields     ＝ 依類別定義的結構化欄位（劇名、場地、座位、價格…）
 //   entry.ticketMeta ＝ 票券掃描辨識結果（只補 fields 沒有的資訊）
-const ENTRY_SYSTEM_FIELD_KEYS = ['healthKey', 'videoUrl', 'videoTitle', 'videoAuthor',
+const ENTRY_SYSTEM_FIELD_KEYS = ['healthKey', 'videoUrl', 'videoTitle', 'videoAuthor', 'watchMin', 'watchKcal', 'watchKm',
   'origAmount', 'origCurrency', 'paidAmount', 'paidCurrency', 'paidTwdEquiv', 'paidTwdSource', 'venueAddress'];
 const ENTRY_TITLE_KEYS = ['showName', 'title', 'exhibitName', 'tourName', 'artist'];
 // 系統自動產生的紀錄文字（健身、手錶、跟練），不是使用者寫的心得
@@ -4426,7 +4472,7 @@ function entryCardBodyHtml(entry, opts) {
   opts = opts || {};
   const info = entryInfo(entry);
   const videoHtml = (entry.fields && entry.fields.videoUrl) ? `
-    <div class="entry-video"><a href="${escapeHtml(entry.fields.videoUrl)}" target="_blank" rel="noopener">▶️ ${escapeHtml(entry.fields.videoTitle || '跟練影片')}</a></div>` : '';
+    <div class="entry-video"><a href="${escapeHtml(entry.fields.videoUrl)}" target="_blank" rel="noopener">▶️ ${escapeHtml(entry.fields.videoTitle || '跟練影片')}</a>${watchSummary_(entry.fields) ? `<div style="color:var(--ink-soft);margin-top:2px;">⌚ ${escapeHtml(watchSummary_(entry.fields))}</div>` : ''}</div>` : '';
   const dateHtml = (opts.showDate && entry.date) ? `${escapeHtml(entry.date)} ` : '';
   const photos = entryPhotosHtml(entry);
   return `
@@ -5161,16 +5207,27 @@ function copyTicket(id) {
 function copyTicketFromWall_(id) {
   copyTicketEntry_(ticketWallAll.find(t => t.id === id));
 }
+// 請求序號：切換日期很快時，舊日期的慢回應（尤其是「今天」第一次要等 AI 生成）不能蓋掉現在這一天的內容
+let summarySeq_ = 0, blessingSeq_ = 0, weekSummarySeq_ = 0;
 async function loadSummary() {
   const ds = fmtDate(currentDate);
+  const mySeq = ++summarySeq_;
+  const area = document.getElementById('summaryArea');
+  // 換了日期就先清掉舊內容，避免畫面還掛著上一天的彙整
+  if (area.dataset.date !== ds) {
+    area.innerHTML = '<div class="summary-loading">讀取這天的彙整中… 🌸</div>';
+    area.dataset.date = '';
+  }
   try {
-    const guidanceRes = await fetch(`${CONFIG.GAS_URL}?action=getDailyGuidance&date=${ds}`, { cache: 'no-store' });
-    const guidance = await guidanceRes.json();
-    const summaryRes = await fetch(`${CONFIG.GAS_URL}?action=getSummary&date=${ds}`, { cache: 'no-store' });
-    const summary = await summaryRes.json();
+    const [guidance, summary] = await Promise.all([
+      fetch(`${CONFIG.GAS_URL}?action=getDailyGuidance&date=${ds}`, { cache: 'no-store' }).then(r => r.json()),
+      fetch(`${CONFIG.GAS_URL}?action=getSummary&date=${ds}`, { cache: 'no-store' }).then(r => r.json())
+    ]);
+    if (mySeq !== summarySeq_ || ds !== fmtDate(currentDate)) return; // 已經換到別天了，丟掉這份舊結果
     renderSummary(summary, guidance);
+    area.dataset.date = ds;
   } catch (err) {
-    document.getElementById('summaryArea').innerHTML = '';
+    if (mySeq === summarySeq_) { area.innerHTML = ''; area.dataset.date = ''; }
   }
 }
 // 首頁表頭「🌿 今日的提醒」——跟「今日彙整」（5個靈性視角＋今日總結＋回饋）完全脫鉤的獨立小功能：
@@ -5180,12 +5237,14 @@ async function loadSummary() {
 async function loadDailyBlessing() {
   const ds = fmtDate(currentDate);
   const isToday = ds === fmtDate(new Date());
+  const mySeq = ++blessingSeq_;
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getDailyBlessing&date=${ds}`, { cache: 'no-store' });
     const blessing = await res.json();
+    if (mySeq !== blessingSeq_ || ds !== fmtDate(currentDate)) return;
     renderDailyReminder(blessing, isToday);
   } catch (err) {
-    renderDailyReminder(null, isToday);
+    if (mySeq === blessingSeq_) renderDailyReminder(null, isToday);
   }
 }
 function renderDailyReminder(blessing, isToday) {
@@ -5221,7 +5280,7 @@ function renderSummary(summary, guidance) {
       <div class="card summary-card guidance-card"><div class="label">${v.icon} ${v.label}</div><p>${escapeHtml(guidance[v.key] || '')}</p></div>
     `).join('');
   } else {
-    guidanceHtml = '<div class="empty-state">今天暫時沒有生成靈性視角提醒</div>';
+    guidanceHtml = '<div class="empty-state">這天沒有靈性視角提醒</div>';
   }
 
   if (!summary) {
@@ -5234,29 +5293,36 @@ function renderSummary(summary, guidance) {
   `;
 }
 async function generateSummary() {
-  if (!confirm('要重新產生今天的彙整內容嗎？這會覆蓋掉目前的今日總結、回饋，以及五個靈性視角提醒。')) return;
+  if (!confirm('要重新產生這一天的彙整內容嗎？這會覆蓋掉目前的總結、回饋，以及靈性視角提醒。')) return;
   const ds = fmtDate(currentDate);
   const area = document.getElementById('summaryArea');
-  area.innerHTML = '<div class="summary-loading">AI 正在整理今天的點點滴滴… 🌸</div>';
+  const mySeq = ++summarySeq_; // 讓還在跑的舊讀取不要蓋掉這次的結果
+  area.dataset.date = '';
+  area.innerHTML = '<div class="summary-loading">AI 正在整理這一天的點點滴滴… 🌸</div>';
   try {
     const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'generateDailyGuidance', date: ds }) });
     const result = await res.json();
+    if (ds !== fmtDate(currentDate)) return; // 生成期間已經換到別天，不要把這天的內容畫到別天上（下次切回來會讀到已存好的）
     if (result.ok === false) { area.innerHTML = `<div class="empty-state">${result.message || '生成失敗'}</div>`; return; }
     if (result.error) { area.innerHTML = `<div class="empty-state">錯誤：${result.error}</div>`; return; }
     renderSummary(result, Object.assign({ exists: true }, result));
+    area.dataset.date = ds;
     // 注意：「🌿 今日的提醒」跟這裡的「今日彙整」已經脫鉤，不會因為在這裡按重新生成而跟著變動，
     // 它有自己獨立的每日生成機制（見 loadDailyBlessing）。
   } catch (err) {
-    area.innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
+    if (ds === fmtDate(currentDate)) area.innerHTML = `<div class="empty-state">生成失敗：${err.message}</div>`;
   }
 }
 
 async function loadWeekSummary() {
   const weekStart = getMondayStr(currentDate);
+  const mySeq = ++weekSummarySeq_;
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getWeeklySummary&weekStart=${weekStart}`, { cache: 'no-store' });
-    renderWeekSummary(await res.json());
-  } catch (err) { document.getElementById('weekSummaryArea').innerHTML = ''; }
+    const data = await res.json();
+    if (mySeq !== weekSummarySeq_ || weekStart !== getMondayStr(currentDate)) return;
+    renderWeekSummary(data);
+  } catch (err) { if (mySeq === weekSummarySeq_) document.getElementById('weekSummaryArea').innerHTML = ''; }
 }
 function renderWeekSummary(s) {
   const area = document.getElementById('weekSummaryArea');
@@ -5320,6 +5386,7 @@ async function loadFitnessPage() {
   renderGymPartRow();
   loadFitHome();
   initRecordDatePicker('weight');
+  initRecordDatePicker('weightHome');
   initRecordDatePicker('exerciseVideo');
   initRecordDatePicker('workoutManual');
   loadExerciseVideos();
@@ -6905,7 +6972,8 @@ function renderFitWeekLog_(data) {
   const row = it => {
     const del = it.deletable ? `<button class="gl-del" onclick="deleteWeekLogItem_('${it.kind}','${it.id}')">✕</button>` : '';
     if (it.kind === 'video') {
-      return `<div class="gym-log-item"><a href="${escapeHtml(it.url)}" target="_blank" rel="noopener" style="flex:1;min-width:0;color:var(--ink);text-decoration:none;"><span class="gl-ex">▶️ ${escapeHtml(it.title)}</span></a>${del}</div>`;
+      const vd = it.detail ? `<div class="gl-detail" style="margin-left:0;margin-top:2px;">⌚ ${escapeHtml(it.detail)}</div>` : '';
+      return `<div class="gym-log-item"><div style="flex:1;min-width:0;"><a href="${escapeHtml(it.url)}" target="_blank" rel="noopener" style="color:var(--ink);text-decoration:none;"><span class="gl-ex">▶️ ${escapeHtml(it.title)}</span></a>${vd}</div>${del}</div>`;
     }
     const icon = it.kind === 'gym' ? '🏋️' : (it.kind === 'workout' ? '⌚' : (it.kind === 'check' ? '✅' : '📝'));
     const detail = it.detail ? `<span class="gl-detail">${escapeHtml(it.detail)}</span>` : '';
@@ -6963,12 +7031,29 @@ async function submitManualWorkout() {
     btn.textContent = originalText;
   }
 }
+// 手錶數據摘要：「30 分鐘，200 大卡，2.5 公里」。fields 可以是 entry.fields，也可以是剛組好的 watchFields
+function watchSummary_(f) {
+  if (!f) return '';
+  const parts = [];
+  if (Number(f.watchMin) > 0) parts.push(f.watchMin + ' 分鐘');
+  if (Number(f.watchKcal) > 0) parts.push(f.watchKcal + ' 大卡');
+  if (Number(f.watchKm) > 0) parts.push(f.watchKm + ' 公里');
+  return parts.join('，');
+}
 async function submitExerciseVideo() {
   const btn = document.getElementById('exerciseVideoSubmitBtn');
   if (btn.disabled) return;
   const input = document.getElementById('exerciseVideoUrlInput');
   const url = input.value.trim();
   if (!url) { alert('請先貼上 YouTube 影片網址'); return; }
+  const watchMin = Math.round(Number(document.getElementById('exerciseVideoMin').value)) || 0;
+  const watchKcal = Math.round(Number(document.getElementById('exerciseVideoKcal').value)) || 0;
+  const watchKm = Math.round(Number(document.getElementById('exerciseVideoKm').value) * 100) / 100 || 0;
+  const watchFields = {};
+  if (watchMin > 0) watchFields.watchMin = watchMin;
+  if (watchKcal > 0) watchFields.watchKcal = watchKcal;
+  if (watchKm > 0) watchFields.watchKm = watchKm;
+  const watchText = watchSummary_(watchFields);
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '抓取影片名稱中…';
@@ -6979,11 +7064,12 @@ async function submitExerciseVideo() {
       action: 'addEntry',
       date: getRecordDate('exerciseVideo'),
       category: '運動健身',
-      text: '居家跟練：' + info.title,
-      fields: { videoUrl: info.url, videoTitle: info.title, videoAuthor: info.author || '' }
+      text: '居家跟練：' + info.title + (watchText ? '（⌚ ' + watchText + '）' : ''),
+      fields: Object.assign({ videoUrl: info.url, videoTitle: info.title, videoAuthor: info.author || '' }, watchFields)
     });
     if (result && result.error) throw new Error(result.error);
     input.value = '';
+    ['exerciseVideoMin', 'exerciseVideoKcal', 'exerciseVideoKm'].forEach(id => { document.getElementById(id).value = ''; });
     showToast(pick(['跟練紀錄好了 🎬', '又完成一支影片啦 💪', '記下這支影片了 🌱']));
     loadExerciseVideos();
     loadFitHome();
@@ -7012,21 +7098,26 @@ async function deleteExerciseVideo(id) {
   }
 }
 
-async function submitWeight() {
-  const btn = document.getElementById('weightSubmitBtn');
+async function submitWeight(src) {
+  const isHome = src === 'home';
+  const btn = document.getElementById(isHome ? 'weightHomeSubmitBtn' : 'weightSubmitBtn');
+  const inputEl = document.getElementById(isHome ? 'weightHomeInput' : 'weightInput');
+  const dateKey = isHome ? 'weightHome' : 'weight';
   if (btn.disabled) return;
-  const val = document.getElementById('weightInput').value;
+  const val = inputEl.value;
   if (!val) return;
+  if (!(Number(val) > 0 && Number(val) < 500)) { alert('體重數字看起來不太對，請再確認一下'); return; }
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '記錄中…';
   try {
-    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: getRecordDate('weight'), weight: val }) });
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: getRecordDate(dateKey), weight: val }) });
     const result = await res.json();
     if (result && result.error) throw new Error(result.error);
-    document.getElementById('weightInput').value = '';
+    inputEl.value = '';
     showToast(pick(['體重記錄好了 ⚖️', '收到，辛苦你了 🌷']));
     loadWeightList();
+    loadFitHome();
   } catch (err) {
     alert('記錄失敗：' + err.message);
   } finally {
@@ -8711,6 +8802,8 @@ function dmLoadMonth(ym, force) {
   return p;
 }
 
+let dmHomeOpen = false; // 已記錄心情後，使用者是否手動展開了選擇區
+function dmToggleHome() { dmHomeOpen = !dmHomeOpen; dmRenderHome(); }
 function dmRenderHome() {
   const card = document.getElementById('dmHomeCard');
   if (!card) return;
@@ -8722,7 +8815,7 @@ function dmRenderHome() {
   const cur = dmData[ds];
   if (cur && DM_BY_CODE[cur]) {
     const m = DM_BY_CODE[cur];
-    status.innerHTML = `今天是 <b>${m.emoji} ${m.label}</b>，想改的話再點一下別的就好`;
+    status.innerHTML = `今天是 <b>${m.emoji} ${m.label}</b> <button type="button" class="dm-retry" onclick="dmToggleHome()">${dmHomeOpen ? '收合' : '修改'}</button>`;
   } else if (!dmLoaded[ym] && dmLoadError[ym]) {
     status.innerHTML = `讀取今天的心情失敗 <button type="button" class="dm-retry" onclick="dmLoadMonth('${ym}', true)">重試</button>`;
   } else if (!dmLoaded[ym]) {
@@ -8730,7 +8823,12 @@ function dmRenderHome() {
   } else {
     status.textContent = '今天的心情如何？點一下就記好 ✨';
   }
-  document.getElementById('dmHomePicker').innerHTML = dmPickerHtml(ds);
+  const picker = document.getElementById('dmHomePicker');
+  picker.innerHTML = dmPickerHtml(ds);
+  // 已經記錄過就摺疊起來（只留一行狀態），沒記錄或讀取失敗時維持展開
+  const collapsed = !!(cur && DM_BY_CODE[cur]) && !dmHomeOpen;
+  picker.style.display = collapsed ? 'none' : '';
+  status.style.marginBottom = collapsed ? '0' : '';
 }
 
 function dmRenderCalPicker() {
@@ -8833,6 +8931,7 @@ async function dmPick(ds, code) {
     if (result.ok === false) throw new Error(result.message || '儲存失敗');
     dmData[ds] = code;
     dmSavedAt[ds] = Date.now();
+    if (ds === dmToday()) dmHomeOpen = false; // 記好了，首頁的選擇區自動摺疊
     const parts = ds.split('-');
     const m = DM_BY_CODE[code];
     showToast(`已儲存 ${Number(parts[1])}/${Number(parts[2])} ${m.emoji} ${m.label}`);
