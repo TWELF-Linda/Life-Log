@@ -117,6 +117,11 @@
   .page.active{display:block;}
 
   /* ---- Phase01: 紀錄 Hub 快速入口卡片 ---- */
+  .row-acts{display:inline-flex;gap:6px;margin-left:8px;vertical-align:middle;align-items:center;}
+  .row-act{border:none;background:var(--input-bg);color:var(--ink-soft);border-radius:8px;min-width:32px;height:32px;font-size:14px;cursor:pointer;font-family:inherit;}
+  .row-act:active{transform:scale(0.92);}
+  .row-act.danger{color:#C0504D;}
+  .gym-log-item.editing{outline:2px solid var(--accent, #F0715E);outline-offset:-2px;border-radius:10px;}
   .record-hub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:2px;}
   .record-hub-item{
     background:var(--card);border-radius:20px;padding:20px 10px 16px;text-align:center;
@@ -705,6 +710,26 @@
     aspect-ratio:1/1;border-radius:10px;background:var(--input-bg);display:flex;flex-direction:column;
     align-items:center;justify-content:flex-start;padding-top:5px;cursor:pointer;position:relative;
   }
+  .cal-cell.cal-predict{outline:1.5px dashed #FF8FB3;outline-offset:-2px;border-radius:10px;}
+  .cal-cell.cal-range-start{box-shadow:inset 0 0 0 2px #FF8FB3;border-radius:10px;}
+  .cal-legend-predict{width:9px;height:9px;border:1.5px dashed #FF8FB3;border-radius:3px;display:inline-block;}
+  .cal-range-hint{display:none;margin:0 0 10px;padding:8px 12px;border-radius:12px;background:rgba(255,143,179,.2);font-size:12.5px;color:var(--ink);align-items:center;justify-content:space-between;gap:8px;}
+  .cal-range-hint button{background:none;border:none;color:var(--ink-soft);font-size:12px;cursor:pointer;text-decoration:underline;}
+  .tov-hint{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(255,143,179,.18);font-size:12.5px;color:var(--ink);line-height:1.5;}
+  .tov-hint .th-btns{display:flex;gap:8px;margin-top:8px;}
+  .tov-hint .th-btns button{flex:1;}
+  .period-backfill{display:none;gap:8px;margin-top:8px;}
+  .period-backfill button{flex:1;}
+  .cal-cell.cal-period{background:rgba(255,143,179,.24);}
+  .cal-cell.cal-p-start::after,.cal-cell.cal-p-end::after{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:9px;font-weight:700;color:#E0668F;line-height:1;pointer-events:none;}
+  .cal-cell.cal-p-start::after{content:'起';}
+  .cal-cell.cal-p-end::after{content:'止';}
+  .cal-cell.cal-p-start.cal-p-end::after{content:'起止';}
+  .cal-period-box{margin:12px 0 4px;padding:10px 12px;border-radius:14px;background:var(--input-bg);}
+  .cal-period-box .cpb-title{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .cal-period-box .cpb-note{font-size:12px;color:var(--ink-soft);line-height:1.5;margin-bottom:8px;}
+  .cal-period-box .cpb-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .cal-period-box .cpb-btns button{flex:1;min-width:120px;}
   .cal-cell.empty{background:none;cursor:default;}
   .cal-cell.today{box-shadow:inset 0 0 0 2px var(--accent);}
   .cal-cell .cal-daynum{font-size:11.5px;color:var(--ink);font-weight:600;}
@@ -2000,6 +2025,7 @@
             </div>
             <button class="submit-btn" id="gymLogSubmitBtn" style="width:100%;" onclick="submitGymLog()">+ 新增這一組</button>
             <button class="gen-btn" id="repeatSetBtn" style="width:100%;margin-top:8px;display:none;" onclick="repeatLastSet()">🔁 重複上一組</button>
+            <button class="gen-btn" id="gymCancelEditBtn" style="width:100%;margin-top:8px;display:none;" onclick="cancelEditGym()">取消修改</button>
           </div>
           <div id="gymLogList"></div>
         </div>
@@ -2025,6 +2051,7 @@
             <input type="number" step="0.1" id="weightInput" inputmode="decimal" placeholder="體重 (kg)">
             <button class="submit-btn" id="weightSubmitBtn" onclick="submitWeight()">記錄</button>
           </div>
+          <button class="gen-btn" id="weightCancelEditBtn" style="width:100%;margin-top:8px;display:none;" onclick="cancelEditWeight()">取消修改</button>
           <div class="weight-list" id="weightList"></div>
         </div>
       </div>
@@ -2104,6 +2131,7 @@
     </div>
     <div class="card">
       <div style="font-size:11.5px;color:var(--ink-soft);margin:-2px 0 10px;">每天的小點點，是那天留下的生活痕跡</div>
+      <div class="cal-range-hint" id="calRangeHint"></div>
       <div class="cal-weekday-row"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
       <div class="cal-grid" id="calGrid"></div>
       <div class="cal-legend" id="calLegend"></div>
@@ -2112,6 +2140,7 @@
       <div class="cdd-date" id="calDayDetailDate">—</div>
       <div class="dm-cal-title" id="dmCalTitle">這天的心情</div>
       <div class="dm-grid" id="dmCalPicker" style="margin-bottom:12px;"></div>
+      <div class="cal-period-box" id="calPeriodBox" style="display:none;"></div>
       <div class="cdd-stats" id="calDayDetailStats"></div>
       <button class="gen-btn" style="width:100%;margin-top:10px;" onclick="jumpFromCalendarSelected()">查看這一天 →</button>
     </div>
@@ -2341,6 +2370,7 @@
         <div class="field-label" style="margin-top:0;">🌷 目前狀態</div>
         <div id="periodStatusArea" class="empty-state">還沒有任何紀錄，記一筆開始追蹤吧</div>
         <button class="submit-btn" id="periodToggleBtn" style="width:100%;margin-top:10px;" onclick="togglePeriodOpen()">🌸 今天開始經期</button>
+        <div class="period-backfill" id="periodBackfillRow"></div>
       </div>
 
       <div class="card">
@@ -2400,6 +2430,7 @@
         </div>
         <textarea id="periodNote" placeholder="備註（選填）" style="min-height:40px;margin-top:8px;"></textarea>
         <button class="submit-btn" id="periodLogSubmitBtn" style="width:100%;margin-top:10px;" onclick="submitPeriodLog()">補登這筆紀錄</button>
+        <button class="gen-btn" id="periodLogCancelEditBtn" style="width:100%;margin-top:8px;display:none;" onclick="cancelEditPeriodLog()">取消修改</button>
       </div>
 
       <div class="card">
@@ -4215,6 +4246,8 @@ function renderTodayOverview(d) {
       ${d.entriesCount ? `<div class="tov-chip" onclick="scrollToEntriesList()"><div class="tov-icon">📝</div><div class="tov-value">${d.entriesCount} 則</div><div class="tov-label">紀錄</div></div>` : ''}
       ${periodHtml}
     `;
+    const oldHint = document.getElementById('tovPeriodHint'); if (oldHint) oldHint.remove();
+    if (d.periodStatus && d.periodStatus.inPeriod && d.periodStatus.overdue) row.insertAdjacentHTML('afterend', periodOverdueHintHtml_(d.periodStatus));
     card.style.display = 'block';
   } catch (err) {}
 }
@@ -5405,11 +5438,15 @@ async function loadStreak() {
   } catch (err) {}
 }
 
+let editingWeightId = null;
+let weightStatsCache_ = [];
 async function loadWeightList() {
   try {
     const res = await fetch(`${CONFIG.GAS_URL}?action=getBodyStats`, { cache: 'no-store' });
     const stats = await res.json();
     const listEl = document.getElementById('weightList');
+    if (!Array.isArray(stats)) return;
+    weightStatsCache_ = stats;
     if (!stats.length) { listEl.innerHTML = ''; return; }
     const recent = stats.slice(-8).reverse();
     listEl.innerHTML = recent.map((s, i) => {
@@ -5419,9 +5456,58 @@ async function loadWeightList() {
         const diff = (parseFloat(s.weight) - parseFloat(prev.weight)).toFixed(1);
         if (diff != 0) delta = `<span class="weight-delta ${diff > 0 ? 'up' : 'down'}">${diff > 0 ? '+' : ''}${diff}</span>`;
       }
-      return `<div class="weight-list-item"><span>${s.date}</span><span><span class="w-val">${s.weight} kg</span>${delta}</span></div>`;
+      const acts = s.id
+        ? `<span class="row-acts"><button class="row-act" aria-label="修改" onclick="editWeightItem('${s.id}')">✏️</button><button class="row-act danger" aria-label="刪除" onclick="deleteWeightItem('${s.id}')">🗑️</button></span>`
+        : '';
+      return `<div class="weight-list-item"><span>${escapeHtml(s.date)}</span><span><span class="w-val">${s.weight} kg</span>${delta}${acts}</span></div>`;
     }).join('');
   } catch (err) {}
+}
+function editWeightItem(id) {
+  const s = weightStatsCache_.find(x => x.id === id);
+  if (!s) return;
+  editingWeightId = id;
+  const p = String(s.date).split('-').map(Number);
+  recordDateState['weight'] = new Date(p[0], p[1] - 1, p[2]);
+  recordDateExplicit['weight'] = true;
+  updateRecordDatePicker('weight');
+  document.getElementById('weightInput').value = s.weight;
+  document.getElementById('weightSubmitBtn').textContent = '更新';
+  document.getElementById('weightCancelEditBtn').style.display = 'block';
+  document.getElementById('weightInput').focus();
+}
+function resetWeightEdit_() {
+  editingWeightId = null;
+  recordDateExplicit['weight'] = false;
+  recordDateState['weight'] = new Date();
+  updateRecordDatePicker('weight');
+  document.getElementById('weightInput').value = '';
+  document.getElementById('weightSubmitBtn').textContent = '記錄';
+  document.getElementById('weightCancelEditBtn').style.display = 'none';
+}
+function cancelEditWeight() { resetWeightEdit_(); }
+async function deleteWeightItem(id) {
+  const s = weightStatsCache_.find(x => x.id === id);
+  if (!s) return;
+  if (!(await showConfirm(`刪除 ${s.date} 的體重 ${s.weight} kg？`))) return;
+  try {
+    const result = await postJSON({ action: 'deleteBodyStat', id });
+    if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message || '刪除失敗');
+    if (editingWeightId === id) resetWeightEdit_();
+    loadWeightList();
+    loadFitHome();
+    showUndoToast('已刪除這筆體重', async () => {
+      try {
+        const r = await postJSON({ action: 'addBodyStat', date: s.date, weight: s.weight, note: s.note || '' });
+        if (r && (r.error || r.ok === false)) throw new Error(r.error || r.message || '復原失敗');
+        showToast('已復原 ↩️');
+        loadWeightList();
+        loadFitHome();
+      } catch (e) { alert('復原失敗：' + e.message); }
+    }, 6000);
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
 }
 function renderGymPartRow() {
   const row = document.getElementById('gymPartRow');
@@ -6003,6 +6089,7 @@ async function loadPeriodOpenState(preData) {
       btn.textContent = '🌸 今天開始經期';
       btn.style.background = '';
     }
+    renderPeriodBackfill_();
   } catch (err) {}
 }
 async function togglePeriodOpen() {
@@ -6033,6 +6120,7 @@ async function loadPeriodLogList(preData) {
   area.innerHTML = '<div class="empty-state">載入中…</div>';
   try {
     const logs = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodLogs`, { cache: 'no-store' })).json();
+    periodLogsCache_ = Array.isArray(logs) ? logs : [];
     if (!logs.length || logs.error) {
       area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>';
       renderPeriodHomeRecent([]);
@@ -6044,7 +6132,7 @@ async function loadPeriodLogList(preData) {
           <div class="sl-code">${l.startDate}${l.endDate ? ' ～ ' + l.endDate : '（進行中）'}</div>
           ${l.note ? `<div class="sl-detail">${escapeHtml(l.note)}</div>` : ''}
         </div>
-        <button class="sl-del" onclick="deletePeriodLogItem('${l.id}')">✕</button>
+        <span class="row-acts"><button class="row-act" aria-label="修改" onclick="editPeriodLogItem('${l.id}')">✏️</button><button class="sl-del" aria-label="刪除" onclick="deletePeriodLogItem('${l.id}')">✕</button></span>
       </div>
     `).join('');
     renderPeriodHomeRecent(logs);
@@ -6069,6 +6157,28 @@ function renderPeriodHomeRecent(logs) {
     </div>
   `).join('');
 }
+let editingPeriodLogId = null;
+let periodLogsCache_ = [];
+function editPeriodLogItem(id) {
+  const l = periodLogsCache_.find(x => x.id === id);
+  if (!l) return;
+  editingPeriodLogId = id;
+  document.getElementById('periodStart').value = l.startDate || '';
+  document.getElementById('periodEnd').value = l.endDate || '';
+  document.getElementById('periodNote').value = l.note || '';
+  document.getElementById('periodLogSubmitBtn').textContent = '更新這筆紀錄';
+  document.getElementById('periodLogCancelEditBtn').style.display = 'block';
+  document.getElementById('periodStart').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function resetPeriodLogForm_() {
+  editingPeriodLogId = null;
+  document.getElementById('periodStart').value = '';
+  document.getElementById('periodEnd').value = '';
+  document.getElementById('periodNote').value = '';
+  document.getElementById('periodLogSubmitBtn').textContent = '補登這筆紀錄';
+  document.getElementById('periodLogCancelEditBtn').style.display = 'none';
+}
+function cancelEditPeriodLog() { resetPeriodLogForm_(); }
 async function submitPeriodLog() {
   const btn = document.getElementById('periodLogSubmitBtn');
   if (btn.disabled) return;
@@ -6076,34 +6186,52 @@ async function submitPeriodLog() {
   const endDate = document.getElementById('periodEnd').value;
   const note = document.getElementById('periodNote').value.trim();
   if (!startDate) { alert('請至少選開始日期喔'); return; }
+  const today = fmtDate(new Date());
+  if (startDate > today) { alert('開始日期不能是未來的日期'); return; }
+  if (endDate && endDate > today) { alert('結束日期不能是未來的日期'); return; }
+  if (endDate && endDate < startDate) { alert('結束日期不能早於開始日期'); return; }
+  if (note.length > 200) { alert('備註太長（最多 200 字）'); return; }
+  const isEdit = !!editingPeriodLogId;
   btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = '記錄中…';
+  btn.textContent = isEdit ? '更新中…' : '記錄中…';
   try {
-    const res = await postJSON({ action: 'addPeriodLog', startDate, endDate, note });
-    if (res.error || res.ok === false) { alert('記錄失敗：' + (res.error || res.message)); return; }
-    document.getElementById('periodStart').value = '';
-    document.getElementById('periodEnd').value = '';
-    document.getElementById('periodNote').value = '';
-    showToast('記錄好了 🌷');
+    const res = await postJSON(isEdit
+      ? { action: 'updatePeriodLog', id: editingPeriodLogId, startDate, endDate, note }
+      : { action: 'addPeriodLog', startDate, endDate, note });
+    if (res.error || res.ok === false) { alert((isEdit ? '更新失敗：' : '記錄失敗：') + (res.error || res.message)); return; }
+    resetPeriodLogForm_();
+    showToast(isEdit ? '已更新 🌷' : '記錄好了 🌷');
     loadPeriodStatus();
     loadPeriodOpenState();
     loadPeriodLogList();
   } catch (err) {
-    alert('記錄失敗：' + err.message);
+    alert((isEdit ? '更新失敗：' : '記錄失敗：') + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = originalText;
+    btn.textContent = editingPeriodLogId ? '更新這筆紀錄' : '補登這筆紀錄';
   }
 }
 async function deletePeriodLogItem(id) {
+  const logBak = periodLogsCache_.find(x => x.id === id);
   if (!(await showConfirm('刪除這筆經期紀錄？'))) return;
   try {
     const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deletePeriodLog', id }) });
     const result = await res.json();
     if (result && result.error) throw new Error(result.error);
     if (result && result.ok === false) throw new Error(result.message || '找不到這筆紀錄');
-    showToast('已刪除 🗑️');
+    if (editingPeriodLogId === id) resetPeriodLogForm_();
+    if (logBak) {
+      showUndoToast('已刪除這筆經期紀錄', async () => {
+        try {
+          const r = await postJSON({ action: 'addPeriodLog', startDate: logBak.startDate, endDate: logBak.endDate || '', note: logBak.note || '' });
+          if (r && (r.error || r.ok === false)) throw new Error(r.error || r.message || '復原失敗');
+          showToast('已復原 ↩️');
+          loadPeriodStatus(); loadPeriodOpenState(); loadPeriodLogList();
+        } catch (e) { alert('復原失敗：' + e.message); }
+      }, 6000);
+    } else {
+      showToast('已刪除 🗑️');
+    }
     loadPeriodStatus();
     loadPeriodOpenState();
     loadPeriodLogList();
@@ -6289,6 +6417,12 @@ async function submitPeriodDaily() {
   if (btn.disabled) return;
   const note = document.getElementById('periodDailyNote').value.trim();
   const ds = getRecordDate('periodDaily');
+  if (ds > fmtDate(new Date())) { alert('日期不能是未來的日期'); return; }
+  if (note.length > 500) { alert('備註太長（最多 500 字）'); return; }
+  if (!periodDailyState.flow && !periodDailyState.pain && !(periodDailyState.symptoms || []).length && !note) {
+    alert('還沒有選任何項目、也沒有寫備註。若想清除這天的紀錄，請按下方歷史清單裡的 🗑️');
+    return;
+  }
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = '儲存中…';
@@ -6307,11 +6441,48 @@ async function submitPeriodDaily() {
     btn.textContent = originalText;
   }
 }
+let periodDailyCache_ = [];
+function editPeriodDailyItem(ds) {
+  const p = String(ds).split('-').map(Number);
+  recordDateState['periodDaily'] = new Date(p[0], p[1] - 1, p[2]);
+  recordDateExplicit['periodDaily'] = true;
+  updateRecordDatePicker('periodDaily');
+  loadPeriodDailyToday(null, ds);
+  const el = document.getElementById('periodDailyNote');
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast(`正在修改 ${ds} 的狀況，改完請按儲存`, 3200);
+}
+async function deletePeriodDailyItem(ds) {
+  const bak = periodDailyCache_.find(x => x.date === ds);
+  if (!(await showConfirm(`刪除 ${ds} 的身體狀況紀錄？`))) return;
+  try {
+    const result = await postJSON({ action: 'deletePeriodDaily', date: ds });
+    if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message || '刪除失敗');
+    loadPeriodDailyHistory();
+    if (getRecordDate('periodDaily') === ds) loadPeriodDailyToday(null, ds);
+    if (bak) {
+      showUndoToast('已刪除這天的狀況', async () => {
+        try {
+          const r = await postJSON({ action: 'savePeriodDaily', date: bak.date, flow: bak.flow, pain: bak.pain, symptoms: bak.symptoms, note: bak.note });
+          if (r && (r.error || r.ok === false)) throw new Error(r.error || r.message || '復原失敗');
+          showToast('已復原 ↩️');
+          loadPeriodDailyHistory();
+          if (getRecordDate('periodDaily') === ds) loadPeriodDailyToday(null, ds);
+        } catch (e) { alert('復原失敗：' + e.message); }
+      }, 6000);
+    } else {
+      showToast('已刪除 🗑️');
+    }
+  } catch (err) {
+    alert('刪除失敗：' + err.message);
+  }
+}
 async function loadPeriodDailyHistory(preData) {
   const area = document.getElementById('periodDailyHistoryArea');
   area.innerHTML = '<div class="empty-state">載入中…</div>';
   try {
     const rows = preData || await (await fetch(`${CONFIG.GAS_URL}?action=getPeriodDailyRecent&limit=14`, { cache: 'no-store' })).json();
+    periodDailyCache_ = Array.isArray(rows) ? rows : [];
     if (!rows.length || rows.error) { area.innerHTML = '<div class="empty-state">還沒有任何紀錄</div>'; return; }
     area.innerHTML = rows.map(r => {
       const lines = [];
@@ -6321,7 +6492,7 @@ async function loadPeriodDailyHistory(preData) {
         lines.push(`<div class="body-history-symrow"><span>${escapeHtml(s.name)}</span><span>${BODY_SEVERITY_LABELS[s.severity] || '輕微'}</span></div>`);
       });
       return `<div class="body-history-day">
-        <div class="body-history-date">${escapeHtml(r.date)}</div>
+        <div class="body-history-date">${escapeHtml(r.date)}<span class="row-acts"><button class="row-act" aria-label="修改" onclick="editPeriodDailyItem('${escapeHtml(r.date)}')">✏️</button><button class="row-act danger" aria-label="刪除" onclick="deletePeriodDailyItem('${escapeHtml(r.date)}')">🗑️</button></span></div>
         ${lines.length ? lines.join('') : '<div class="body-history-symrow"><span>（無症狀）</span></div>'}
         ${r.note ? `<div class="body-history-note">📝 ${escapeHtml(r.note)}</div>` : ''}
       </div>`;
@@ -6546,6 +6717,11 @@ async function submitStockLog() {
   const date = document.getElementById('stockDate').value || fmtDate(new Date());
   const note = document.getElementById('stockNote').value.trim();
   if (!code || !shares || !price) { alert('至少填代號、股數、成交價喔'); return; }
+  if (!(Number(shares) > 0)) { alert('股數必須大於 0'); return; }
+  if (!(Number(price) > 0)) { alert('成交價必須大於 0'); return; }
+  if (fee !== '' && !(Number(fee) >= 0)) { alert('手續費不能是負數'); return; }
+  if (tax !== '' && !(Number(tax) >= 0)) { alert('交易稅不能是負數'); return; }
+  if (date > fmtDate(new Date())) { alert('交易日期不能是未來的日期'); return; }
   const isEdit = !!editingStockId;
   btn.disabled = true;
   const originalText = btn.textContent;
@@ -6774,12 +6950,25 @@ function setStockFilter(kind, key, value) {
   }
 }
 async function deleteStockLogItem(id) {
+  const bak = (typeof stockLogAll !== 'undefined' && Array.isArray(stockLogAll)) ? stockLogAll.find(x => x.id === id) : null;
   if (!(await showConfirm('刪除這筆交易紀錄？'))) return;
   try {
     const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteStockLog', id }) });
     const result = await res.json();
     if (result && result.error) throw new Error(result.error);
-    showToast('已刪除 🗑️');
+    if (result && result.ok === false) throw new Error(result.message || '找不到這筆交易紀錄');
+    if (bak) {
+      showUndoToast('已刪除這筆交易', async () => {
+        try {
+          const r = await postJSON({ action: 'addStockLog', code: bak.code, name: bak.name || '', stockAction: bak.action === 'sell' ? 'sell' : 'buy', shares: bak.shares, price: bak.price, fee: bak.fee || '', tax: bak.tax || '', date: bak.date, note: bak.note || '' });
+          if (r && (r.error || r.ok === false)) throw new Error(r.error || r.message || '復原失敗');
+          showToast('已復原 ↩️');
+          loadStockSummary(); loadStockLogList(); loadStockCostChart();
+        } catch (e) { alert('復原失敗：' + e.message); }
+      }, 6000);
+    } else {
+      showToast('已刪除 🗑️');
+    }
     loadStockSummary();
     loadStockLogList();
     loadStockCostChart();
@@ -6832,51 +7021,81 @@ async function loadGymLog() {
     renderGymLog(list);
   } catch (err) {}
 }
+let gymLogCache_ = [];
+let editingGymId = null;
 function renderGymLog(list) {
+  gymLogCache_ = Array.isArray(list) ? list : [];
   const area = document.getElementById('gymLogList');
-  if (!list.length) { area.innerHTML = '<div class="empty-state" style="padding:14px 0;">今天還沒有紀錄任何動作</div>'; return; }
-  area.innerHTML = list.map(g => `
-    <div class="gym-log-item">
+  if (!gymLogCache_.length) { area.innerHTML = '<div class="empty-state" style="padding:14px 0;">今天還沒有紀錄任何動作</div>'; return; }
+  area.innerHTML = gymLogCache_.map(g => `
+    <div class="gym-log-item${editingGymId === g.id ? ' editing' : ''}">
       <div><span class="gl-ex">${escapeHtml(g.exercise)}</span><span class="gl-detail">${g.weight ? g.weight + 'kg・' : ''}${g.sets ? g.sets + '組' : ''}${g.reps ? '×' + g.reps + '下' : ''}</span></div>
-      <button class="gl-del" onclick="deleteGymLogItem('${g.id}')">✕</button>
+      <span class="row-acts"><button class="row-act" aria-label="修改" onclick="editGymLogItem('${g.id}')">✏️</button><button class="gl-del" aria-label="刪除" onclick="deleteGymLogItem('${g.id}')">✕</button></span>
     </div>
   `).join('');
 }
+function editGymLogItem(id) {
+  const g = gymLogCache_.find(x => x.id === id);
+  if (!g) return;
+  editingGymId = id;
+  document.getElementById('gymExerciseInput').value = g.exercise || '';
+  document.getElementById('gymWeightInput').value = g.weight === '' || g.weight == null ? '' : g.weight;
+  document.getElementById('gymSetsInput').value = g.sets === '' || g.sets == null ? '' : g.sets;
+  document.getElementById('gymRepsInput').value = g.reps === '' || g.reps == null ? '' : g.reps;
+  document.getElementById('gymLogSubmitBtn').textContent = '✔ 更新這一組';
+  document.getElementById('gymCancelEditBtn').style.display = 'block';
+  renderGymLog(gymLogCache_);
+  document.getElementById('gymExerciseInput').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function resetGymForm_() {
+  editingGymId = null;
+  document.getElementById('gymExerciseInput').value = '';
+  document.getElementById('gymWeightInput').value = '';
+  document.getElementById('gymSetsInput').value = '';
+  document.getElementById('gymRepsInput').value = '';
+  document.getElementById('gymLogSubmitBtn').textContent = '+ 新增這一組';
+  document.getElementById('gymCancelEditBtn').style.display = 'none';
+}
+function cancelEditGym() { resetGymForm_(); renderGymLog(gymLogCache_); }
 async function submitGymLog() {
   const btn = document.getElementById('gymLogSubmitBtn');
   if (btn.disabled) return;
   const exercise = document.getElementById('gymExerciseInput').value.trim();
   if (!exercise) { alert('請輸入器械/動作名稱'); return; }
-  const weight = document.getElementById('gymWeightInput').value;
-  const sets = document.getElementById('gymSetsInput').value;
-  const reps = document.getElementById('gymRepsInput').value;
+  if (exercise.length > 40) { alert('動作名稱太長（最多 40 字）'); return; }
+  const weight = String(document.getElementById('gymWeightInput').value).trim();
+  const sets = String(document.getElementById('gymSetsInput').value).trim();
+  const reps = String(document.getElementById('gymRepsInput').value).trim();
+  if (weight !== '' && !(isFinite(Number(weight)) && Number(weight) >= 0 && Number(weight) <= 1000)) { alert('重量請輸入 0～1000 之間的數字'); return; }
+  if (sets !== '' && !(Number.isInteger(Number(sets)) && Number(sets) >= 1 && Number(sets) <= 100)) { alert('組數請輸入 1～100 的整數'); return; }
+  if (reps !== '' && !(Number.isInteger(Number(reps)) && Number(reps) >= 1 && Number(reps) <= 1000)) { alert('次數請輸入 1～1000 的整數'); return; }
+  const date = getRecordDate('gym');
+  if (date > fmtDate(new Date())) { alert('日期不能是未來的日期'); return; }
+  const isEdit = !!editingGymId;
   btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = '記錄中…';
+  btn.textContent = isEdit ? '更新中…' : '記錄中…';
   try {
-    const res = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: 'addGymLog', date: getRecordDate('gym'), exercise, weight, sets, reps })
-    });
-    const result = await res.json();
-    if (result && result.error) throw new Error(result.error);
-    document.getElementById('gymExerciseInput').value = '';
-    document.getElementById('gymWeightInput').value = '';
-    document.getElementById('gymSetsInput').value = '';
-    document.getElementById('gymRepsInput').value = '';
-    document.getElementById('repeatSetBtn').style.display = 'block';
-    lastGymSet = { exercise, weight, sets, reps };
-    showToast(pick(['這組收工啦 💪', '記下這一組了 🏋️', '又進步一點點 🌱']));
+    const body = isEdit
+      ? { action: 'updateGymLog', id: editingGymId, date, exercise, weight, sets, reps }
+      : { action: 'addGymLog', date, exercise, weight, sets, reps };
+    const result = await postJSON(body);
+    if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message || '儲存失敗');
+    resetGymForm_();
+    if (!isEdit) {
+      document.getElementById('repeatSetBtn').style.display = 'block';
+      lastGymSet = { exercise, weight, sets, reps };
+    }
+    showToast(isEdit ? '這組已更新 💪' : pick(['這組收工啦 💪', '記下這一組了 🏋️', '又進步一點點 🌱']));
     loadGymLog();
     loadGymExerciseNames();
     loadWeekProgress();
     loadStreak();
     if (getRecordDate('gym') === fmtDate(new Date())) loadTodayOverview();
   } catch (err) {
-    alert('記錄失敗：' + err.message);
+    alert((isEdit ? '更新失敗：' : '記錄失敗：') + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = originalText;
+    btn.textContent = editingGymId ? '✔ 更新這一組' : '+ 新增這一組';
   }
 }
 function repeatLastSet() {
@@ -6888,12 +7107,27 @@ function repeatLastSet() {
   vibrate(10);
 }
 async function deleteGymLogItem(id) {
+  const bak = gymLogCache_.find(x => x.id === id);
   if (!(await showConfirm('刪除這組重訓紀錄？'))) return;
   try {
     const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteGymLog', id }) });
     const result = await res.json();
     if (result && result.error) throw new Error(result.error);
-    showToast('已刪除 🗑️');
+    if (result && result.ok === false) throw new Error(result.message || '刪除失敗');
+    if (editingGymId === id) resetGymForm_();
+    if (bak) {
+      showUndoToast('已刪除這組', async () => {
+        try {
+          const r = await postJSON({ action: 'addGymLog', date: bak.date, exercise: bak.exercise, weight: bak.weight, sets: bak.sets, reps: bak.reps });
+          if (r && (r.error || r.ok === false)) throw new Error(r.error || r.message || '復原失敗');
+          showToast('已復原 ↩️');
+          loadGymLog(); loadWeekProgress(); loadStreak();
+          if (getRecordDate('gym') === fmtDate(new Date())) loadTodayOverview();
+        } catch (e) { alert('復原失敗：' + e.message); }
+      }, 6000);
+    } else {
+      showToast('已刪除 🗑️');
+    }
     loadGymLog();
     loadWeekProgress();
     loadStreak();
@@ -7104,25 +7338,39 @@ async function submitWeight(src) {
   const inputEl = document.getElementById(isHome ? 'weightHomeInput' : 'weightInput');
   const dateKey = isHome ? 'weightHome' : 'weight';
   if (btn.disabled) return;
-  const val = inputEl.value;
-  if (!val) return;
-  if (!(Number(val) > 0 && Number(val) < 500)) { alert('體重數字看起來不太對，請再確認一下'); return; }
+  const raw = String(inputEl.value).trim();
+  if (!raw) { alert('請先輸入體重'); return; }
+  const val = Number(raw);
+  if (!isFinite(val) || !(val > 0 && val < 500)) { alert('體重數字看起來不太對，請再確認一下'); return; }
+  const weight = Math.round(val * 10) / 10;
+  const date = getRecordDate(dateKey);
+  if (date > fmtDate(new Date())) { alert('日期不能是未來的日期'); return; }
+  const isEdit = !isHome && !!editingWeightId;
+  // 防呆：和最近一筆差太多時再確認一次，避免多打或少打一位數
+  const before = (weightStatsCache_ || []).filter(s => s.id !== editingWeightId && s.date <= date);
+  const ref = before.length ? before[before.length - 1] : null;
+  if (ref && Math.abs(weight - parseFloat(ref.weight)) >= 5) {
+    const gap = Math.abs(weight - parseFloat(ref.weight)).toFixed(1);
+    if (!(await showConfirm(`和 ${ref.date} 的 ${ref.weight} kg 差了 ${gap} kg，確定要記錄 ${weight} kg 嗎？`))) return;
+  }
   btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = '記錄中…';
+  const originalText = isHome ? btn.textContent : '記錄';
+  btn.textContent = isEdit ? '更新中…' : '記錄中…';
   try {
-    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'addBodyStat', date: getRecordDate(dateKey), weight: val }) });
-    const result = await res.json();
-    if (result && result.error) throw new Error(result.error);
-    inputEl.value = '';
-    showToast(pick(['體重記錄好了 ⚖️', '收到，辛苦你了 🌷']));
+    const body = isEdit
+      ? { action: 'updateBodyStat', id: editingWeightId, date, weight }
+      : { action: 'addBodyStat', date, weight };
+    const result = await postJSON(body);
+    if (result && (result.error || result.ok === false)) throw new Error(result.error || result.message || '儲存失敗');
+    if (isEdit) resetWeightEdit_(); else inputEl.value = '';
+    showToast(isEdit ? '體重已更新 ⚖️' : pick(['體重記錄好了 ⚖️', '收到，辛苦你了 🌷']));
     loadWeightList();
     loadFitHome();
   } catch (err) {
-    alert('記錄失敗：' + err.message);
+    alert((isEdit ? '更新失敗：' : '記錄失敗：') + err.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = originalText;
+    btn.textContent = (!isHome && editingWeightId) ? '更新' : originalText;
   }
 }
 async function loadWeekProgress() {
@@ -8617,6 +8865,9 @@ let calMonth = new Date();
 let calOverviewData = {}; // Phase04：快取這個月的密度資料，點日期時不用再打一次 API
 let calLoadedYm = null; // 效能優化：記錄快取資料是哪個月份，切回同一個月時可以先秒開再背景更新
 let calSelectedDate = null;
+let calRangeStart_ = null; // 連點兩天補記整段：已選的開始日（null = 不在選取模式）
+let calPeriodStatus_ = null; // 月曆用：getPeriodStatus 的結果（平均週期／經期天數，用來畫預估經期）
+let calPeriodLogs_ = []; // 月曆用：所有經期紀錄（畫粉紅底色、起／止標記、判斷點日期可以做什麼）
 function changeCalMonth(delta) {
   calMonth.setDate(1); // 先回到 1 號再加減月份，避免 31 號 +1 個月時跳過整個月（例如 10/31 → 12/1）
   calMonth.setMonth(calMonth.getMonth() + delta);
@@ -8638,6 +8889,7 @@ async function loadCalendarPage() {
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">載入中…</div>';
   }
   // 每日心情與月曆總覽「並行」載入，互不拖慢；心情資料先到的話，等總覽回來一起畫，晚到的話再補畫一次
+  calLoadPeriodLogs_();
   dmRenderMonthSummary(ym);
   const moodP = dmLoadMonth(ym, true).then(() => {
     const curYm = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
@@ -8689,7 +8941,11 @@ function renderCalendarGrid(ym, overview) {
     }
     const mood = DM_BY_CODE[dmData[ds]];
     const moodHtml = mood ? `<span class="cal-mood" title="${mood.label}">${mood.emoji}</span>` : '';
-    html += `<div class="cal-cell${ds === todayStr ? ' today' : ''}${ds === calSelectedDate ? ' selected' : ''}${mood ? ' has-mood' : ''}" onclick="selectCalendarDay('${ds}', this)"${mood ? ` aria-label="${d}日 ${mood.label}"` : ''}>
+    const pl = calPeriodLogs_.find(l => l.startDate <= ds && ds <= (l.endDate || todayStr));
+    let pCls = pl ? (' cal-period' + (pl.startDate === ds ? ' cal-p-start' : '') + (pl.endDate === ds ? ' cal-p-end' : '')) : '';
+    if (!pl && calIsPredictedPeriodDay_(ds, todayStr)) { pCls += ' cal-predict'; legendSet['預估經期'] = 'PREDICT'; }
+    if (calRangeStart_ === ds) pCls += ' cal-range-start';
+    html += `<div class="cal-cell${pCls}${ds === todayStr ? ' today' : ''}${ds === calSelectedDate ? ' selected' : ''}${mood ? ' has-mood' : ''}" onclick="selectCalendarDay('${ds}', this)"${mood ? ` aria-label="${d}日 ${mood.label}"` : ''}>
       ${moodHtml}<span class="cal-daynum">${d}</span>
       <div class="cal-dots">${dots}</div>
     </div>`;
@@ -8698,11 +8954,12 @@ function renderCalendarGrid(ym, overview) {
   const legend = document.getElementById('calLegend');
   const keys = Object.keys(legendSet);
   legend.innerHTML = keys.length ? keys.map(name =>
-    `<div class="cal-legend-item"><span class="cal-dot" style="background:${legendSet[name]};"></span>${escapeHtml(name)}</div>`
+    `<div class="cal-legend-item">${legendSet[name] === 'PREDICT' ? '<span class="cal-legend-predict"></span>' : `<span class="cal-dot" style="background:${legendSet[name]};"></span>`}${escapeHtml(name)}</div>`
   ).join('') : '<div style="color:var(--ink-soft);">這個月還沒有任何紀錄</div>';
 }
 // Phase04：點日期先秀出這一天的小結，而不是直接跳走；再按「查看這一天」才真的跳去紀錄頁
 function selectCalendarDay(ds, cellEl) {
+  if (calRangeStart_) { calCommitRange_(ds); return; } // 正在「連點兩天補記整段」：這次點的是結束日
   calSelectedDate = ds;
   document.querySelectorAll('#calGrid .cal-cell').forEach(cell => cell.classList.remove('selected'));
   if (cellEl) cellEl.classList.add('selected');
@@ -8716,9 +8973,244 @@ function selectCalendarDay(ds, cellEl) {
   ];
   document.getElementById('calDayDetailStats').innerHTML = rows.map(r => `<div class="cdd-stat-row">${r}</div>`).join('');
   document.getElementById('calDayDetail').style.display = 'block';
+  calRenderPeriodBox_(ds);
   dmRenderCalPicker();
   const detail = document.getElementById('calDayDetail');
   if (detail.scrollIntoView) detail.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+/* ================= 月曆點日期記錄經期（開始日／結束日自動串聯） ================= */
+async function calLoadPeriodLogs_() {
+  try {
+    const [logs, st] = await Promise.all([
+      fetch(`${CONFIG.GAS_URL}?action=getPeriodLogs`, { cache: 'no-store' }).then(r => r.json()),
+      fetch(`${CONFIG.GAS_URL}?action=getPeriodStatus`, { cache: 'no-store' }).then(r => r.json()).catch(() => null)
+    ]);
+    if (!Array.isArray(logs)) return;
+    calPeriodLogs_ = logs;
+    if (st && !st.error) calPeriodStatus_ = st;
+    const ym = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
+    if (calLoadedYm === ym) renderCalendarGrid(ym, calOverviewData);
+    if (calSelectedDate) calRenderPeriodBox_(calSelectedDate);
+  } catch (err) {}
+}
+function calRenderPeriodBox_(ds) {
+  const box = document.getElementById('calPeriodBox');
+  if (!box) return;
+  const today = fmtDate(new Date());
+  if (ds > today) { box.style.display = 'none'; box.innerHTML = ''; return; } // 未來的日子不能記
+  const logs = calPeriodLogs_;
+  const inside = logs.find(l => l.startDate <= ds && ds <= (l.endDate || today));
+  const open = logs.find(l => !l.endDate);
+  let note = '', btns = '';
+  if (inside) {
+    const range = inside.startDate + (inside.endDate ? ' ～ ' + inside.endDate : '（進行中）');
+    note = `這天在經期內：${range}`;
+    if (!inside.endDate && ds >= inside.startDate) btns += `<button class="gen-btn" onclick="calMarkPeriod('end')">🌷 這天是結束日</button>`;
+    else if (inside.endDate && ds >= inside.startDate && ds !== inside.endDate) btns += `<button class="gen-btn" onclick="calMarkPeriod('end')">🌷 結束日改成這天</button>`;
+    btns += `<button class="gen-btn" onclick="calDeletePeriod('${inside.id}')">🗑 移除這段經期</button>`;
+  } else if (open) {
+    if (ds >= open.startDate) {
+      note = `目前有一筆從 ${open.startDate} 開始、還沒結束的經期`;
+      btns += `<button class="gen-btn" onclick="calMarkPeriod('end')">🌷 這天是結束日</button>`;
+    } else {
+      note = `目前有一筆從 ${open.startDate} 開始、還沒結束的經期，要先把它結束才能再記新的一次；如果是補記更早的一段，可以用下面的按鈕`;
+      btns += `<button class="gen-btn" onclick="calStartRange()">📅 補記整段（再點結束日）</button>`;
+    }
+  } else {
+    note = '點一下，就會記成這次經期的開始日；之後在結束那天回來點「結束日」就會自動串起來';
+    btns += `<button class="gen-btn" onclick="calMarkPeriod('start')">🌸 這天是開始日</button>`;
+    btns += `<button class="gen-btn" onclick="calStartRange()">📅 補記整段（再點結束日）</button>`;
+  }
+  box.innerHTML = `<div class="cpb-title">🌸 經期</div><div class="cpb-note">${escapeHtml(note)}</div><div class="cpb-btns">${btns}</div>`;
+  box.style.display = 'block';
+}
+/* ---- 預估經期：用平均週期往後推，最多推 3 個週期；已經有實際紀錄的日子不重複標 ---- */
+function calIsPredictedPeriodDay_(ds, todayStr) {
+  const st = calPeriodStatus_;
+  if (!st || !st.hasData || !calPeriodLogs_.length || ds < todayStr) return false;
+  const lastStart = calPeriodLogs_.reduce((m, l) => l.startDate > m ? l.startDate : m, '');
+  if (!lastStart) return false;
+  const cyc = st.avgCycleLength || 28, len = st.avgPeriodLength || 5;
+  const diff = Math.round((new Date(ds + 'T00:00:00') - new Date(lastStart + 'T00:00:00')) / 86400000);
+  if (diff <= 0) return false;
+  const k = Math.round(diff / cyc);
+  for (let n = Math.max(1, k - 1); n <= k + 1 && n <= 3; n++) {
+    const off = diff - n * cyc;
+    if (off >= 0 && off < len) return true;
+  }
+  return false;
+}
+/* ---- 連點兩天補記整段 ---- */
+function calUpdateRangeHint_() {
+  const el = document.getElementById('calRangeHint');
+  if (!el) return;
+  if (!calRangeStart_) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  el.innerHTML = `<span>🌸 開始日 ${calRangeStart_}，請點結束那天（可以換月份）</span><button onclick="calCancelRange()">取消</button>`;
+}
+function calStartRange() {
+  if (!calSelectedDate) return;
+  calRangeStart_ = calSelectedDate;
+  calUpdateRangeHint_();
+  const ym = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
+  renderCalendarGrid(ym, calOverviewData);
+  document.getElementById('calDayDetail').style.display = 'none';
+}
+function calCancelRange() {
+  calRangeStart_ = null;
+  calUpdateRangeHint_();
+  const ym = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
+  renderCalendarGrid(ym, calOverviewData);
+}
+async function calCommitRange_(endDs, force) {
+  if (calPeriodBusy_ || !calRangeStart_) return;
+  const startDs = calRangeStart_;
+  const today = fmtDate(new Date());
+  if (endDs > today) { showToast('結束日不能是未來的日期'); return; }
+  if (endDs < startDs) { showToast('結束日不能早於開始日 ' + startDs + '，請再點一次'); return; }
+  if (endDs === startDs && !force && !(await showConfirm('只記 ' + startDs + ' 這一天嗎？'))) return;
+  calPeriodBusy_ = true;
+  try {
+    const res = await postJSON({ action: 'markPeriodDay', kind: 'range', startDate: startDs, date: endDs, force: !!force });
+    if (res && res.needConfirm) {
+      calPeriodBusy_ = false;
+      if (await showConfirm(res.message)) return calCommitRange_(endDs, true);
+      return;
+    }
+    if (!res || res.ok === false || res.error) throw new Error((res && (res.error || res.message)) || '儲存失敗');
+    calRangeStart_ = null;
+    calUpdateRangeHint_();
+    calSelectedDate = endDs;
+    showToast('這段經期記好了 🌷');
+    await calRefreshAfterPeriod_();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  } finally {
+    calPeriodBusy_ = false;
+  }
+}
+
+/* ---- 經期頁「昨天／前天」快速補記 ---- */
+function periodDateOffset_(n) { const d = new Date(); d.setDate(d.getDate() - n); return fmtDate(d); }
+function renderPeriodBackfill_() {
+  const row = document.getElementById('periodBackfillRow');
+  if (!row) return;
+  const k = periodOpenState.hasOpen ? 'end' : 'start';
+  const word = k === 'start' ? '開始' : '結束';
+  row.style.display = 'flex';
+  row.innerHTML = `<button class="gen-btn" onclick="periodMarkOffset(1,'${k}')">昨天${word}</button><button class="gen-btn" onclick="periodMarkOffset(2,'${k}')">前天${word}</button>`;
+}
+let periodMarkBusy_ = false;
+async function periodMarkOffset(n, kind, force) {
+  if (periodMarkBusy_) return;
+  periodMarkBusy_ = true;
+  try {
+    const res = await postJSON({ action: 'markPeriodDay', date: periodDateOffset_(n), kind, force: !!force });
+    if (res && res.needConfirm) {
+      periodMarkBusy_ = false;
+      if (await showConfirm(res.message)) return periodMarkOffset(n, kind, true);
+      return;
+    }
+    if (!res || res.ok === false || res.error) throw new Error((res && (res.error || res.message)) || '儲存失敗');
+    showToast(kind === 'start' ? '已記下開始日 🌸' : '這次經期記好了 🌷');
+    loadPeriodStatus(); loadPeriodOpenState(); loadPeriodLogList(); loadTodayOverview();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  } finally {
+    periodMarkBusy_ = false;
+  }
+}
+
+/* ---- 首頁「忘了結束嗎？」輕提示 ---- */
+function periodOverdueHintHtml_(ps) {
+  try { if (localStorage.getItem('period_overdue_dismiss') === fmtDate(new Date())) return ''; } catch (e) {}
+  return `<div class="tov-hint" id="tovPeriodHint">🌷 這次經期已經第 ${ps.day} 天了（平均約 ${ps.avgPeriodLength} 天），結束了嗎？<div style="font-size:11.5px;color:var(--ink-soft);margin-top:2px;">如果早就結束了，到月曆點實際的結束日就好</div><div class="th-btns"><button class="gen-btn" onclick="periodHintEndToday()">今天結束</button><button class="gen-btn" onclick="periodHintDismiss()">之後再說</button></div></div>`;
+}
+function periodHintDismiss() {
+  try { localStorage.setItem('period_overdue_dismiss', fmtDate(new Date())); } catch (e) {}
+  const el = document.getElementById('tovPeriodHint'); if (el) el.remove();
+}
+async function periodHintEndToday(force) {
+  if (periodMarkBusy_) return;
+  periodMarkBusy_ = true;
+  try {
+    const res = await postJSON({ action: 'markPeriodDay', date: fmtDate(new Date()), kind: 'end', force: !!force });
+    if (res && res.needConfirm) {
+      periodMarkBusy_ = false;
+      if (await showConfirm(res.message)) return periodHintEndToday(true);
+      return;
+    }
+    if (!res || res.ok === false || res.error) throw new Error((res && (res.error || res.message)) || '儲存失敗');
+    showToast('辛苦了，這次記錄好了 🌷');
+    loadTodayOverview(); loadPeriodStatus(); loadPeriodOpenState(); loadPeriodLogList();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  } finally {
+    periodMarkBusy_ = false;
+  }
+}
+async function calRefreshAfterPeriod_() {
+  const ym = calMonth.getFullYear() + '-' + String(calMonth.getMonth() + 1).padStart(2, '0');
+  try {
+    const [logs, overview, st] = await Promise.all([
+      fetch(`${CONFIG.GAS_URL}?action=getPeriodLogs`, { cache: 'no-store' }).then(r => r.json()),
+      fetch(`${CONFIG.GAS_URL}?action=getCalendarOverview&month=${ym}`, { cache: 'no-store' }).then(r => r.json()),
+      fetch(`${CONFIG.GAS_URL}?action=getPeriodStatus`, { cache: 'no-store' }).then(r => r.json()).catch(() => null)
+    ]);
+    if (Array.isArray(logs)) calPeriodLogs_ = logs;
+    if (st && !st.error) calPeriodStatus_ = st;
+    if (overview && !overview.error) { calOverviewData = overview; calLoadedYm = ym; }
+    renderCalendarGrid(ym, calOverviewData);
+    document.querySelectorAll('#calGrid .cal-cell:not(.empty)').forEach((c, i) => {
+      if (calSelectedDate && Number(calSelectedDate.substring(8, 10)) - 1 === i) c.classList.add('selected');
+    });
+    if (calSelectedDate) calRenderPeriodBox_(calSelectedDate);
+  } catch (err) {}
+  // 順便更新經期頁／首頁，兩邊資料才會一致
+  try { loadPeriodStatus(); loadPeriodOpenState(); loadPeriodLogList(); loadTodayOverview(); } catch (e) {}
+}
+let calPeriodBusy_ = false;
+async function calMarkPeriod(kind, force) {
+  if (calPeriodBusy_ || !calSelectedDate) return;
+  calPeriodBusy_ = true;
+  const ds = calSelectedDate;
+  try {
+    const res = await postJSON({ action: 'markPeriodDay', date: ds, kind, force: !!force });
+    if (res && res.needConfirm) {
+      calPeriodBusy_ = false;
+      if (await showConfirm(res.message)) return calMarkPeriod(kind, true);
+      return;
+    }
+    if (!res || res.ok === false || res.error) throw new Error((res && (res.error || res.message)) || '儲存失敗');
+    showToast(kind === 'start' ? (res.alreadyOpen ? '這天本來就是開始日囉' : '已記下開始日 🌸 結束那天回來點「結束日」') : '這次經期記好了 🌷');
+    await calRefreshAfterPeriod_();
+  } catch (err) {
+    alert('記錄失敗：' + err.message);
+  } finally {
+    calPeriodBusy_ = false;
+  }
+}
+async function calDeletePeriod(id) {
+  if (calPeriodBusy_) return;
+  const l = calPeriodLogs_.find(x => x.id === id);
+  if (!l || !(await showConfirm('移除這段經期紀錄？（' + l.startDate + (l.endDate ? ' ～ ' + l.endDate : '（進行中）') + '）'))) return;
+  calPeriodBusy_ = true;
+  try {
+    const res = await postJSON({ action: 'deletePeriodLog', id });
+    if (!res || res.ok === false || res.error) throw new Error((res && (res.error || res.message)) || '找不到這筆紀錄');
+    showUndoToast('已移除這段經期', async () => {
+      try {
+        const r = await postJSON({ action: 'addPeriodLog', startDate: l.startDate, endDate: l.endDate || '', note: l.note || '' });
+        if (r && (r.error || r.ok === false)) throw new Error(r.error || r.message);
+        await calRefreshAfterPeriod_();
+      } catch (e) { alert('復原失敗：' + e.message); }
+    });
+    await calRefreshAfterPeriod_();
+  } catch (err) {
+    alert('移除失敗：' + err.message);
+  } finally {
+    calPeriodBusy_ = false;
+  }
 }
 function jumpFromCalendarSelected() {
   if (calSelectedDate) jumpFromCalendar(calSelectedDate);
@@ -8815,7 +9307,7 @@ function dmRenderHome() {
   const cur = dmData[ds];
   if (cur && DM_BY_CODE[cur]) {
     const m = DM_BY_CODE[cur];
-    status.innerHTML = `今天是 <b>${m.emoji} ${m.label}</b> <button type="button" class="dm-retry" onclick="dmToggleHome()">${dmHomeOpen ? '收合' : '修改'}</button>`;
+    status.innerHTML = `今天是 <b>${m.emoji} ${m.label}</b> <button type="button" class="dm-retry" onclick="dmToggleHome()">${dmHomeOpen ? '收合' : '修改'}</button> <button type="button" class="dm-retry" onclick="dmClear('${ds}')">清除</button>`;
   } else if (!dmLoaded[ym] && dmLoadError[ym]) {
     status.innerHTML = `讀取今天的心情失敗 <button type="button" class="dm-retry" onclick="dmLoadMonth('${ym}', true)">重試</button>`;
   } else if (!dmLoaded[ym]) {
@@ -8837,7 +9329,7 @@ function dmRenderCalPicker() {
   const ds = calSelectedDate;
   const cur = DM_BY_CODE[dmData[ds]];
   document.getElementById('dmCalTitle').textContent = cur ? `這天的心情：${cur.emoji} ${cur.label}（可重新選擇）` : '這天的心情如何？點一下就記好';
-  box.innerHTML = dmPickerHtml(ds);
+  box.innerHTML = dmPickerHtml(ds) + (cur ? `<div style="text-align:right;margin-top:8px;"><button type="button" class="row-act danger" style="width:auto;padding:0 12px;" onclick="dmClear('${ds}')">🗑️ 清除這天心情</button></div>` : '');
 }
 
 function dmRenderMonthSummary(ym) {
@@ -8913,6 +9405,33 @@ function dmRefreshViews(ds) {
   const ym = dmYm(ds);
   if (dmCalYm() === ym && calLoadedYm === ym) renderCalendarGrid(ym, calOverviewData);
   if (dmCalYm() === ym) dmRenderMonthSummary(ym);
+}
+
+// 清除某一天的心情（有確認、刪完可在幾秒內復原）
+async function dmClear(ds) {
+  const code = dmData[ds];
+  const m = DM_BY_CODE[code];
+  if (!m) return;
+  if (dmSaving[ds]) return;
+  if (!(await showConfirm(`清除 ${ds} 的心情（${m.emoji} ${m.label}）？`))) return;
+  if (!checkConfig()) return;
+  dmSaving[ds] = code;
+  dmRefreshViews(ds);
+  try {
+    const res = await fetch(CONFIG.GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteDailyMood', date: ds }) });
+    const result = await res.json();
+    if (result.error === 'AUTH_REQUIRED') throw new Error('登入已過期，請重新整理頁面後再試');
+    if (result.error) throw new Error(result.error);
+    if (result.ok === false) throw new Error(result.message || '清除失敗');
+    delete dmData[ds];
+    delete dmSavedAt[ds];
+    showUndoToast('已清除這天的心情', () => { dmPick(ds, code); }, 6000);
+  } catch (err) {
+    showToast('⚠️ 心情沒有清除成功：' + (err.message || '網路錯誤'), 4200);
+  } finally {
+    delete dmSaving[ds];
+    dmRefreshViews(ds);
+  }
 }
 
 // 點一下心情 → 直接儲存（新增或修改同一天，後端以日期為唯一鍵）
